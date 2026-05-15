@@ -5639,3 +5639,307 @@ button.is-loading { opacity: .85; }
   line-height: 1;
   opacity: 0.78;
 }
+
+
+
+/* =========================================================
+   Post-Season Preview MVP — preview-only UI components
+   ========================================================= */
+
+.ps-home-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ps-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.ps-card-season {
+  border-color: rgba(37, 99, 235, .20);
+}
+
+.ps-card-grand {
+  border-color: rgba(245, 158, 11, .30);
+}
+
+.ps-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ps-kicker {
+  font-size: 10px;
+  line-height: 1.1;
+  font-weight: 900;
+  letter-spacing: .08em;
+  color: var(--primary);
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.ps-title {
+  font-size: 16px;
+  line-height: 1.2;
+  font-weight: 950;
+  color: var(--text);
+  letter-spacing: -.02em;
+}
+
+.ps-sub,
+.ps-muted {
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(15, 23, 42, .68);
+  margin-top: 4px;
+}
+
+.ps-badge {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 6px 9px;
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.ps-badge-ready {
+  background: rgba(34, 197, 94, .12);
+  color: #15803d;
+}
+
+.ps-badge-soon {
+  background: rgba(245, 158, 11, .14);
+  color: #b45309;
+}
+
+.ps-mini-line {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.ps-mini-line span {
+  min-width: 0;
+  text-align: center;
+  border-radius: 999px;
+  padding: 6px 5px;
+  background: rgba(15, 23, 42, .06);
+  color: rgba(15, 23, 42, .58);
+  font-size: 10px;
+  line-height: 1.1;
+  font-weight: 900;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ps-mini-line .is-done {
+  background: rgba(34, 197, 94, .12);
+  color: #15803d;
+}
+
+.ps-mini-line .is-current {
+  background: rgba(37, 99, 235, .12);
+  color: #2563eb;
+}
+
+.ps-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.ps-actions .btn {
+  min-height: 42px;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.ps-modal {
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: 14px;
+}
+
+.ps-modal-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ps-modal-title {
+  font-size: 20px;
+  margin-bottom: 2px;
+}
+
+.ps-icon-btn {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.ps-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.ps-metric {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(248, 250, 252, .82);
+}
+
+.ps-metric-value {
+  font-size: 24px;
+  line-height: 1;
+  font-weight: 950;
+  color: var(--primary);
+  letter-spacing: -.04em;
+}
+
+.ps-metric-label {
+  margin-top: 5px;
+  font-size: 11px;
+  line-height: 1.25;
+  color: rgba(15, 23, 42, .58);
+  font-weight: 800;
+}
+
+.ps-panel {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 12px;
+  margin-top: 10px;
+  background: #fff;
+}
+
+.ps-panel-title {
+  font-size: 12px;
+  line-height: 1.2;
+  color: rgba(15, 23, 42, .58);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.ps-panel-main {
+  margin-top: 5px;
+  font-size: 15px;
+  line-height: 1.25;
+  font-weight: 950;
+  color: var(--text);
+}
+
+.ps-panel-note {
+  margin-top: 8px;
+}
+
+.ps-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 9px;
+}
+
+.ps-chip {
+  border-radius: 999px;
+  padding: 7px 9px;
+  font-size: 11px;
+  line-height: 1.1;
+  font-weight: 900;
+}
+
+.ps-chip-green {
+  background: rgba(34, 197, 94, .12);
+  color: #15803d;
+}
+
+.ps-chip-amber {
+  background: rgba(245, 158, 11, .14);
+  color: #b45309;
+}
+
+.ps-chip-blue {
+  background: rgba(37, 99, 235, .12);
+  color: #2563eb;
+}
+
+.ps-next-card {
+  border-radius: 18px;
+  padding: 13px;
+  margin-top: 12px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, .10), rgba(37, 99, 235, .04));
+  border: 1px solid rgba(37, 99, 235, .20);
+}
+
+.ps-disclaimer {
+  margin-top: 12px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: rgba(15, 23, 42, .56);
+}
+
+.ps-hub-preview {
+  margin-top: 12px;
+}
+
+.ps-hub-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ps-hub-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  color: #2563eb;
+  background: rgba(37, 99, 235, .12);
+  font-weight: 950;
+}
+
+.ps-hub-actions {
+  margin-top: 0;
+}
+
+.ps-profile-preview {
+  margin-top: 14px;
+}
+
+.ps-profile-card {
+  margin-top: 10px;
+}
+
+@media (max-width: 360px) {
+  .ps-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .ps-metric-grid {
+    grid-template-columns: 1fr;
+  }
+}

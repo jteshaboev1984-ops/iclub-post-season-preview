@@ -12217,6 +12217,8 @@ keys.forEach(k => {
 }
       // Credentials (Profile: list + progress)
 try { renderProfileCredentialsUI(); } catch {}
+try { renderPostSeasonProfilePreview(); } catch {}
+
 
    // ✅ подтягиваем из БД и перерисовываем (чтобы работало у всех и всегда)
    if (window.sb) {
@@ -12225,6 +12227,498 @@ try { renderProfileCredentialsUI(); } catch {}
        .catch(() => {});
       }
     }
+
+
+// =========================================================
+// Post-Season Preview MVP — Season Review + Grand Olympiad
+// Preview-only. DB is OFF. No Supabase writes.
+// =========================================================
+function isPostSeasonPreviewEnabled() {
+  return !!window.ICLUB_PREVIEW_MODE;
+}
+
+function getPostSeasonPreviewSubjectKey() {
+  try {
+    const fromState = String(state?.courses?.subjectKey || "").trim();
+    if (fromState && isSubjectActive(fromState)) return fromState;
+
+    const profile = loadProfile();
+    const subjects = Array.isArray(profile?.subjects) ? profile.subjects : [];
+    const competitive = subjects.find(s => s?.mode === "competitive" && s?.key && isSubjectActive(s.key));
+    if (competitive?.key) return competitive.key;
+
+    const pinned = subjects.find(s => !!s?.pinned && s?.key && isSubjectActive(s.key));
+    if (pinned?.key) return pinned.key;
+  } catch {}
+
+  return "economics";
+}
+
+function getPostSeasonPreviewSummary(subjectKey = null) {
+  const key = subjectKey || getPostSeasonPreviewSubjectKey();
+  const subj = subjectByKey(key);
+  const title = subjectTitle(key, subj?.title || "Economics");
+
+  return {
+    subjectKey: key,
+    subjectTitle: title,
+    toursCompleted: 6,
+    totalTours: 7,
+    avgPercent: 74,
+    practiceAttempts: 18,
+    activeDays: 11,
+    bestTour: 3,
+    bestPercent: 85,
+    strengths: [
+      "Demand & Supply",
+      "Elasticity",
+      "Market intervention"
+    ],
+    weakAreas: [
+      "Evaluation paragraphs",
+      "Exchange rates",
+      "Balance of payments"
+    ],
+    nextStep: tr3(
+      "Закрыть слабые темы перед Grand Olympiad",
+      "Grand Olympiad oldidan zaif mavzularni mustahkamlash",
+      "Close weak topics before Grand Olympiad"
+    ),
+    grandOpensIn: tr3("Откроется через 5 дней", "5 kundan keyin ochiladi", "Opens in 5 days")
+  };
+}
+
+function postSeasonPreviewChipList(items, kind = "neutral") {
+  return (Array.isArray(items) ? items : []).map(x => `
+    <span class="ps-chip ps-chip-${escapeHTML(kind)}">${escapeHTML(x)}</span>
+  `).join("");
+}
+
+function bindPostSeasonPreviewActions(root = document) {
+  if (!isPostSeasonPreviewEnabled()) return;
+
+  root.querySelectorAll("[data-ps-action]").forEach(btn => {
+    if (btn.dataset.psBound === "1") return;
+    btn.dataset.psBound = "1";
+
+    btn.addEventListener("click", (ev) => {
+      try { ev.preventDefault(); ev.stopPropagation(); } catch {}
+
+      const action = String(btn.dataset.psAction || "").trim();
+      const subjectKey = String(btn.dataset.subjectKey || getPostSeasonPreviewSubjectKey()).trim();
+
+      if (action === "season-review") {
+        openPostSeasonPreviewReview(subjectKey);
+        return;
+      }
+
+      if (action === "practice") {
+        openPostSeasonPreviewPractice(subjectKey);
+        return;
+      }
+
+      if (action === "recommendations") {
+        openPostSeasonPreviewRecommendations(subjectKey);
+        return;
+      }
+
+      if (action === "grand-rules") {
+        openPostSeasonPreviewGrandRules(subjectKey);
+        return;
+      }
+
+      if (action === "subject-hub") {
+        openPostSeasonPreviewSubjectHub(subjectKey);
+        return;
+      }
+
+      if (action === "modal-close") {
+        try { closeModal(false); } catch {}
+        return;
+      }
+    });
+  });
+}
+
+function openPostSeasonPreviewSubjectHub(subjectKey) {
+  if (!isPostSeasonPreviewEnabled()) return;
+
+  try { closeModal(false); } catch {}
+
+  state.courses.subjectKey = subjectKey || getPostSeasonPreviewSubjectKey();
+  state.courses.entryTab = state.tab || "home";
+  saveState();
+
+  setTab("courses");
+  replaceCourses("subject-hub");
+  renderSubjectHub();
+}
+
+function openPostSeasonPreviewPractice(subjectKey) {
+  if (!isPostSeasonPreviewEnabled()) return;
+
+  try { closeModal(false); } catch {}
+
+  state.courses.subjectKey = subjectKey || getPostSeasonPreviewSubjectKey();
+  state.courses.entryTab = state.tab || "home";
+  saveState();
+
+  setTab("courses");
+  replaceCourses("practice-start");
+  try { renderPracticeStart(); } catch {}
+}
+
+function openPostSeasonPreviewRecommendations(subjectKey) {
+  if (!isPostSeasonPreviewEnabled()) return;
+
+  try { closeModal(false); } catch {}
+
+  state.courses.subjectKey = subjectKey || getPostSeasonPreviewSubjectKey();
+  state.courses.entryTab = state.tab || "home";
+  saveState();
+
+  setTab("courses");
+  replaceCourses("my-recs");
+  try { renderMyRecs(); } catch {}
+}
+
+function openPostSeasonPreviewReview(subjectKey = null) {
+  if (!isPostSeasonPreviewEnabled()) return;
+
+  const s = getPostSeasonPreviewSummary(subjectKey);
+
+  const html = `
+    <div class="modal-backdrop" data-modal-backdrop data-close="backdrop">
+      <div class="modal ps-modal">
+        <div class="ps-modal-top">
+          <div>
+            <div class="ps-kicker">${escapeHTML(tr3("ИТОГ СЕЗОНА", "MAVSUM YAKUNI", "SEASON REVIEW"))}</div>
+            <div class="modal-title ps-modal-title">${escapeHTML(tr3("Season Review", "Season Review", "Season Review"))}</div>
+            <div class="ps-muted">${escapeHTML(tr3(
+              "Итоги 7 туров и следующий учебный шаг.",
+              "7 tur yakuni va keyingi o‘quv qadami.",
+              "Your 7-tour summary and next learning step."
+            ))}</div>
+          </div>
+          <button class="ps-icon-btn" type="button" data-ps-action="modal-close">×</button>
+        </div>
+
+        <div class="ps-metric-grid">
+          <div class="ps-metric">
+            <div class="ps-metric-value">${s.toursCompleted}/${s.totalTours}</div>
+            <div class="ps-metric-label">${escapeHTML(tr3("Туры", "Turlar", "Tours"))}</div>
+          </div>
+          <div class="ps-metric">
+            <div class="ps-metric-value">${s.avgPercent}%</div>
+            <div class="ps-metric-label">${escapeHTML(tr3("Средний результат", "O‘rtacha natija", "Average result"))}</div>
+          </div>
+          <div class="ps-metric">
+            <div class="ps-metric-value">${s.practiceAttempts}</div>
+            <div class="ps-metric-label">${escapeHTML(tr3("Практики", "Amaliyotlar", "Practices"))}</div>
+          </div>
+          <div class="ps-metric">
+            <div class="ps-metric-value">${s.activeDays}</div>
+            <div class="ps-metric-label">${escapeHTML(tr3("Активные дни", "Faol kunlar", "Active days"))}</div>
+          </div>
+        </div>
+
+        <div class="ps-panel">
+          <div class="ps-panel-title">${escapeHTML(tr3("Лучший результат", "Eng yaxshi natija", "Best performance"))}</div>
+          <div class="ps-panel-main">${escapeHTML(s.subjectTitle)} · Tour ${s.bestTour}</div>
+          <div class="ps-muted">${escapeHTML(tr3("Результат", "Natija", "Result"))}: ${s.bestPercent}%</div>
+        </div>
+
+        <div class="ps-panel">
+          <div class="ps-panel-title">${escapeHTML(tr3("Сильные темы", "Kuchli mavzular", "Strengths"))}</div>
+          <div class="ps-chip-row">${postSeasonPreviewChipList(s.strengths, "green")}</div>
+        </div>
+
+        <div class="ps-panel">
+          <div class="ps-panel-title">${escapeHTML(tr3("Темы для усиления", "Mustahkamlash kerak", "Areas to improve"))}</div>
+          <div class="ps-chip-row">${postSeasonPreviewChipList(s.weakAreas, "amber")}</div>
+          <div class="ps-muted ps-panel-note">${escapeHTML(tr3(
+            "Эти темы лучше закрыть перед Grand Olympiad.",
+            "Bu mavzularni Grand Olympiad oldidan mustahkamlash yaxshiroq.",
+            "These topics should be strengthened before Grand Olympiad."
+          ))}</div>
+        </div>
+
+        <div class="ps-next-card">
+          <div class="ps-panel-title">${escapeHTML(tr3("Следующий шаг", "Keyingi qadam", "Next step"))}</div>
+          <div class="ps-panel-main">${escapeHTML(s.nextStep)}</div>
+          <div class="ps-actions">
+            <button type="button" class="btn primary" data-ps-action="practice" data-subject-key="${escapeHTML(s.subjectKey)}">
+              ${escapeHTML(tr3("Открыть практику", "Amaliyotni ochish", "Open practice"))}
+            </button>
+            <button type="button" class="btn" data-ps-action="recommendations" data-subject-key="${escapeHTML(s.subjectKey)}">
+              ${escapeHTML(tr3("Мои рекомендации", "Tavsiyalarim", "My recommendations"))}
+            </button>
+          </div>
+        </div>
+
+        <div class="ps-disclaimer">
+          ${escapeHTML(tr3(
+            "Это preview-отчёт без базы. В production цифры будут считаться по реальным турам, практике и рекомендациям.",
+            "Bu bazasiz preview-hisobot. Productionda raqamlar real tur, amaliyot va tavsiyalar asosida hisoblanadi.",
+            "This is a DB-off preview report. In production, numbers will be calculated from real tours, practice and recommendations."
+          ))}
+        </div>
+      </div>
+    </div>
+  `;
+
+  openModal(html);
+  bindPostSeasonPreviewActions(document.getElementById("modal-root"));
+}
+
+function openPostSeasonPreviewGrandRules(subjectKey = null) {
+  if (!isPostSeasonPreviewEnabled()) return;
+
+  const s = getPostSeasonPreviewSummary(subjectKey);
+
+  const html = `
+    <div class="modal-backdrop" data-modal-backdrop data-close="backdrop">
+      <div class="modal ps-modal">
+        <div class="ps-modal-top">
+          <div>
+            <div class="ps-kicker">${escapeHTML(tr3("ФИНАЛ СЕЗОНА", "MAVSUM FINALI", "SEASON FINAL"))}</div>
+            <div class="modal-title ps-modal-title">Grand Olympiad</div>
+            <div class="ps-muted">${escapeHTML(s.grandOpensIn)}</div>
+          </div>
+          <button class="ps-icon-btn" type="button" data-ps-action="modal-close">×</button>
+        </div>
+
+        <div class="ps-panel">
+          <div class="ps-panel-title">${escapeHTML(tr3("Что это?", "Bu nima?", "What is it?"))}</div>
+          <div class="ps-muted">${escapeHTML(tr3(
+            "Grand Olympiad — отдельный финальный этап сезона после 7 туров. Это не 8-й тур.",
+            "Grand Olympiad — 7 turdan keyingi alohida final bosqich. Bu 8-tur emas.",
+            "Grand Olympiad is a separate final stage after 7 tours. It is not Tour 8."
+          ))}</div>
+        </div>
+
+        <div class="ps-panel">
+          <div class="ps-panel-title">${escapeHTML(tr3("Как подготовиться?", "Qanday tayyorlanish kerak?", "How to prepare?"))}</div>
+          <div class="ps-muted">${escapeHTML(tr3(
+            "Используйте практику и рекомендации по слабым темам. Рейтинговый Grand Olympiad должен использовать отдельный закрытый пул вопросов.",
+            "Zaif mavzular bo‘yicha amaliyot va tavsiyalardan foydalaning. Reytingli Grand Olympiad uchun alohida yopiq savollar puli kerak.",
+            "Use practice and recommendations for weak topics. A ranked Grand Olympiad should use a separate closed question pool."
+          ))}</div>
+        </div>
+
+        <div class="ps-actions">
+          <button type="button" class="btn primary" data-ps-action="practice" data-subject-key="${escapeHTML(s.subjectKey)}">
+            ${escapeHTML(tr3("Готовиться в практике", "Amaliyotda tayyorlanish", "Prepare in practice"))}
+          </button>
+          <button type="button" class="btn" data-ps-action="season-review" data-subject-key="${escapeHTML(s.subjectKey)}">
+            ${escapeHTML(tr3("Открыть Season Review", "Season Reviewni ochish", "Open Season Review"))}
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  openModal(html);
+  bindPostSeasonPreviewActions(document.getElementById("modal-root"));
+}
+
+function renderPostSeasonHomePreview() {
+  if (!isPostSeasonPreviewEnabled()) return;
+
+  const content = document.querySelector("#view-home .content");
+  const compList = document.getElementById("home-competitive-list");
+  if (!content || !compList) return;
+
+  const s = getPostSeasonPreviewSummary();
+  let block = document.getElementById("home-post-season-preview");
+
+  if (!block) {
+    block = document.createElement("div");
+    block.id = "home-post-season-preview";
+    block.className = "home-block ps-home-block";
+
+    const compBlock = compList.closest(".home-block");
+    if (compBlock && compBlock.parentNode) {
+      compBlock.parentNode.insertBefore(block, compBlock.nextSibling);
+    } else {
+      content.insertBefore(block, content.firstChild);
+    }
+  }
+
+  block.innerHTML = `
+    <div class="ps-card ps-card-season">
+      <div class="ps-card-head">
+        <div>
+          <div class="ps-kicker">${escapeHTML(tr3("ПОСЛЕ 7 ТУРОВ", "7 TURDAN KEYIN", "AFTER 7 TOURS"))}</div>
+          <div class="ps-title">Season Review</div>
+          <div class="ps-sub">${escapeHTML(tr3(
+            "Ваш итог сезона готов. Посмотрите сильные темы, слабые зоны и следующий шаг.",
+            "Mavsum yakuni tayyor. Kuchli mavzular, zaif joylar va keyingi qadamni ko‘ring.",
+            "Your season summary is ready. See strengths, weak areas and next step."
+          ))}</div>
+        </div>
+        <div class="ps-badge ps-badge-ready">${escapeHTML(tr3("Готов", "Tayyor", "Ready"))}</div>
+      </div>
+
+      <div class="ps-mini-line">
+        <span class="is-done">7 ${escapeHTML(tr3("туров", "tur", "tours"))}</span>
+        <span class="is-current">Review</span>
+        <span>Practice</span>
+        <span>Grand</span>
+      </div>
+
+      <div class="ps-actions">
+        <button type="button" class="btn primary" data-ps-action="season-review" data-subject-key="${escapeHTML(s.subjectKey)}">
+          ${escapeHTML(tr3("Открыть отчёт", "Hisobotni ochish", "Open Review"))}
+        </button>
+        <button type="button" class="btn" data-ps-action="practice" data-subject-key="${escapeHTML(s.subjectKey)}">
+          ${escapeHTML(tr3("Закрыть темы", "Mavzularni mustahkamlash", "Close topics"))}
+        </button>
+      </div>
+    </div>
+
+    <div class="ps-card ps-card-grand">
+      <div class="ps-card-head">
+        <div>
+          <div class="ps-kicker">${escapeHTML(tr3("ФИНАЛ СЕЗОНА", "MAVSUM FINALI", "SEASON FINAL"))}</div>
+          <div class="ps-title">Grand Olympiad</div>
+          <div class="ps-sub">${escapeHTML(tr3(
+            "Финальный этап сезона. Подготовьтесь через практику и рекомендации.",
+            "Mavsumning final bosqichi. Amaliyot va tavsiyalar orqali tayyorlaning.",
+            "Final stage of the season. Prepare through practice and recommendations."
+          ))}</div>
+        </div>
+        <div class="ps-badge ps-badge-soon">${escapeHTML(s.grandOpensIn)}</div>
+      </div>
+
+      <div class="ps-actions">
+        <button type="button" class="btn primary" data-ps-action="practice" data-subject-key="${escapeHTML(s.subjectKey)}">
+          ${escapeHTML(tr3("Готовиться", "Tayyorlanish", "Prepare"))}
+        </button>
+        <button type="button" class="btn" data-ps-action="grand-rules" data-subject-key="${escapeHTML(s.subjectKey)}">
+          ${escapeHTML(tr3("Правила", "Qoidalar", "Rules"))}
+        </button>
+      </div>
+    </div>
+  `;
+
+  bindPostSeasonPreviewActions(block);
+}
+
+function renderPostSeasonSubjectHubPreview(subjectKey) {
+  if (!isPostSeasonPreviewEnabled()) return;
+
+  const hub = document.getElementById("courses-subject-hub");
+  if (!hub) return;
+
+  const panels = hub.querySelector(".subject-hub-panels");
+  if (!panels) return;
+
+  const s = getPostSeasonPreviewSummary(subjectKey);
+
+  let block = document.getElementById("subject-hub-post-season-preview");
+  if (!block) {
+    block = document.createElement("div");
+    block.id = "subject-hub-post-season-preview";
+    block.className = "subject-hub-panels ps-hub-preview";
+    panels.parentNode.insertBefore(block, panels.nextSibling);
+  }
+
+  block.innerHTML = `
+    <div class="panel-card ps-hub-card">
+      <div class="panel-row">
+        <div class="ps-hub-icon">◆</div>
+        <div class="panel-col">
+          <div class="panel-kicker">${escapeHTML(tr3("NEXT STEP", "KEYINGI QADAM", "NEXT STEP"))}</div>
+          <div class="panel-title">${escapeHTML(tr3(
+            "Подготовка к Grand Olympiad",
+            "Grand Olympiadga tayyorgarlik",
+            "Prepare for Grand Olympiad"
+          ))}</div>
+          <div class="muted small">${escapeHTML(tr3(
+            "Используйте практику и рекомендации по слабым темам.",
+            "Zaif mavzular bo‘yicha amaliyot va tavsiyalardan foydalaning.",
+            "Use practice and recommendations for weak topics."
+          ))}</div>
+        </div>
+      </div>
+
+      <div class="ps-actions ps-hub-actions">
+        <button type="button" class="btn primary" data-ps-action="practice" data-subject-key="${escapeHTML(s.subjectKey)}">
+          ${escapeHTML(tr3("Открыть практику", "Amaliyotni ochish", "Open practice"))}
+        </button>
+        <button type="button" class="btn" data-ps-action="recommendations" data-subject-key="${escapeHTML(s.subjectKey)}">
+          ${escapeHTML(tr3("Рекомендации", "Tavsiyalar", "Recommendations"))}
+        </button>
+      </div>
+    </div>
+  `;
+
+  bindPostSeasonPreviewActions(block);
+}
+
+function renderPostSeasonProfilePreview() {
+  if (!isPostSeasonPreviewEnabled()) return;
+
+  const main = document.getElementById("profile-main");
+  if (!main) return;
+
+  const hero = main.querySelector(".profile-hero");
+  const s = getPostSeasonPreviewSummary();
+
+  let block = document.getElementById("profile-post-season-preview");
+  if (!block) {
+    block = document.createElement("div");
+    block.id = "profile-post-season-preview";
+    block.className = "profile-section ps-profile-preview";
+
+    if (hero && hero.parentNode) {
+      hero.parentNode.insertBefore(block, hero.nextSibling);
+    } else {
+      main.insertBefore(block, main.firstChild);
+    }
+  }
+
+  block.innerHTML = `
+    <div class="profile-section-title">${escapeHTML(tr3(
+      "Academic Season Review",
+      "Academic Season Review",
+      "Academic Season Review"
+    ))}</div>
+
+    <div class="ps-card ps-profile-card">
+      <div class="ps-card-head">
+        <div>
+          <div class="ps-title">${escapeHTML(s.subjectTitle)}</div>
+          <div class="ps-sub">${escapeHTML(tr3(
+            `${s.toursCompleted}/${s.totalTours} туров · средний результат ${s.avgPercent}%`,
+            `${s.toursCompleted}/${s.totalTours} tur · o‘rtacha natija ${s.avgPercent}%`,
+            `${s.toursCompleted}/${s.totalTours} tours · average result ${s.avgPercent}%`
+          ))}</div>
+        </div>
+        <div class="ps-badge ps-badge-ready">Review</div>
+      </div>
+
+      <div class="ps-chip-row">
+        <span class="ps-chip ps-chip-green">Practice Mastery</span>
+        <span class="ps-chip ps-chip-green">Error-Driven Learner</span>
+        <span class="ps-chip ps-chip-blue">Fair Play</span>
+      </div>
+
+      <div class="ps-actions">
+        <button type="button" class="btn primary" data-ps-action="season-review" data-subject-key="${escapeHTML(s.subjectKey)}">
+          ${escapeHTML(tr3("Открыть отчёт", "Hisobotni ochish", "Open Review"))}
+        </button>
+        <button type="button" class="btn" data-ps-action="practice" data-subject-key="${escapeHTML(s.subjectKey)}">
+          ${escapeHTML(tr3("Практика", "Amaliyot", "Practice"))}
+        </button>
+      </div>
+    </div>
+  `;
+
+  bindPostSeasonPreviewActions(block);
+}
+
 
      // ---------------------------
   // Modal (for confirmations in Telegram WebApp)
@@ -13097,6 +13591,8 @@ function renderHome() {
 
 // ✅ Home extra accordion (restore open/closed)
 applyHomeExtraState();
+try { renderPostSeasonHomePreview(); } catch {}
+
 }
 
       // ===========================
@@ -14214,6 +14710,8 @@ async function renderSubjectHubMentorCard(subjectKey) {
 
         // ✅ Subject mentor card
     await renderSubjectHubMentorCard(subjectKey).catch(() => null);
+    try { renderPostSeasonSubjectHubPreview(subjectKey); } catch {}
+
   }
   // ---------------------------
   // Lessons (demo)
