@@ -1,1 +1,58 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>iClub Post-Season Preview</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">i</div>
+        <div>
+          <div class="brand-title">iClub</div>
+          <div class="brand-subtitle" data-i18n="preview_label">Post-season preview · DB off</div>
+        </div>
+      </div>
 
+      <div class="lang-switch" aria-label="Language switcher">
+        <button class="lang-btn active" data-lang="ru">RU</button>
+        <button class="lang-btn" data-lang="uz">UZ</button>
+        <button class="lang-btn" data-lang="en">EN</button>
+      </div>
+    </header>
+
+    <main id="app" class="app-main"></main>
+
+    <nav class="bottom-nav" aria-label="Preview navigation">
+      <button class="nav-btn active" data-screen="home">
+        <span class="nav-icon">⌂</span>
+        <span data-i18n="nav_home">Home</span>
+      </button>
+      <button class="nav-btn" data-screen="review">
+        <span class="nav-icon">◌</span>
+        <span data-i18n="nav_review">Review</span>
+      </button>
+      <button class="nav-btn" data-screen="exam">
+        <span class="nav-icon">▣</span>
+        <span data-i18n="nav_exam">Exam Prep</span>
+      </button>
+      <button class="nav-btn" data-screen="grand">
+        <span class="nav-icon">◆</span>
+        <span data-i18n="nav_grand">Grand</span>
+      </button>
+      <button class="nav-btn" data-screen="profile">
+        <span class="nav-icon">○</span>
+        <span data-i18n="nav_profile">Profile</span>
+      </button>
+    </nav>
+  </div>
+
+  <div id="modalRoot" class="modal-root hidden"></div>
+
+  <script src="./mockData.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
