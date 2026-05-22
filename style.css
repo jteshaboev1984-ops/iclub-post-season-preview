@@ -5943,3 +5943,82 @@ button.is-loading { opacity: .85; }
     grid-template-columns: 1fr;
   }
 }
+
+
+
+/* Post-season refinement: compact top-app Home card */
+
+.ps-command-card {
+  padding: 13px;
+  border-radius: 20px;
+}
+
+.ps-tight-head {
+  gap: 10px;
+}
+
+.ps-compact-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.ps-compact-stats > div {
+  min-width: 0;
+  border-radius: 14px;
+  padding: 9px 8px;
+  background: rgba(248, 250, 252, .92);
+  border: 1px solid rgba(226, 232, 240, .9);
+}
+
+.ps-compact-stats b {
+  display: block;
+  font-size: 16px;
+  line-height: 1.05;
+  font-weight: 950;
+  color: var(--primary);
+  letter-spacing: -.03em;
+}
+
+.ps-compact-stats span {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  line-height: 1.15;
+  color: rgba(15, 23, 42, .58);
+  font-weight: 850;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ps-mini-line-compact {
+  margin-top: 10px;
+}
+
+.ps-mini-line-compact span {
+  padding: 5px 4px;
+  font-size: 9.5px;
+}
+
+.ps-home-note {
+  margin-top: 10px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: rgba(15, 23, 42, .60);
+}
+
+.ps-actions-home {
+  margin-top: 11px;
+}
+
+.ps-modal-back-row {
+  margin-top: 12px;
+}
+
+@media (max-width: 340px) {
+  .ps-compact-stats {
+    grid-template-columns: 1fr;
+  }
+}

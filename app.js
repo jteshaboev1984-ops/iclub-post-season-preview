@@ -12456,6 +12456,15 @@ function openPostSeasonPreviewReview(subjectKey = null) {
           </div>
         </div>
 
+        <div class="ps-actions ps-modal-back-row">
+          <button type="button" class="btn" data-ps-action="modal-close">
+            ${escapeHTML(tr3("← Назад", "← Orqaga", "← Back"))}
+          </button>
+          <button type="button" class="btn primary" data-ps-action="grand-rules" data-subject-key="${escapeHTML(s.subjectKey)}">
+            ${escapeHTML(tr3("План Grand Olympiad", "Grand Olympiad rejasi", "Grand plan"))}
+          </button>
+        </div>
+
         <div class="ps-disclaimer">
           ${escapeHTML(tr3(
             "Это preview-отчёт без базы. В production цифры будут считаться по реальным турам, практике и рекомендациям.",
@@ -12546,57 +12555,56 @@ function renderPostSeasonHomePreview() {
   }
 
   block.innerHTML = `
-    <div class="ps-card ps-card-season">
-      <div class="ps-card-head">
+    <div class="ps-card ps-card-season ps-command-card">
+      <div class="ps-card-head ps-tight-head">
         <div>
           <div class="ps-kicker">${escapeHTML(tr3("ПОСЛЕ 7 ТУРОВ", "7 TURDAN KEYIN", "AFTER 7 TOURS"))}</div>
           <div class="ps-title">Season Review</div>
           <div class="ps-sub">${escapeHTML(tr3(
-            "Ваш итог сезона готов. Посмотрите сильные темы, слабые зоны и следующий шаг.",
-            "Mavsum yakuni tayyor. Kuchli mavzular, zaif joylar va keyingi qadamni ko‘ring.",
-            "Your season summary is ready. See strengths, weak areas and next step."
+            "Итог сезона готов. Используйте его как план подготовки к финалу.",
+            "Mavsum yakuni tayyor. Uni finalga tayyorgarlik rejasi sifatida ishlating.",
+            "Your season summary is ready. Use it as your final preparation plan."
           ))}</div>
         </div>
         <div class="ps-badge ps-badge-ready">${escapeHTML(tr3("Готов", "Tayyor", "Ready"))}</div>
       </div>
 
-      <div class="ps-mini-line">
+      <div class="ps-compact-stats">
+        <div>
+          <b>${s.toursCompleted}/${s.totalTours}</b>
+          <span>${escapeHTML(tr3("туров", "tur", "tours"))}</span>
+        </div>
+        <div>
+          <b>${s.avgPercent}%</b>
+          <span>${escapeHTML(tr3("средний", "o‘rtacha", "average"))}</span>
+        </div>
+        <div>
+          <b>Grand</b>
+          <span>${escapeHTML(tr3("через 5 дней", "5 kunda", "in 5 days"))}</span>
+        </div>
+      </div>
+
+      <div class="ps-mini-line ps-mini-line-compact">
         <span class="is-done">7 ${escapeHTML(tr3("туров", "tur", "tours"))}</span>
         <span class="is-current">Review</span>
         <span>Practice</span>
         <span>Grand</span>
       </div>
 
-      <div class="ps-actions">
+      <div class="ps-home-note">
+        ${escapeHTML(tr3(
+          "Слабые темы закрываются через привычную практику и рекомендации.",
+          "Zaif mavzular odatiy amaliyot va tavsiyalar orqali mustahkamlanadi.",
+          "Weak topics are closed through familiar practice and recommendations."
+        ))}
+      </div>
+
+      <div class="ps-actions ps-actions-home">
         <button type="button" class="btn primary" data-ps-action="season-review" data-subject-key="${escapeHTML(s.subjectKey)}">
           ${escapeHTML(tr3("Открыть отчёт", "Hisobotni ochish", "Open Review"))}
         </button>
-        <button type="button" class="btn" data-ps-action="practice" data-subject-key="${escapeHTML(s.subjectKey)}">
-          ${escapeHTML(tr3("Закрыть темы", "Mavzularni mustahkamlash", "Close topics"))}
-        </button>
-      </div>
-    </div>
-
-    <div class="ps-card ps-card-grand">
-      <div class="ps-card-head">
-        <div>
-          <div class="ps-kicker">${escapeHTML(tr3("ФИНАЛ СЕЗОНА", "MAVSUM FINALI", "SEASON FINAL"))}</div>
-          <div class="ps-title">Grand Olympiad</div>
-          <div class="ps-sub">${escapeHTML(tr3(
-            "Финальный этап сезона. Подготовьтесь через практику и рекомендации.",
-            "Mavsumning final bosqichi. Amaliyot va tavsiyalar orqali tayyorlaning.",
-            "Final stage of the season. Prepare through practice and recommendations."
-          ))}</div>
-        </div>
-        <div class="ps-badge ps-badge-soon">${escapeHTML(s.grandOpensIn)}</div>
-      </div>
-
-      <div class="ps-actions">
-        <button type="button" class="btn primary" data-ps-action="practice" data-subject-key="${escapeHTML(s.subjectKey)}">
-          ${escapeHTML(tr3("Готовиться", "Tayyorlanish", "Prepare"))}
-        </button>
         <button type="button" class="btn" data-ps-action="grand-rules" data-subject-key="${escapeHTML(s.subjectKey)}">
-          ${escapeHTML(tr3("Правила", "Qoidalar", "Rules"))}
+          ${escapeHTML(tr3("План подготовки", "Tayyorgarlik rejasi", "Prep plan"))}
         </button>
       </div>
     </div>
@@ -12604,6 +12612,7 @@ function renderPostSeasonHomePreview() {
 
   bindPostSeasonPreviewActions(block);
 }
+
 
 function renderPostSeasonSubjectHubPreview(subjectKey) {
   if (!isPostSeasonPreviewEnabled()) return;
