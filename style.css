@@ -6074,3 +6074,72 @@ button.is-loading { opacity: .85; }
   border-top: 1px solid rgba(226, 232, 240, .85);
   padding-top: 9px;
 }
+
+
+
+/* Post-season refinement v3: semantics, event strip, modal top-back */
+
+.ps-grand-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px;
+  border-radius: 18px;
+  background: #fff;
+  border: 1px solid rgba(245, 158, 11, .32);
+  box-shadow: 0 12px 28px rgba(245, 158, 11, .08);
+}
+
+.ps-grand-strip-main {
+  min-width: 0;
+}
+
+.ps-grand-strip .ps-title {
+  font-size: 15px;
+}
+
+.ps-grand-strip .ps-sub {
+  font-size: 11px;
+}
+
+.ps-grand-strip-btn {
+  min-height: 38px;
+  flex: 0 0 auto;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.ps-modal-top {
+  justify-content: flex-start !important;
+}
+
+.ps-modal-top > .ps-icon-btn {
+  order: -1;
+  flex: 0 0 auto;
+}
+
+.ps-modal-top > div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ps-icon-btn {
+  font-size: 18px !important;
+  font-weight: 950 !important;
+}
+
+.ps-next-card .ps-actions {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 360px) {
+  .ps-grand-strip {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ps-grand-strip-btn {
+    width: 100%;
+  }
+}
