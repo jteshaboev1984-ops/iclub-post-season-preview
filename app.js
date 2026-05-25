@@ -12259,34 +12259,94 @@ function getPostSeasonPreviewSummary(subjectKey = null) {
   const subj = subjectByKey(key);
   const title = subjectTitle(key, subj?.title || "Economics");
 
+  const mock = {
+    economics: {
+      toursCompleted: 6,
+      totalTours: 7,
+      avgPercent: 74,
+      practiceAttempts: 18,
+      activeDays: 11,
+      bestTour: 3,
+      bestPercent: 85,
+      regionRank: 12,
+      overallRank: 84,
+      weakCount: 3,
+      strengths: ["Demand & Supply", "Elasticity", "Market intervention"],
+      weakAreas: ["Evaluation paragraphs", "Exchange rates", "Balance of payments"]
+    },
+    mathematics: {
+      toursCompleted: 5,
+      totalTours: 7,
+      avgPercent: 68,
+      practiceAttempts: 14,
+      activeDays: 9,
+      bestTour: 5,
+      bestPercent: 82,
+      regionRank: 18,
+      overallRank: 126,
+      weakCount: 4,
+      strengths: ["Quadratics", "Graph transformations", "Coordinate geometry"],
+      weakAreas: ["Trigonometric identities", "Binomial coefficients", "Inequalities", "Series"]
+    },
+    biology: {
+      toursCompleted: 4,
+      totalTours: 7,
+      avgPercent: 71,
+      practiceAttempts: 18,
+      activeDays: 10,
+      bestTour: 2,
+      bestPercent: 80,
+      regionRank: 21,
+      overallRank: 143,
+      weakCount: 3,
+      strengths: ["Cell structure", "Biological molecules", "Enzymes"],
+      weakAreas: ["Transport in mammals", "Immunity", "Genetic technology"]
+    },
+    chemistry: {
+      toursCompleted: 4,
+      totalTours: 7,
+      avgPercent: 66,
+      practiceAttempts: 18,
+      activeDays: 8,
+      bestTour: 3,
+      bestPercent: 79,
+      regionRank: 24,
+      overallRank: 151,
+      weakCount: 4,
+      strengths: ["Atomic structure", "Stoichiometry", "Bonding"],
+      weakAreas: ["Equilibria", "Kinetics", "Organic mechanisms", "Electrochemistry"]
+    },
+    informatics: {
+      toursCompleted: 5,
+      totalTours: 7,
+      avgPercent: 72,
+      practiceAttempts: 16,
+      activeDays: 10,
+      bestTour: 6,
+      bestPercent: 86,
+      regionRank: 15,
+      overallRank: 97,
+      weakCount: 3,
+      strengths: ["Binary", "Logic gates", "Trace tables"],
+      weakAreas: ["SQL", "Cybersecurity", "Recursion"]
+    }
+  };
+
+  const m = mock[key] || mock.economics;
+
   return {
     subjectKey: key,
     subjectTitle: title,
-    toursCompleted: 6,
-    totalTours: 7,
-    avgPercent: 74,
-    practiceAttempts: 18,
-    activeDays: 11,
-    bestTour: 3,
-    bestPercent: 85,
-    strengths: [
-      "Demand & Supply",
-      "Elasticity",
-      "Market intervention"
-    ],
-    weakAreas: [
-      "Evaluation paragraphs",
-      "Exchange rates",
-      "Balance of payments"
-    ],
+    ...m,
     nextStep: tr3(
-      "Закрыть слабые темы перед Grand Olympiad",
-      "Grand Olympiad oldidan zaif mavzularni mustahkamlash",
-      "Close weak topics before Grand Olympiad"
+      `Тренировать ${m.weakCount} слабые темы перед Grand Olympiad`,
+      `Grand Olympiad oldidan ${m.weakCount} ta zaif mavzuni mashq qilish`,
+      `Train ${m.weakCount} weak topics before Grand Olympiad`
     ),
     grandOpensIn: tr3("Откроется через 5 дней", "5 kundan keyin ochiladi", "Opens in 5 days")
   };
 }
+
 
 function postSeasonPreviewChipList(items, kind = "neutral") {
   return (Array.isArray(items) ? items : []).map(x => `
@@ -12324,6 +12384,11 @@ function bindPostSeasonPreviewActions(root = document) {
 
       if (action === "grand-rules") {
         openPostSeasonPreviewGrandRules(subjectKey);
+        return;
+      }
+
+      if (action === "practice-builder") {
+        openPostSeasonPreviewPracticeBuilder(subjectKey);
         return;
       }
 
@@ -12413,6 +12478,14 @@ function openPostSeasonPreviewReview(subjectKey = null) {
             <div class="ps-metric-label">${escapeHTML(tr3("Средний результат", "O‘rtacha natija", "Average result"))}</div>
           </div>
           <div class="ps-metric">
+            <div class="ps-metric-value">#${s.regionRank}</div>
+            <div class="ps-metric-label">${escapeHTML(tr3("Место в регионе", "Hududdagi o‘rin", "Region rank"))}</div>
+          </div>
+          <div class="ps-metric">
+            <div class="ps-metric-value">#${s.overallRank}</div>
+            <div class="ps-metric-label">${escapeHTML(tr3("Общий рейтинг", "Umumiy reyting", "Overall rank"))}</div>
+          </div>
+          <div class="ps-metric">
             <div class="ps-metric-value">${s.practiceAttempts}</div>
             <div class="ps-metric-label">${escapeHTML(tr3("Практики", "Amaliyotlar", "Practices"))}</div>
           </div>
@@ -12447,7 +12520,7 @@ function openPostSeasonPreviewReview(subjectKey = null) {
           <div class="ps-panel-title">${escapeHTML(tr3("Следующий шаг", "Keyingi qadam", "Next step"))}</div>
           <div class="ps-panel-main">${escapeHTML(s.nextStep)}</div>
           <div class="ps-actions">
-            <button type="button" class="btn primary" data-ps-action="practice" data-subject-key="${escapeHTML(s.subjectKey)}">
+            <button type="button" class="btn primary" data-ps-action="practice-builder" data-subject-key="${escapeHTML(s.subjectKey)}">
               ${escapeHTML(tr3("Тренировать слабые темы", "Zaif mavzularni mashq qilish", "Train weak topics"))}
             </button>
             <button type="button" class="btn" data-ps-action="recommendations" data-subject-key="${escapeHTML(s.subjectKey)}">
@@ -12469,6 +12542,120 @@ function openPostSeasonPreviewReview(subjectKey = null) {
   openModal(html);
   bindPostSeasonPreviewActions(document.getElementById("modal-root"));
 }
+
+function openPostSeasonPreviewPracticeBuilder(subjectKey = null) {
+  if (!isPostSeasonPreviewEnabled()) return;
+
+  const s = getPostSeasonPreviewSummary(subjectKey);
+
+  const html = `
+    <div class="modal-backdrop" data-modal-backdrop data-close="backdrop">
+      <div class="modal ps-modal">
+        <div class="ps-modal-top">
+          <button class="ps-icon-btn" type="button" data-ps-action="modal-close">←</button>
+          <div>
+            <div class="ps-kicker">${escapeHTML(tr3("ПРАКТИКА", "AMALIYOT", "PRACTICE"))}</div>
+            <div class="modal-title ps-modal-title">${escapeHTML(tr3("Выберите практику", "Amaliyotni tanlang", "Choose practice"))}</div>
+            <div class="ps-muted">${escapeHTML(s.subjectTitle)} · ${escapeHTML(tr3(
+              "подготовка к финалу",
+              "finalga tayyorgarlik",
+              "final preparation"
+            ))}</div>
+          </div>
+        </div>
+
+        <div class="ps-practice-options">
+          <button type="button" class="ps-practice-option" data-ps-action="practice" data-subject-key="${escapeHTML(s.subjectKey)}">
+            <div class="ps-option-icon">□</div>
+            <div>
+              <div class="ps-panel-main">${escapeHTML(tr3("Обычная практика", "Oddiy amaliyot", "Regular practice"))}</div>
+              <div class="ps-muted">${escapeHTML(tr3(
+                "Продолжайте привычную практику по предмету.",
+                "Fan bo‘yicha odatiy amaliyotni davom ettiring.",
+                "Continue the familiar subject practice."
+              ))}</div>
+            </div>
+          </button>
+
+          <button type="button" class="ps-practice-option" data-ps-action="practice" data-subject-key="${escapeHTML(s.subjectKey)}">
+            <div class="ps-option-icon">◇</div>
+            <div>
+              <div class="ps-panel-main">${escapeHTML(tr3("Слабые темы", "Zaif mavzular", "Weak topics"))}</div>
+              <div class="ps-muted">${escapeHTML(tr3(
+                `${s.weakCount} темы для усиления по итогам сезона.`,
+                `Mavsum yakuniga ko‘ra ${s.weakCount} ta mavzuni kuchaytirish kerak.`,
+                `${s.weakCount} topics to strengthen based on your season.`
+              ))}</div>
+            </div>
+          </button>
+
+          <div class="ps-practice-option ps-builder-card">
+            <div class="ps-option-icon">▣</div>
+            <div>
+              <div class="ps-panel-main">${escapeHTML(tr3("Собрать практику", "Amaliyotni sozlash", "Build practice"))}</div>
+              <div class="ps-muted">${escapeHTML(tr3(
+                "Выберите тур, темы, сложность и количество вопросов.",
+                "Tur, mavzu, qiyinlik va savollar sonini tanlang.",
+                "Choose tour, topics, difficulty and number of questions."
+              ))}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ps-builder-grid">
+          <div class="ps-builder-filter">
+            <div class="ps-filter-label">${escapeHTML(tr3("Тур", "Tur", "Tour"))}</div>
+            <div class="ps-filter-pills">
+              <span class="is-on">1–7</span><span>5</span><span>6</span><span>7</span>
+            </div>
+          </div>
+
+          <div class="ps-builder-filter">
+            <div class="ps-filter-label">${escapeHTML(tr3("Темы", "Mavzular", "Topics"))}</div>
+            <div class="ps-filter-pills">
+              <span class="is-on">${escapeHTML(tr3("Слабые", "Zaif", "Weak"))}</span><span>${escapeHTML(tr3("Все", "Barchasi", "All"))}</span>
+            </div>
+          </div>
+
+          <div class="ps-builder-filter">
+            <div class="ps-filter-label">${escapeHTML(tr3("Сложность", "Qiyinlik", "Difficulty"))}</div>
+            <div class="ps-filter-pills">
+              <span class="is-on">Mixed</span><span>Easy</span><span>Medium</span><span>Hard</span>
+            </div>
+          </div>
+
+          <div class="ps-builder-filter">
+            <div class="ps-filter-label">${escapeHTML(tr3("Количество", "Soni", "Count"))}</div>
+            <div class="ps-filter-pills">
+              <span>5</span><span class="is-on">10</span><span>20</span><span>30</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="ps-disclaimer">
+          ${escapeHTML(tr3(
+            "В preview фильтры показывают будущую логику. Сейчас кнопка запускает обычную mock-практику.",
+            "Previewda filtrlar kelajakdagi logikani ko‘rsatadi. Hozir tugma oddiy mock-amaliyotni ochadi.",
+            "In preview, filters show the future logic. For now, the button starts regular mock practice."
+          ))}
+        </div>
+
+        <div class="ps-actions">
+          <button type="button" class="btn primary" data-ps-action="practice" data-subject-key="${escapeHTML(s.subjectKey)}">
+            ${escapeHTML(tr3("Начать практику", "Amaliyotni boshlash", "Start practice"))}
+          </button>
+          <button type="button" class="btn" data-ps-action="recommendations" data-subject-key="${escapeHTML(s.subjectKey)}">
+            ${escapeHTML(tr3("Открыть рекомендации", "Tavsiyalarni ochish", "Open recommendations"))}
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  openModal(html);
+  bindPostSeasonPreviewActions(document.getElementById("modal-root"));
+}
+
 
 function openPostSeasonPreviewGrandRules(subjectKey = null) {
   if (!isPostSeasonPreviewEnabled()) return;
@@ -12528,10 +12715,10 @@ function decoratePostSeasonHomeCopyPreview() {
   if (!scope) return;
 
   const replacements = new Map([
-    ["Соревновательный режим", tr3("Предметы сезона", "Mavsum fanlari", "Season subjects")],
-    ["Отслеживайте прогресс по Cambridge curriculum", tr3("Практика и материалы остаются доступны", "Amaliyot va materiallar ochiq qoladi", "Practice and materials remain available")],
-    ["ТУР АКТИВЕН", tr3("СЕЗОН ЗАВЕРШЁН", "MAVSUM YAKUNLANDI", "SEASON COMPLETED")],
-    ["Участвуйте в текущем туре.", tr3("Практика и рекомендации доступны.", "Amaliyot va tavsiyalar mavjud.", "Practice and recommendations are available.")],
+    ["Соревновательный режим", tr3("Итоги по предметам", "Fanlar bo‘yicha yakunlar", "Subject summaries")],
+    ["Отслеживайте прогресс по Cambridge curriculum", tr3("Откройте итог, посмотрите слабые темы и выберите практику.", "Yakunlarni oching, zaif mavzularni ko‘ring va amaliyotni tanlang.", "Open summaries, check weak topics and choose practice.")],
+    ["ТУР АКТИВЕН", tr3("ИТОГ ГОТОВ", "YAKUN TAYYOR", "SUMMARY READY")],
+    ["Участвуйте в текущем туре.", tr3("Финальный отчёт и практика доступны.", "Final hisobot va amaliyot mavjud.", "Final summary and practice are available.")],
     ["Практика 1 тура", tr3("Практика открыта", "Amaliyot ochiq", "Practice open")]
   ]);
 
@@ -12542,6 +12729,82 @@ function decoratePostSeasonHomeCopyPreview() {
       el.textContent = replacements.get(current);
     }
   });
+}
+
+function getSubjectKeyFromTextPreview(text) {
+  const t = String(text || "").toLowerCase();
+  if (t.includes("эконом") || t.includes("economics")) return "economics";
+  if (t.includes("матем") || t.includes("math")) return "mathematics";
+  if (t.includes("биолог") || t.includes("biology")) return "biology";
+  if (t.includes("хим") || t.includes("chem")) return "chemistry";
+  if (t.includes("информ") || t.includes("computer") || t.includes("cs")) return "informatics";
+  return null;
+}
+
+function findSubjectCardPreview(button) {
+  let node = button;
+  for (let i = 0; i < 8 && node; i += 1) {
+    if (node.classList && (
+      node.classList.contains("subject-card") ||
+      node.classList.contains("course-card") ||
+      node.classList.contains("home-subject-card") ||
+      node.classList.contains("card") ||
+      node.classList.contains("panel-card")
+    )) {
+      return node;
+    }
+    node = node.parentElement;
+  }
+  return button.closest("div");
+}
+
+function decoratePostSeasonSubjectCardsPreview() {
+  if (!isPostSeasonPreviewEnabled()) return;
+
+  const compList = document.getElementById("home-competitive-list");
+  if (!compList) return;
+
+  const openButtons = Array.from(compList.querySelectorAll("button"))
+    .filter(btn => /Открыть предмет|Open subject|Fanni ochish/i.test(String(btn.textContent || "")));
+
+  openButtons.forEach((btn) => {
+    const card = findSubjectCardPreview(btn);
+    if (!card || card.dataset.psCardDecorated === "1") return;
+
+    const subjectKey = getSubjectKeyFromTextPreview(card.textContent) || "economics";
+    const s = getPostSeasonPreviewSummary(subjectKey);
+    card.dataset.psCardDecorated = "1";
+    card.classList.add("ps-subject-season-card");
+
+    btn.style.display = "none";
+
+    const summary = document.createElement("div");
+    summary.className = "ps-subject-summary";
+    summary.innerHTML = `
+      <div class="ps-subject-metrics">
+        <span><b>${s.toursCompleted}/${s.totalTours}</b> ${escapeHTML(tr3("туров", "tur", "tours"))}</span>
+        <span><b>${s.avgPercent}%</b> ${escapeHTML(tr3("средний", "o‘rtacha", "avg"))}</span>
+        <span><b>#${s.regionRank}</b> ${escapeHTML(tr3("регион", "hudud", "region"))}</span>
+      </div>
+      <div class="ps-subject-weak">${escapeHTML(tr3(
+        `${s.weakCount} темы усилить`,
+        `${s.weakCount} ta mavzuni kuchaytirish`,
+        `${s.weakCount} topics to strengthen`
+      ))}</div>
+      <div class="ps-subject-actions">
+        <button type="button" class="btn primary" data-ps-action="season-review" data-subject-key="${escapeHTML(subjectKey)}">
+          ${escapeHTML(tr3("Открыть итог", "Yakunlarni ochish", "Open summary"))}
+        </button>
+        <button type="button" class="btn" data-ps-action="practice-builder" data-subject-key="${escapeHTML(subjectKey)}">
+          ${escapeHTML(tr3("Выбрать практику", "Amaliyotni tanlash", "Choose practice"))}
+        </button>
+      </div>
+    `;
+
+    card.appendChild(summary);
+  });
+
+  bindPostSeasonPreviewActions(compList);
 }
 
 function renderPostSeasonHomePreview() {
@@ -12570,68 +12833,14 @@ function renderPostSeasonHomePreview() {
   }
 
   block.innerHTML = `
-    <div class="ps-card ps-card-season ps-command-card">
-      <div class="ps-card-head ps-tight-head">
-        <div>
-          <div class="ps-kicker">${escapeHTML(tr3("ИТОГ СЕЗОНА", "MAVSUM YAKUNI", "SEASON SUMMARY"))}</div>
-          <div class="ps-title">${escapeHTML(tr3("Итог сезона", "Mavsum yakuni", "Season Review"))}</div>
-          <div class="ps-sub">${escapeHTML(tr3(
-            "Итог готов. Используйте его как план подготовки к финалу.",
-            "Yakuningiz tayyor. Uni finalga tayyorgarlik rejasi sifatida ishlating.",
-            "Your summary is ready. Use it as your final preparation plan."
-          ))}</div>
-        </div>
-        <div class="ps-badge ps-badge-ready">${escapeHTML(tr3("Готово", "Tayyor", "Ready"))}</div>
-      </div>
-
-      <div class="ps-compact-stats">
-        <div>
-          <b>${s.toursCompleted}/${s.totalTours}</b>
-          <span>${escapeHTML(tr3("туров", "tur", "tours"))}</span>
-        </div>
-        <div>
-          <b>${s.avgPercent}%</b>
-          <span>${escapeHTML(tr3("средний", "o‘rtacha", "average"))}</span>
-        </div>
-        <div>
-          <b>${s.practiceAttempts}</b>
-          <span>${escapeHTML(tr3("практик", "amaliyot", "practices"))}</span>
-        </div>
-      </div>
-
-      <div class="ps-mini-line ps-mini-line-compact">
-        <span class="is-done">7 ${escapeHTML(tr3("туров", "tur", "tours"))}</span>
-        <span class="is-current">${escapeHTML(tr3("Отчёт", "Hisobot", "Review"))}</span>
-        <span>${escapeHTML(tr3("Практика", "Amaliyot", "Practice"))}</span>
-        <span>${escapeHTML(tr3("Финал", "Final", "Final"))}</span>
-      </div>
-
-      <div class="ps-home-note">
-        ${escapeHTML(tr3(
-          "Слабые темы закрываются через привычную практику и рекомендации.",
-          "Zaif mavzular odatiy amaliyot va tavsiyalar orqali mustahkamlanadi.",
-          "Weak topics are closed through familiar practice and recommendations."
-        ))}
-      </div>
-
-      <div class="ps-actions ps-actions-home">
-        <button type="button" class="btn primary" data-ps-action="season-review" data-subject-key="${escapeHTML(s.subjectKey)}">
-          ${escapeHTML(tr3("Посмотреть итог", "Yakunlarni ko‘rish", "View summary"))}
-        </button>
-        <button type="button" class="btn" data-ps-action="practice" data-subject-key="${escapeHTML(s.subjectKey)}">
-          ${escapeHTML(tr3("Тренировать темы", "Mavzularni mashq qilish", "Train topics"))}
-        </button>
-      </div>
-    </div>
-
-    <div class="ps-grand-strip">
+    <div class="ps-grand-strip ps-grand-strip-top">
       <div class="ps-grand-strip-main">
         <div class="ps-kicker">${escapeHTML(tr3("ФИНАЛ СЕЗОНА", "MAVSUM FINALI", "SEASON FINAL"))}</div>
         <div class="ps-title">Grand Olympiad</div>
         <div class="ps-sub">${escapeHTML(tr3(
-          "Финал сезона · через 5 дней",
-          "Mavsum finali · 5 kundan keyin",
-          "Season final · in 5 days"
+          "Откроется через 5 дней. Подготовьтесь через итоги предметов и практику.",
+          "5 kundan keyin ochiladi. Fan yakunlari va amaliyot orqali tayyorlaning.",
+          "Opens in 5 days. Prepare through subject summaries and practice."
         ))}</div>
       </div>
       <button type="button" class="btn ps-grand-strip-btn" data-ps-action="grand-rules" data-subject-key="${escapeHTML(s.subjectKey)}">
@@ -12641,9 +12850,37 @@ function renderPostSeasonHomePreview() {
   `;
 
   decoratePostSeasonHomeCopyPreview();
+  decoratePostSeasonSubjectCardsPreview();
   bindPostSeasonPreviewActions(block);
 }
 
+
+function hideEmptyMentorBlockPreview() {
+  if (!isPostSeasonPreviewEnabled()) return;
+
+  const hub = document.getElementById("courses-subject-hub");
+  if (!hub) return;
+
+  const all = Array.from(hub.querySelectorAll("*"));
+  const mentorText = all.find(el => /Ментор назначается|Mentor will|Скоро появится профиль/i.test(String(el.textContent || "")));
+
+  if (!mentorText) return;
+
+  let card = mentorText;
+  for (let i = 0; i < 8 && card; i += 1) {
+    if (card.classList && (
+      card.classList.contains("panel-card") ||
+      card.classList.contains("mentor-card") ||
+      card.classList.contains("card")
+    )) break;
+    card = card.parentElement;
+  }
+
+  if (card) {
+    card.style.display = "none";
+    card.dataset.psHiddenMentor = "1";
+  }
+}
 
 function renderPostSeasonSubjectHubPreview(subjectKey) {
   if (!isPostSeasonPreviewEnabled()) return;
@@ -12651,7 +12888,9 @@ function renderPostSeasonSubjectHubPreview(subjectKey) {
   const hub = document.getElementById("courses-subject-hub");
   if (!hub) return;
 
-  const panels = hub.querySelector(".subject-hub-panels");
+  hideEmptyMentorBlockPreview();
+
+  const panels = hub.querySelector(".subject-hub-panels") || hub.querySelector(".content") || hub;
   if (!panels) return;
 
   const s = getPostSeasonPreviewSummary(subjectKey);
@@ -12661,34 +12900,36 @@ function renderPostSeasonSubjectHubPreview(subjectKey) {
     block = document.createElement("div");
     block.id = "subject-hub-post-season-preview";
     block.className = "subject-hub-panels ps-hub-preview";
-    panels.parentNode.insertBefore(block, panels.nextSibling);
+    panels.parentNode.insertBefore(block, panels.firstChild || null);
   }
 
   block.innerHTML = `
-    <div class="panel-card ps-hub-card">
+    <div class="panel-card ps-hub-card ps-hub-final-card">
       <div class="panel-row">
         <div class="ps-hub-icon">◆</div>
         <div class="panel-col">
-          <div class="panel-kicker">${escapeHTML(tr3("NEXT STEP", "KEYINGI QADAM", "NEXT STEP"))}</div>
-          <div class="panel-title">${escapeHTML(tr3(
-            "Подготовка к Grand Olympiad",
-            "Grand Olympiadga tayyorgarlik",
-            "Prepare for Grand Olympiad"
-          ))}</div>
+          <div class="panel-kicker">${escapeHTML(tr3("ДО ФИНАЛА", "FINALGACHA", "BEFORE FINAL"))}</div>
+          <div class="panel-title">Grand Olympiad</div>
           <div class="muted small">${escapeHTML(tr3(
-            "Используйте практику и рекомендации по слабым темам.",
-            "Zaif mavzular bo‘yicha amaliyot va tavsiyalardan foydalaning.",
-            "Use practice and recommendations for weak topics."
+            `Ваш следующий шаг: тренировать ${s.weakCount} слабые темы.`,
+            `Keyingi qadam: ${s.weakCount} ta zaif mavzuni mashq qilish.`,
+            `Next step: train ${s.weakCount} weak topics.`
           ))}</div>
         </div>
       </div>
 
+      <div class="ps-hub-mini">
+        <span>${s.toursCompleted}/${s.totalTours} ${escapeHTML(tr3("туров", "tur", "tours"))}</span>
+        <span>${s.avgPercent}%</span>
+        <span>#${s.regionRank} ${escapeHTML(tr3("регион", "hudud", "region"))}</span>
+      </div>
+
       <div class="ps-actions ps-hub-actions">
-        <button type="button" class="btn primary" data-ps-action="practice" data-subject-key="${escapeHTML(s.subjectKey)}">
-          ${escapeHTML(tr3("Тренировать слабые темы", "Zaif mavzularni mashq qilish", "Train weak topics"))}
+        <button type="button" class="btn primary" data-ps-action="season-review" data-subject-key="${escapeHTML(s.subjectKey)}">
+          ${escapeHTML(tr3("Открыть итог", "Yakunlarni ochish", "Open summary"))}
         </button>
-        <button type="button" class="btn" data-ps-action="recommendations" data-subject-key="${escapeHTML(s.subjectKey)}">
-          ${escapeHTML(tr3("Рекомендации", "Tavsiyalar", "Recommendations"))}
+        <button type="button" class="btn" data-ps-action="practice-builder" data-subject-key="${escapeHTML(s.subjectKey)}">
+          ${escapeHTML(tr3("Выбрать практику", "Amaliyotni tanlash", "Choose practice"))}
         </button>
       </div>
     </div>
@@ -12696,6 +12937,7 @@ function renderPostSeasonSubjectHubPreview(subjectKey) {
 
   bindPostSeasonPreviewActions(block);
 }
+
 
 function renderPostSeasonProfilePreview() {
   if (!isPostSeasonPreviewEnabled()) return;

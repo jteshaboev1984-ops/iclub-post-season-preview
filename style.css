@@ -6143,3 +6143,183 @@ button.is-loading { opacity: .85; }
     width: 100%;
   }
 }
+
+
+
+/* Post-season MAX preview: subject summaries + practice builder */
+
+.ps-grand-strip-top {
+  margin-bottom: 14px;
+}
+
+.ps-subject-season-card {
+  position: relative;
+}
+
+.ps-subject-summary {
+  border-top: 1px solid rgba(226, 232, 240, .95);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+
+.ps-subject-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.ps-subject-metrics span {
+  min-width: 0;
+  border-radius: 12px;
+  padding: 7px 6px;
+  background: rgba(248, 250, 252, .95);
+  border: 1px solid rgba(226, 232, 240, .9);
+  font-size: 10px;
+  line-height: 1.1;
+  color: rgba(15, 23, 42, .62);
+  font-weight: 850;
+  text-align: center;
+}
+
+.ps-subject-metrics b {
+  display: block;
+  color: var(--primary);
+  font-size: 14px;
+  line-height: 1.05;
+  font-weight: 950;
+}
+
+.ps-subject-weak {
+  margin-top: 8px;
+  color: #b45309;
+  background: rgba(245, 158, 11, .12);
+  border-radius: 999px;
+  padding: 7px 9px;
+  font-size: 11px;
+  line-height: 1.1;
+  font-weight: 900;
+  display: inline-flex;
+}
+
+.ps-subject-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-top: 10px;
+}
+
+.ps-subject-actions .btn {
+  min-height: 40px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.ps-hub-final-card {
+  border-color: rgba(245, 158, 11, .28);
+  box-shadow: 0 12px 28px rgba(245, 158, 11, .08);
+}
+
+.ps-hub-mini {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 9px;
+}
+
+.ps-hub-mini span {
+  border-radius: 999px;
+  padding: 6px 8px;
+  background: rgba(37, 99, 235, .08);
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.ps-practice-options {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.ps-practice-option {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  text-align: left;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 16px;
+  padding: 12px;
+}
+
+.ps-practice-option:active {
+  transform: translateY(1px);
+}
+
+.ps-option-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: rgba(37, 99, 235, .10);
+  color: #2563eb;
+  font-weight: 950;
+  flex: 0 0 auto;
+}
+
+.ps-builder-card {
+  background: linear-gradient(135deg, rgba(37, 99, 235, .06), rgba(255,255,255,1));
+}
+
+.ps-builder-grid {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.ps-builder-filter {
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  padding: 10px;
+  background: rgba(248, 250, 252, .78);
+}
+
+.ps-filter-label {
+  font-size: 11px;
+  color: rgba(15, 23, 42, .58);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-bottom: 8px;
+}
+
+.ps-filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.ps-filter-pills span {
+  border-radius: 999px;
+  padding: 7px 9px;
+  background: #fff;
+  border: 1px solid rgba(226, 232, 240, .95);
+  font-size: 11px;
+  font-weight: 900;
+  color: rgba(15, 23, 42, .70);
+}
+
+.ps-filter-pills .is-on {
+  background: rgba(37, 99, 235, .12);
+  border-color: rgba(37, 99, 235, .22);
+  color: #2563eb;
+}
+
+@media (max-width: 360px) {
+  .ps-subject-actions,
+  .ps-subject-metrics {
+    grid-template-columns: 1fr;
+  }
+}
