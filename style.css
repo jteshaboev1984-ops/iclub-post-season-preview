@@ -6022,3 +6022,55 @@ button.is-loading { opacity: .85; }
     grid-template-columns: 1fr;
   }
 }
+
+
+
+/* Post-season refinement v2: top placement + modal polish */
+
+.modal-backdrop {
+  z-index: 10000 !important;
+}
+
+.ps-home-block {
+  margin-top: 8px;
+  margin-bottom: 14px;
+}
+
+.ps-modal {
+  padding-bottom: 18px;
+}
+
+.ps-modal-back-row {
+  position: sticky;
+  bottom: -14px;
+  z-index: 3;
+  padding: 12px 0 4px;
+  margin-top: 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,.76), #fff 34%);
+  backdrop-filter: blur(10px);
+}
+
+.ps-card-season {
+  box-shadow: 0 14px 34px rgba(37, 99, 235, .10);
+}
+
+.ps-command-card .ps-title {
+  letter-spacing: -.03em;
+}
+
+.ps-command-card .ps-sub {
+  max-width: 96%;
+}
+
+.ps-badge-ready {
+  box-shadow: inset 0 0 0 1px rgba(34, 197, 94, .10);
+}
+
+.ps-compact-stats > div {
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.55);
+}
+
+.ps-home-note {
+  border-top: 1px solid rgba(226, 232, 240, .85);
+  padding-top: 9px;
+}

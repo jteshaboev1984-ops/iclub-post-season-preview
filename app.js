@@ -12509,9 +12509,9 @@ function openPostSeasonPreviewGrandRules(subjectKey = null) {
         <div class="ps-panel">
           <div class="ps-panel-title">${escapeHTML(tr3("Как подготовиться?", "Qanday tayyorlanish kerak?", "How to prepare?"))}</div>
           <div class="ps-muted">${escapeHTML(tr3(
-            "Используйте практику и рекомендации по слабым темам. Рейтинговый Grand Olympiad должен использовать отдельный закрытый пул вопросов.",
-            "Zaif mavzular bo‘yicha amaliyot va tavsiyalardan foydalaning. Reytingli Grand Olympiad uchun alohida yopiq savollar puli kerak.",
-            "Use practice and recommendations for weak topics. A ranked Grand Olympiad should use a separate closed question pool."
+            "Сначала закройте слабые темы через практику и рекомендации. Финальные вопросы будут отдельными от обычной практики.",
+            "Avval zaif mavzularni amaliyot va tavsiyalar orqali mustahkamlang. Final savollari oddiy amaliyotdan alohida bo‘ladi.",
+            "First close weak topics through practice and recommendations. Final questions will be separate from regular practice."
           ))}</div>
         </div>
 
@@ -12548,7 +12548,7 @@ function renderPostSeasonHomePreview() {
 
     const compBlock = compList.closest(".home-block");
     if (compBlock && compBlock.parentNode) {
-      compBlock.parentNode.insertBefore(block, compBlock.nextSibling);
+      compBlock.parentNode.insertBefore(block, compBlock);
     } else {
       content.insertBefore(block, content.firstChild);
     }
@@ -12586,9 +12586,9 @@ function renderPostSeasonHomePreview() {
 
       <div class="ps-mini-line ps-mini-line-compact">
         <span class="is-done">7 ${escapeHTML(tr3("туров", "tur", "tours"))}</span>
-        <span class="is-current">Review</span>
-        <span>Practice</span>
-        <span>Grand</span>
+        <span class="is-current">${escapeHTML(tr3("Отчёт", "Hisobot", "Review"))}</span>
+        <span>${escapeHTML(tr3("Практика", "Amaliyot", "Practice"))}</span>
+        <span>${escapeHTML(tr3("Финал", "Final", "Final"))}</span>
       </div>
 
       <div class="ps-home-note">

@@ -93,7 +93,8 @@
       badge.style.position = "fixed";
       badge.style.left = "12px";
       badge.style.bottom = "74px";
-      badge.style.zIndex = "9999";
+      badge.style.zIndex = "60";
+      badge.style.pointerEvents = "none";
       badge.style.padding = "7px 10px";
       badge.style.borderRadius = "999px";
       badge.style.background = "rgba(21, 94, 239, 0.92)";
