@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "report-scope-v8-20260526";
+  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "report-logic-v9-20260526";
   console.info("[iClub Preview] post-season build:", window.ICLUB_POSTSEASON_PREVIEW_BUILD);
 
 
@@ -298,37 +298,142 @@
     `);
   }
 
-  function getTourReportData(key, tourNo) {
-    const d = DATA[key] || DATA.economics;
-    const n = Number(tourNo || 7);
-
-    const resultMap = {
-      economics: { 1: 56, 2: 64, 3: 85, 4: 72, 5: 76, 6: 70, 7: 74 },
-      mathematics: { 1: 48, 2: 61, 3: 66, 4: 59, 5: 82, 6: 68, 7: 71 }
+  function getAcademicReportBasis(key) {
+    const base = {
+      economics: {
+        seasonStrong: [
+          { name: "Demand & Supply", accuracy: 86, answered: 24 },
+          { name: "Elasticity", accuracy: 82, answered: 19 },
+          { name: "Market intervention", accuracy: 79, answered: 21 }
+        ],
+        seasonWeak: [
+          { name: "Evaluation paragraphs", risk: "high", mistakes: 7 },
+          { name: "Exchange rates", risk: "medium", mistakes: 5 },
+          { name: "Balance of payments", risk: "medium", mistakes: 4 }
+        ],
+        tours: {
+          1: {
+            result: 56, rank: 18, mistakes: 9, time: "15:10",
+            strong: [{ name: "Basic demand shifts", accuracy: 78, answered: 6 }],
+            weak: [{ name: "Supply shifts", mistakes: 3 }, { name: "Equilibrium changes", mistakes: 2 }]
+          },
+          2: {
+            result: 64, rank: 16, mistakes: 7, time: "14:40",
+            strong: [{ name: "Price elasticity", accuracy: 80, answered: 5 }],
+            weak: [{ name: "Income elasticity", mistakes: 3 }, { name: "Cross elasticity", mistakes: 2 }]
+          },
+          3: {
+            result: 85, rank: 16, mistakes: 3, time: "12:45",
+            strong: [{ name: "Demand & Supply", accuracy: 92, answered: 7 }, { name: "Elasticity", accuracy: 86, answered: 6 }],
+            weak: [{ name: "Balance of payments", mistakes: 2 }, { name: "Development economics", mistakes: 1 }]
+          },
+          4: {
+            result: 72, rank: 14, mistakes: 6, time: "13:35",
+            strong: [{ name: "Market failure", accuracy: 83, answered: 6 }],
+            weak: [{ name: "Externalities", mistakes: 3 }, { name: "Government failure", mistakes: 2 }]
+          },
+          5: {
+            result: 76, rank: 14, mistakes: 5, time: "13:10",
+            strong: [{ name: "Market intervention", accuracy: 84, answered: 7 }],
+            weak: [{ name: "Consumer surplus", mistakes: 2 }, { name: "Elasticity application", mistakes: 2 }]
+          },
+          6: {
+            result: 70, rank: 13, mistakes: 6, time: "14:20",
+            strong: [{ name: "Macroeconomic policy", accuracy: 82, answered: 6 }],
+            weak: [{ name: "Exchange rates", mistakes: 3 }, { name: "Evaluation paragraphs", mistakes: 2 }]
+          },
+          7: {
+            result: 74, rank: 12, mistakes: 5, time: "13:05",
+            strong: [{ name: "Development economics", accuracy: 81, answered: 6 }],
+            weak: [{ name: "Balance of payments", mistakes: 3 }, { name: "Globalisation", mistakes: 2 }]
+          }
+        }
+      },
+      mathematics: {
+        seasonStrong: [
+          { name: "Quadratics", accuracy: 84, answered: 22 },
+          { name: "Graph transformations", accuracy: 80, answered: 18 },
+          { name: "Coordinate geometry", accuracy: 78, answered: 19 }
+        ],
+        seasonWeak: [
+          { name: "Trigonometric identities", risk: "high", mistakes: 8 },
+          { name: "Binomial coefficients", risk: "medium", mistakes: 5 },
+          { name: "Inequalities", risk: "medium", mistakes: 4 },
+          { name: "Series", risk: "medium", mistakes: 4 }
+        ],
+        tours: {
+          1: {
+            result: 48, rank: 24, mistakes: 10, time: "16:10",
+            strong: [{ name: "Linear equations", accuracy: 76, answered: 5 }],
+            weak: [{ name: "Completing the square", mistakes: 3 }, { name: "Graph sketching", mistakes: 3 }]
+          },
+          2: {
+            result: 61, rank: 22, mistakes: 8, time: "15:25",
+            strong: [{ name: "Quadratics", accuracy: 80, answered: 6 }],
+            weak: [{ name: "Transformations", mistakes: 3 }, { name: "Function notation", mistakes: 2 }]
+          },
+          3: {
+            result: 66, rank: 21, mistakes: 7, time: "14:50",
+            strong: [{ name: "Coordinate geometry", accuracy: 79, answered: 6 }],
+            weak: [{ name: "Circle equations", mistakes: 3 }, { name: "Gradients", mistakes: 2 }]
+          },
+          4: {
+            result: 59, rank: 23, mistakes: 8, time: "15:15",
+            strong: [{ name: "Algebraic manipulation", accuracy: 77, answered: 5 }],
+            weak: [{ name: "Inequalities", mistakes: 3 }, { name: "Modulus notation", mistakes: 2 }]
+          },
+          5: {
+            result: 82, rank: 17, mistakes: 4, time: "12:55",
+            strong: [{ name: "Quadratics", accuracy: 88, answered: 7 }, { name: "Graphs", accuracy: 84, answered: 6 }],
+            weak: [{ name: "Coordinate geometry", mistakes: 2 }]
+          },
+          6: {
+            result: 68, rank: 18, mistakes: 6, time: "14:20",
+            strong: [{ name: "Trigonometric equations", accuracy: 80, answered: 6 }],
+            weak: [{ name: "Trigonometric identities", mistakes: 3 }, { name: "Binomial coefficients", mistakes: 2 }]
+          },
+          7: {
+            result: 71, rank: 18, mistakes: 6, time: "13:40",
+            strong: [{ name: "Differentiation basics", accuracy: 81, answered: 6 }],
+            weak: [{ name: "Inequalities", mistakes: 3 }, { name: "Series", mistakes: 2 }]
+          }
+        }
+      }
     };
 
-    const base = resultMap[key] || resultMap.economics;
-    const result = base[n] || Number(String(d.avg).replace("%", "")) || 70;
-    const mistakes = Math.max(2, Math.round((100 - result) / 5));
-    const regionRank = key === "mathematics" ? 18 + (7 - n) : 12 + (7 - n);
+    return base[key] || base.economics;
+  }
 
-    const rows = d.topics[n] || d.topics[7] || [];
-    const tourWeak = rows.slice(0, 2).map(r => r[0]);
+  function getTourReportData(key, tourNo) {
+    const basis = getAcademicReportBasis(key);
+    const n = Number(tourNo || 7);
+    const fallback = basis.tours[7];
 
     return {
       tourNo: n,
-      result,
-      mistakes,
-      regionRank,
-      time: n % 2 === 0 ? "14:20" : "12:45",
-      weak: tourWeak.length ? tourWeak : d.weakList.slice(0, 2),
-      strong: d.strong.slice(0, 2)
+      ...(basis.tours[n] || fallback)
     };
+  }
+
+  function formatStrongTopic(topic) {
+    if (!topic) return "";
+    if (topic.accuracy && topic.answered) {
+      return `${topic.name} · ${topic.accuracy}% / ${topic.answered}q`;
+    }
+    return topic.name || String(topic);
+  }
+
+  function formatWeakTopic(topic) {
+    if (!topic) return "";
+    if (topic.mistakes) {
+      return `${topic.name} · ${topic.mistakes} ошибки`;
+    }
+    return topic.name || String(topic);
   }
 
   function reportScopeTabs(key, activeScope) {
     const chips = [
-      ["season", "Все 7 туров"],
+      ["season", "Итог сезона"],
       ["tour1", "Тур 1"],
       ["tour2", "Тур 2"],
       ["tour3", "Тур 3"],
@@ -353,6 +458,8 @@
 
   function showReport(key, scope = "season") {
     const d = DATA[key] || DATA.economics;
+    const basis = getAcademicReportBasis(key);
+
     const activeScope = String(scope || "season");
     const isTour = activeScope.startsWith("tour");
     const tourNo = isTour ? Number(activeScope.replace("tour", "")) || 7 : null;
@@ -361,12 +468,12 @@
     const title = isTour ? `${d.title} · Тур ${tourNo}` : d.title;
     const subtitle = isTour
       ? "Итог выбранного тура."
-      : "Общий итог по всем 7 турам.";
+      : "Общий итог сезона по предмету.";
 
     const metrics = isTour
       ? `
         <div><b>${t.result}%</b><span>Результат</span></div>
-        <div><b>#${t.regionRank}</b><span>Регион</span></div>
+        <div><b>#${t.rank}</b><span>Регион</span></div>
         <div><b>${t.mistakes}</b><span>Ошибки</span></div>
         <div><b>${t.time}</b><span>Время</span></div>
       `
@@ -377,20 +484,25 @@
         <div><b>18</b><span>Практики</span></div>
       `;
 
-    const strong = isTour ? t.strong : d.strong;
-    const weak = isTour ? t.weak : d.weakList;
+    const strong = isTour ? t.strong : basis.seasonStrong;
+    const weak = isTour ? t.weak : basis.seasonWeak;
 
-    const readiness = isTour
-      ? `Тур ${tourNo}: ${t.mistakes} ошибок для разбора`
+    const analysisTitle = isTour ? "Итог тура" : "Готовность к Grand Olympiad";
+    const analysisMain = isTour
+      ? `Тур ${tourNo}: ${t.mistakes} ошибки требуют разбора`
       : "Средняя готовность: 3 темы требуют усиления";
 
-    const dynamics = isTour
-      ? `В этом туре главный фокус — ${weak.slice(0, 2).join(" и ")}.`
+    const analysisText = isTour
+      ? `Главный фокус этого тура — ${weak.map(x => x.name).slice(0, 2).join(" и ")}.`
       : "С начала сезона результат вырос примерно на 18 пунктов, но часть тем остаётся нестабильной.";
 
     const nextAction = isTour
-      ? `Тренировать ошибки Тур ${tourNo}`
+      ? `Собрать практику по ошибкам Тур ${tourNo}`
       : "Собрать практику по 3 темам перед Grand Olympiad";
+
+    const detailedButton = isTour
+      ? `Сформировать отчёт по Тур ${tourNo}`
+      : "Сформировать общий отчёт";
 
     openModal(`
       <div class="ps2-modal">
@@ -410,35 +522,43 @@
         </div>
 
         <div class="ps2-panel ps2-readiness">
-          <div class="ps2-panel-title">Готовность к Grand Olympiad</div>
-          <div class="ps2-readiness-main">${esc(readiness)}</div>
-          <div class="ps2-muted">${esc(dynamics)}</div>
+          <div class="ps2-panel-title">${esc(analysisTitle)}</div>
+          <div class="ps2-readiness-main">${esc(analysisMain)}</div>
+          <div class="ps2-muted">${esc(analysisText)}</div>
         </div>
 
         <div class="ps2-panel">
           <div class="ps2-panel-title">Сильные темы</div>
-          <div class="ps2-chip-row">${strong.map(x => `<span class="good">${esc(x)}</span>`).join("")}</div>
+          <div class="ps2-muted ps2-academic-note">Показаны темы с высокой точностью и достаточным числом ответов.</div>
+          <div class="ps2-chip-row">${strong.map(x => `<span class="good">${esc(formatStrongTopic(x))}</span>`).join("")}</div>
         </div>
 
         <div class="ps2-panel">
           <div class="ps2-panel-title">Темы для усиления</div>
-          <div class="ps2-chip-row">${weak.map(x => `<span class="warn">${esc(x)}</span>`).join("")}</div>
+          <div class="ps2-chip-row">${weak.map(x => `<span class="warn">${esc(formatWeakTopic(x))}</span>`).join("")}</div>
         </div>
 
         <div class="ps2-panel">
           <div class="ps2-panel-title">Следующий шаг</div>
           <div class="ps2-next-action">${esc(nextAction)}</div>
           <div class="ps2-steps mini">
-            <div><b>1</b><span>${isTour ? "Разберите ошибки этого тура." : "Выберите темы для усиления."}</span></div>
-            <div><b>2</b><span>${isTour ? "Соберите практику по темам тура." : "Соберите mixed practice."}</span></div>
+            <div><b>1</b><span>${isTour ? "Проверьте темы, где были ошибки." : "Выберите темы для усиления."}</span></div>
+            <div><b>2</b><span>${isTour ? "Соберите практику по темам этого тура." : "Соберите mixed practice."}</span></div>
             <div><b>3</b><span>Повторите вопросы до стабильного результата.</span></div>
           </div>
         </div>
 
         <div class="ps2-panel soft">
           <div class="ps2-panel-title">Подробный отчёт</div>
-          <div class="ps2-muted">Можно сформировать расширенный отчёт: активность, динамика, слабые темы и обезличенное сравнение по классу, району и региону.</div>
-          <button type="button" class="btn ps2-report-btn" data-ps2-action="detailed-report" data-subject="${esc(key)}">Сформировать подробный отчёт</button>
+          <div class="ps2-muted">${isTour
+            ? `Можно сформировать отдельный отчёт по Тур ${tourNo}: результат, время, темы, ошибки и сравнение с группой.`
+            : "Можно сформировать общий отчёт за сезон: активность, динамика, слабые темы и обезличенное сравнение по классу, району и региону."}</div>
+          <button type="button"
+            class="btn ps2-report-btn"
+            data-ps2-action="detailed-report"
+            data-subject="${esc(key)}"
+            data-scope="${esc(activeScope)}"
+            data-tour="${esc(tourNo || "")}">${esc(detailedButton)}</button>
         </div>
 
         <div class="ps2-actions">
@@ -454,37 +574,66 @@
     `);
   }
 
-  function showDetailedReport(key) {
+  function showDetailedReport(key, context = {}) {
     const d = DATA[key] || DATA.economics;
+    const scope = String(context.scope || "season");
+    const isTour = scope.startsWith("tour");
+    const tourNo = Number(context.tour || scope.replace("tour", "") || 0) || null;
+
+    const title = isTour
+      ? `${d.title} · Отчёт по Тур ${tourNo}`
+      : `${d.title} · Общий отчёт`;
+
+    const rows = isTour
+      ? [
+          "Результат, время и место в рейтинге выбранного тура.",
+          "Темы тура: где результат был сильным и где были ошибки.",
+          "Сравнение с похожими участниками этого тура.",
+          "Что повторить перед Grand Olympiad."
+        ]
+      : [
+          "Активные дни и регулярность занятий за сезон.",
+          "Динамика по всем турам и практике.",
+          "Темы, где ошибки повторялись чаще всего.",
+          "Обезличенное сравнение по классу, району и региону."
+        ];
 
     openModal(`
       <div class="ps2-modal">
         <div class="ps2-modal-top">
-          <button type="button" class="ps2-back" data-ps2-action="report" data-subject="${esc(key)}">←</button>
+          <button type="button"
+            class="ps2-back"
+            data-ps2-action="report"
+            data-subject="${esc(key)}"
+            data-scope="${esc(scope)}">←</button>
           <div>
             <div class="ps2-kicker">ПОДРОБНЫЙ ОТЧЁТ</div>
-            <div class="ps2-modal-title">${esc(d.title)}</div>
-            <div class="ps2-muted">Preview структуры расширенного отчёта.</div>
+            <div class="ps2-modal-title">${esc(title)}</div>
+            <div class="ps2-muted">${isTour ? "Preview отчёта по выбранному туру." : "Preview общего отчёта за сезон."}</div>
           </div>
         </div>
 
         <div class="ps2-panel">
           <div class="ps2-panel-title">Что войдёт</div>
           <div class="ps2-steps">
-            <div><b>1</b><span>Активные дни и регулярность занятий.</span></div>
-            <div><b>2</b><span>Динамика по турам и практике.</span></div>
-            <div><b>3</b><span>Темы, где ошибки повторялись чаще всего.</span></div>
-            <div><b>4</b><span>Обезличенное сравнение по классу, району и региону.</span></div>
+            ${rows.map((text, i) => `<div><b>${i + 1}</b><span>${esc(text)}</span></div>`).join("")}
           </div>
         </div>
 
         <div class="ps2-panel soft">
-          <div class="ps2-panel-title">Важно</div>
-          <div class="ps2-muted">В main такой отчёт лучше считать заранее SQL-ом и показывать только по запросу, чтобы не перегружать основной экран.</div>
+          <div class="ps2-panel-title">Логика расчёта</div>
+          <div class="ps2-muted">${isTour
+            ? "Отчёт по туру считается только по попытке этого тура, времени, ошибкам и темам тура."
+            : "Общий отчёт считается по всем турам, практике, активности и повторяющимся ошибкам."}</div>
         </div>
 
         <div class="ps2-actions">
-          <button type="button" class="btn primary" data-ps2-action="practice" data-subject="${esc(key)}">Практика</button>
+          <button type="button"
+            class="btn primary"
+            data-ps2-action="practice"
+            data-subject="${esc(key)}"
+            data-scope="${esc(scope)}"
+            data-tour="${esc(tourNo || "")}">Практика</button>
           <button type="button" class="btn" data-ps2-action="close">Закрыть</button>
         </div>
       </div>
@@ -797,7 +946,10 @@
       }
 
       if (action === "detailed-report") {
-        showDetailedReport(key);
+        showDetailedReport(key, {
+          scope: actionBtn.dataset.scope || "season",
+          tour: actionBtn.dataset.tour || ""
+        });
         return;
       }
 
@@ -916,6 +1068,15 @@
       .ps2-next-action { font-size:15px; line-height:1.25; font-weight:950; color:var(--text); margin-bottom:10px; }
       .ps2-steps.mini { gap:7px; }
       .ps2-report-btn { width:100%; margin-top:10px; min-height:40px; }
+      .ps2-academic-note {
+        margin-top:-2px;
+        margin-bottom:8px;
+      }
+      .ps2-chip-row span {
+        max-width:100%;
+        white-space:normal;
+        line-height:1.25;
+      }
       .ps2-scope-tabs {
         position:sticky; top:-14px; z-index:5;
         background:#f3f6fb; padding:8px 0 10px;
