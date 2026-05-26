@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "profile-hide-v14-final-20260526";
+  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "profile-hide-v15-safe-20260526";
   console.info("[iClub Preview] post-season build:", window.ICLUB_POSTSEASON_PREVIEW_BUILD);
 
 
@@ -1752,8 +1752,58 @@
     el.style.setProperty("display", "none", "important");
   }
 
-  function ps2LooksLikeAcademicReview(text) {
+  function ps2IsUnsafeContainer(el) {
+    if (!el) return true;
+
+    const tag = String(el.tagName || "").toLowerCase();
+    const id = String(el.id || "");
+    const cls = String(el.className || "");
+
+    return (
+      tag === "body" ||
+      tag === "html" ||
+      tag === "main" ||
+      id === "view-profile" ||
+      id === "app" ||
+      cls.includes("view-profile") ||
+      cls.includes("profile-view") ||
+      cls.includes("content") ||
+      cls.includes("screen")
+    );
+  }
+
+  function ps2StartsNextProfileSection(text) {
     const t = String(text || "").replace(/\s+/g, " ").trim();
+
+    return (
+      t === "Обзор результатов" ||
+      t.startsWith("Обзор результатов") ||
+      t.startsWith("Слоты соревновательного режима") ||
+      t.startsWith("Достижения") ||
+      t.startsWith("Мои сертификаты") ||
+      t.startsWith("Мои рекомендации") ||
+      t.startsWith("Поддержка")
+    );
+  }
+
+  function ps2ContainsNextProfileSection(text) {
+    const t = String(text || "").replace(/\s+/g, " ").trim();
+
+    return (
+      t.includes("Обзор результатов") ||
+      t.includes("Слоты соревновательного режима") ||
+      t.includes("Достижения") ||
+      t.includes("Мои сертификаты") ||
+      t.includes("Мои рекомендации") ||
+      t.includes("Поддержка")
+    );
+  }
+
+  function ps2LooksLikeOnlyAcademicReview(text) {
+    const t = String(text || "").replace(/\s+/g, " ").trim();
+
+    if (!t) return false;
+    if (ps2ContainsNextProfileSection(t)) return false;
 
     return (
       t.includes("Academic Season Review") ||
@@ -1766,28 +1816,81 @@
         t.includes("Открыть отчёт") &&
         t.includes("Практика") &&
         t.includes("Practice Mastery")
-      ) ||
-      (
-        t.includes("Экономика") &&
-        t.includes("6/7 туров") &&
-        t.includes("средний результат 74%") &&
-        t.includes("Practice Mastery")
       )
     );
   }
 
-  function ps2NextProfileSectionStarts(text) {
-    const t = String(text || "").replace(/\s+/g, " ").trim();
+  function ps2FindAcademicReviewTitle(root) {
+    const all = Array.from(root.querySelectorAll("*"));
 
-    return (
-      t === "Обзор результатов" ||
-      t.includes("Обзор результатов") ||
-      t.includes("Слоты соревновательного режима") ||
-      t.includes("Достижения") ||
-      t.includes("Мои сертификаты") ||
-      t.includes("Мои рекомендации") ||
-      t.includes("Поддержка")
-    );
+    const exact = all.find(el => {
+      const direct = ps2DirectText(el);
+      const total = ps2Text(el);
+      return direct === "Academic Season Review" || total === "Academic Season Review";
+    });
+
+    if (exact) return exact;
+
+    // fallback: smallest element containing the title only, not the whole profile
+    return all
+      .map(el => ({ el, text: ps2Text(el) }))
+      .filter(item => {
+        if (!item.text.includes("Academic Season Review")) return false;
+        if (item.text.length > 900) return false;
+        if (ps2ContainsNextProfileSection(item.text)) return false;
+        if (ps2IsUnsafeContainer(item.el)) return false;
+        return true;
+      })
+      .sort((a, b) => a.text.length - b.text.length)[0]?.el || null;
+  }
+
+  function ps2FindAcademicReviewCardAfterTitle(titleEl) {
+    if (!titleEl) return null;
+
+    const titleBlock =
+      titleEl.closest("h1, h2, h3, .section-title, .block-title") ||
+      titleEl;
+
+    let next = titleBlock.nextElementSibling;
+
+    while (next) {
+      const text = ps2Text(next);
+
+      if (!text) {
+        next = next.nextElementSibling;
+        continue;
+      }
+
+      if (ps2StartsNextProfileSection(text)) return null;
+
+      if (
+        text.includes("Practice Mastery") ||
+        text.includes("Error-Driven Learner") ||
+        text.includes("Fair Play") ||
+        text.includes("Открыть отчёт") ||
+        text.includes("Практика") ||
+        text.includes("Экономика")
+      ) {
+        return next;
+      }
+
+      // If title and card are separated by a wrapper, inspect small children only.
+      const child = Array.from(next.querySelectorAll("*"))
+        .map(el => ({ el, text: ps2Text(el) }))
+        .filter(item => {
+          if (item.text.length > 1400) return false;
+          if (ps2ContainsNextProfileSection(item.text)) return false;
+          if (ps2IsUnsafeContainer(item.el)) return false;
+          return ps2LooksLikeOnlyAcademicReview(item.text);
+        })
+        .sort((a, b) => a.text.length - b.text.length)[0]?.el;
+
+      if (child) return child;
+
+      break;
+    }
+
+    return null;
   }
 
   function hideProfileAcademicSeasonReview() {
@@ -1800,72 +1903,45 @@
 
     if (!profileRoot) return;
 
-    const all = Array.from(profileRoot.querySelectorAll("*"));
+    const titleEl = ps2FindAcademicReviewTitle(profileRoot);
 
-    // A) Hide compact cards that contain the whole duplicated Academic Season Review block.
-    all.forEach(el => {
-      const text = ps2Text(el);
-      if (!text || text.length > 3600) return;
-      if (!ps2LooksLikeAcademicReview(text)) return;
+    if (titleEl) {
+      const titleBlock =
+        titleEl.closest("h1, h2, h3, .section-title, .block-title") ||
+        titleEl;
 
-      const card =
-        el.closest(".profile-section, .profile-card, .home-block, .card, .panel-card, section") ||
-        el;
+      if (!ps2IsUnsafeContainer(titleBlock)) {
+        ps2ForceHide(titleBlock);
+      }
 
-      const cardText = ps2Text(card);
-
-      if (cardText.length <= 3600 && ps2LooksLikeAcademicReview(cardText)) {
+      const card = ps2FindAcademicReviewCardAfterTitle(titleEl);
+      if (card && !ps2IsUnsafeContainer(card)) {
         ps2ForceHide(card);
-      } else {
-        ps2ForceHide(el);
-      }
-    });
-
-    // B) Hide heading "Academic Season Review" and the card immediately after it.
-    const heading = all.find(el => {
-      const direct = ps2DirectText(el);
-      const total = ps2Text(el);
-      return direct === "Academic Season Review" || total === "Academic Season Review";
-    });
-
-    if (!heading) return;
-
-    const headingBlock =
-      heading.closest("h1, h2, h3, .section-title, .block-title") ||
-      heading;
-
-    ps2ForceHide(headingBlock);
-
-    let next = headingBlock.nextElementSibling;
-    let guard = 0;
-
-    while (next && guard < 4) {
-      const text = ps2Text(next);
-
-      if (ps2NextProfileSectionStarts(text)) break;
-
-      if (
-        text.includes("Экономика") ||
-        text.includes("Practice Mastery") ||
-        text.includes("Error-Driven Learner") ||
-        text.includes("Fair Play") ||
-        text.includes("Открыть отчёт") ||
-        text.includes("Практика")
-      ) {
-        const toHide = next;
-        next = next.nextElementSibling;
-        ps2ForceHide(toHide);
-        guard += 1;
-        continue;
       }
 
-      break;
+      return;
+    }
+
+    // Last fallback: hide only the smallest isolated review card.
+    const isolatedCard = Array.from(profileRoot.querySelectorAll(".card, .panel-card, section, .home-block, .profile-section, div"))
+      .map(el => ({ el, text: ps2Text(el) }))
+      .filter(item => {
+        if (item.text.length > 1400) return false;
+        if (ps2IsUnsafeContainer(item.el)) return false;
+        return ps2LooksLikeOnlyAcademicReview(item.text);
+      })
+      .sort((a, b) => a.text.length - b.text.length)[0]?.el;
+
+    if (isolatedCard) {
+      ps2ForceHide(isolatedCard);
     }
   }
 
   function startProfileAcademicReviewHider() {
     if (window.__ps2ProfileReviewHiderStarted) return;
     window.__ps2ProfileReviewHiderStarted = true;
+
+    window.hideProfileAcademicSeasonReview = hideProfileAcademicSeasonReview;
 
     const run = () => {
       try { hideProfileAcademicSeasonReview(); } catch {}
