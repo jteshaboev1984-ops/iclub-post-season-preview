@@ -367,3 +367,84 @@
     );
   };
 })();
+
+
+
+// Preview practice-mode override v3: selected topics/count/difficulty affect mock set.
+(function () {
+  "use strict";
+
+  if (!window.ICLUB_PREVIEW) return;
+  window.ICLUB_PREVIEW.__practiceModeOverrideV3 = true;
+
+  const topicBanks = {
+    economics: ["Market intervention", "Elasticity", "Consumer surplus", "Macroeconomic policy", "Exchange rates", "Evaluation paragraphs", "Balance of payments", "Development economics"],
+    mathematics: ["Quadratics", "Graphs", "Coordinate geometry", "Trigonometric identities", "Binomial coefficients", "Series", "Inequalities", "Differentiation"],
+    biology: ["Cell structure", "Enzymes", "Transport in mammals", "Immunity", "Genetic technology", "Homeostasis"],
+    chemistry: ["Atomic structure", "Moles", "Equilibria", "Kinetics", "Organic mechanisms", "Electrochemistry"],
+    informatics: ["Binary", "Logic gates", "SQL", "Cybersecurity", "Recursion", "Databases"]
+  };
+
+  function getDifficulty(i, selected) {
+    const d = String(selected || "mixed").toLowerCase();
+    if (["easy", "medium", "hard"].includes(d)) return d;
+    return i % 5 === 0 ? "hard" : i % 2 === 0 ? "medium" : "easy";
+  }
+
+  function makeQuestion(subjectKey, i, mode, filters) {
+    const key = String(subjectKey || "economics");
+    const selectedTopics = Array.isArray(filters?.topics) && filters.topics.length
+      ? filters.topics
+      : (topicBanks[key] || topicBanks.economics);
+
+    const topic = selectedTopics[(i - 1) % selectedTopics.length];
+    const difficulty = getDifficulty(i, filters?.difficulty);
+    const count = Number(filters?.count || 10) || 10;
+
+    const modeTitle =
+      mode === "weak" ? "Weak-topic practice" :
+      mode === "custom" ? "Custom practice" :
+      "Regular practice";
+
+    return {
+      id: Number(890000 + i + (mode === "weak" ? 1000 : mode === "custom" ? 2000 : 0)),
+      topic,
+      subtopic: topic,
+      difficulty,
+      timeLimitSec: difficulty === "hard" ? 90 : difficulty === "medium" ? 70 : 55,
+      type: "mcq",
+      qtype: "mcq",
+      question: `${modeTitle}: ${topic}. Question ${i}/${count}.`,
+      options: ["Correct concept", "Common distractor", "Partial idea", "Opposite answer"],
+      correctIndex: 0,
+      correctAnswer: "",
+      correct_answer: "A",
+      explanation:
+        mode === "custom"
+          ? `Custom preview: tour ${filters?.tour || "7"}, difficulty ${filters?.difficulty || "mixed"}, repeat closed ${filters?.includeClosed ? "yes" : "no"}.`
+          : mode === "weak"
+            ? `Weak-topic preview: this question focuses on ${topic}.`
+            : `Regular preview: familiar practice flow for ${topic}.`,
+      imageUrl: null,
+      practiceTourNo: Number(filters?.tour || 7),
+      practicePoolId: 9900,
+      orderNo: i
+    };
+  }
+
+  window.ICLUB_PREVIEW.makePracticeQuestions = function (subjectKey, tourNo) {
+    const selected = window.ICLUB_PREVIEW_SELECTED_PRACTICE || {};
+    const mode = selected.mode || "regular";
+    const filters = {
+      tour: selected.filters?.tour || String(tourNo || "7"),
+      topics: selected.filters?.topics || [],
+      difficulty: selected.filters?.difficulty || "mixed",
+      count: Number(selected.filters?.count || 10) || 10,
+      includeClosed: !!selected.filters?.includeClosed
+    };
+
+    return Array.from({ length: filters.count }).map((_, idx) =>
+      makeQuestion(subjectKey, idx + 1, mode, filters)
+    );
+  };
+})();

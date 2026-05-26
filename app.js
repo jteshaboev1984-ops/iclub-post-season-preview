@@ -12530,9 +12530,9 @@ function openPostSeasonPreviewReview(subjectKey = null) {
         </div>
         <div class="ps-disclaimer">
           ${escapeHTML(tr3(
-            "Это preview-отчёт без базы. В production цифры будут считаться по реальным турам, практике и рекомендациям.",
+            "Это краткий итог сезона в preview. В production можно отдельно запросить подробный отчёт с обезличенным сравнением по классу, району и региону.",
             "Bu bazasiz preview-hisobot. Productionda raqamlar real tur, amaliyot va tavsiyalar asosida hisoblanadi.",
-            "This is a DB-off preview report. In production, numbers will be calculated from real tours, practice and recommendations."
+            "This is a short preview summary. In production, users may request a detailed report with anonymized comparison by class, district and region."
           ))}
         </div>
       </div>
@@ -12543,14 +12543,68 @@ function openPostSeasonPreviewReview(subjectKey = null) {
   bindPostSeasonPreviewActions(document.getElementById("modal-root"));
 }
 
+function getPracticeBuilderPreviewData(subjectKey) {
+  const s = getPostSeasonPreviewSummary(subjectKey);
+
+  const topics = {
+    economics: {
+      5: [
+        { name: "Market intervention", available: 18, total: 24 },
+        { name: "Elasticity", available: 11, total: 18 },
+        { name: "Consumer surplus", available: 8, total: 12 }
+      ],
+      6: [
+        { name: "Macroeconomic policy", available: 16, total: 22 },
+        { name: "Exchange rates", available: 9, total: 14 },
+        { name: "Evaluation paragraphs", available: 7, total: 12 }
+      ],
+      7: [
+        { name: "Balance of payments", available: 13, total: 18 },
+        { name: "Development economics", available: 10, total: 16 },
+        { name: "Globalisation", available: 8, total: 12 }
+      ]
+    },
+    mathematics: {
+      5: [
+        { name: "Quadratics", available: 17, total: 22 },
+        { name: "Graphs", available: 13, total: 18 },
+        { name: "Coordinate geometry", available: 9, total: 14 }
+      ],
+      6: [
+        { name: "Trigonometric identities", available: 12, total: 20 },
+        { name: "Binomial coefficients", available: 8, total: 12 },
+        { name: "Series", available: 7, total: 10 }
+      ],
+      7: [
+        { name: "Inequalities", available: 11, total: 16 },
+        { name: "Differentiation", available: 10, total: 14 },
+        { name: "Integration", available: 8, total: 12 }
+      ]
+    }
+  };
+
+  return {
+    subjectKey: s.subjectKey,
+    subjectTitle: s.subjectTitle,
+    weakCount: s.weakCount,
+    topicsByTour: topics[s.subjectKey] || topics.economics
+  };
+}
+
 function bindPostSeasonPracticeBuilder(root) {
   if (!root) return;
 
+  const modal = root.querySelector("[data-ps-practice-subject]");
   const cards = Array.from(root.querySelectorAll("[data-ps-practice-mode]"));
   const primary = root.querySelector("[data-ps-builder-primary]");
   const hint = root.querySelector("[data-ps-builder-hint]");
   const filters = root.querySelector("[data-ps-builder-filters]");
-  const subjectKey = String(root.querySelector("[data-ps-practice-subject]")?.dataset?.subjectKey || getPostSeasonPreviewSubjectKey() || "economics");
+  const topicBox = root.querySelector("[data-ps-topic-list]");
+  const availability = root.querySelector("[data-ps-available-count]");
+  const repeat = root.querySelector("[data-ps-repeat-closed]");
+
+  const subjectKey = String(modal?.dataset?.subjectKey || getPostSeasonPreviewSubjectKey() || "economics");
+  const builderData = getPracticeBuilderPreviewData(subjectKey);
 
   const labels = {
     regular: tr3("Начать обычную практику", "Oddiy amaliyotni boshlash", "Start regular practice"),
@@ -12570,15 +12624,90 @@ function bindPostSeasonPracticeBuilder(root) {
       "Focuses on topics with more mistakes."
     ),
     custom: tr3(
-      "Выберите тур, темы, сложность и количество вопросов.",
-      "Tur, mavzu, qiyinlik va savollar sonini tanlang.",
-      "Choose tour, topics, difficulty and number of questions."
+      "Сначала выберите тур. Затем отметьте темы из доступного банка этого тура.",
+      "Avval turni tanlang. Keyin shu tur bankidagi mavzularni belgilang.",
+      "First choose a tour. Then select topics from that tour bank."
     )
   };
 
   function getActiveFilter(name, fallback) {
     const group = root.querySelector(`[data-ps-filter="${name}"]`);
-    return String(group?.querySelector(".is-on")?.dataset?.value || group?.querySelector(".is-on")?.textContent || fallback || "").trim();
+    return String(group?.querySelector(".is-on")?.dataset?.value || fallback || "").trim();
+  }
+
+  function getSelectedTopics() {
+    return Array.from(root.querySelectorAll("[data-ps-topic].is-on")).map(x => String(x.dataset.psTopic || "").trim()).filter(Boolean);
+  }
+
+  function getTopicRows(tour) {
+    const tourKey = String(tour || "7");
+    return builderData.topicsByTour[tourKey] || builderData.topicsByTour["7"] || [];
+  }
+
+  function getAvailableCount() {
+    const mode = root.dataset.psPracticeMode || "regular";
+    if (mode === "regular") return 10;
+    if (mode === "weak") return builderData.weakCount * 8;
+
+    const tour = getActiveFilter("tour", "7");
+    const selected = getSelectedTopics();
+    const rows = getTopicRows(tour);
+    const useRows = selected.length ? rows.filter(r => selected.includes(r.name)) : rows;
+    const includeClosed = !!repeat?.checked;
+
+    return useRows.reduce((sum, r) => sum + Number(includeClosed ? r.total : r.available), 0);
+  }
+
+  function renderTopics() {
+    if (!topicBox) return;
+
+    const tour = getActiveFilter("tour", "7");
+    const rows = getTopicRows(tour);
+
+    topicBox.innerHTML = rows.map((row, idx) => `
+      <button type="button" class="ps-topic-row ${idx === 0 ? "is-on" : ""}" data-ps-topic="${escapeHTML(row.name)}">
+        <span>${escapeHTML(row.name)}</span>
+        <small>${row.available}/${row.total}</small>
+      </button>
+    `).join("");
+
+    topicBox.querySelectorAll("[data-ps-topic]").forEach(btn => {
+      btn.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        btn.classList.toggle("is-on");
+        updateAvailability();
+      });
+    });
+  }
+
+  function updateAvailability() {
+    const available = getAvailableCount();
+    const countGroup = root.querySelector('[data-ps-filter="count"]');
+
+    if (availability) {
+      availability.textContent = tr3(
+        `Доступно новых вопросов: ${available}`,
+        `Yangi savollar mavjud: ${available}`,
+        `Available new questions: ${available}`
+      );
+    }
+
+    if (countGroup) {
+      countGroup.querySelectorAll("span").forEach(pill => {
+        const n = Number(pill.dataset.value || pill.textContent || 0);
+        const disabled = n > available;
+        pill.classList.toggle("is-disabled", disabled);
+        if (disabled && pill.classList.contains("is-on")) {
+          pill.classList.remove("is-on");
+        }
+      });
+
+      if (!countGroup.querySelector(".is-on:not(.is-disabled)")) {
+        const first = Array.from(countGroup.querySelectorAll("span")).find(x => !x.classList.contains("is-disabled"));
+        if (first) first.classList.add("is-on");
+      }
+    }
   }
 
   function setMode(mode) {
@@ -12592,6 +12721,8 @@ function bindPostSeasonPracticeBuilder(root) {
     if (primary) primary.textContent = labels[normalized] || labels.regular;
     if (hint) hint.textContent = hints[normalized] || hints.regular;
     if (filters) filters.classList.toggle("is-active", normalized === "custom");
+
+    updateAvailability();
   }
 
   cards.forEach(card => {
@@ -12613,13 +12744,23 @@ function bindPostSeasonPracticeBuilder(root) {
       ev.preventDefault();
       ev.stopPropagation();
 
+      if (pill.classList.contains("is-disabled")) return;
+
       const group = pill.closest(".ps-filter-pills");
       if (!group) return;
 
       group.querySelectorAll("span").forEach(x => x.classList.remove("is-on"));
       pill.classList.add("is-on");
+
+      if (group.dataset.psFilter === "tour") renderTopics();
+      updateAvailability();
     });
   });
+
+  if (repeat && repeat.dataset.psRepeatBound !== "1") {
+    repeat.dataset.psRepeatBound = "1";
+    repeat.addEventListener("change", updateAvailability);
+  }
 
   if (primary && primary.dataset.psPrimaryBound !== "1") {
     primary.dataset.psPrimaryBound = "1";
@@ -12630,10 +12771,12 @@ function bindPostSeasonPracticeBuilder(root) {
 
       const mode = root.dataset.psPracticeMode || "regular";
       const filtersState = {
-        tour: getActiveFilter("tour", "1-7"),
-        topics: getActiveFilter("topics", "weak"),
+        tour: getActiveFilter("tour", "7"),
+        topics: mode === "custom" ? getSelectedTopics() : [],
         difficulty: getActiveFilter("difficulty", "mixed"),
-        count: Number(getActiveFilter("count", "10")) || 10
+        count: Number(getActiveFilter("count", "10")) || 10,
+        includeClosed: !!repeat?.checked,
+        available: getAvailableCount()
       };
 
       window.ICLUB_PREVIEW_SELECTED_PRACTICE = {
@@ -12647,6 +12790,7 @@ function bindPostSeasonPracticeBuilder(root) {
     });
   }
 
+  renderTopics();
   setMode("regular");
 }
 
@@ -12715,19 +12859,24 @@ function openPostSeasonPreviewPracticeBuilder(subjectKey = null) {
           <div class="ps-builder-filter">
             <div class="ps-filter-label">${escapeHTML(tr3("Тур", "Tur", "Tour"))}</div>
             <div class="ps-filter-pills" data-ps-filter="tour">
-              <span class="is-on" data-value="1-7">1–7</span>
               <span data-value="5">5</span>
               <span data-value="6">6</span>
-              <span data-value="7">7</span>
+              <span class="is-on" data-value="7">7</span>
             </div>
           </div>
 
           <div class="ps-builder-filter">
-            <div class="ps-filter-label">${escapeHTML(tr3("Темы", "Mavzular", "Topics"))}</div>
-            <div class="ps-filter-pills" data-ps-filter="topics">
-              <span class="is-on" data-value="weak">${escapeHTML(tr3("Слабые", "Zaif", "Weak"))}</span>
-              <span data-value="all">${escapeHTML(tr3("Все", "Barchasi", "All"))}</span>
-            </div>
+            <div class="ps-filter-label">${escapeHTML(tr3("Темы тура", "Tur mavzulari", "Tour topics"))}</div>
+            <div class="ps-topic-list" data-ps-topic-list></div>
+            <div class="ps-available-count" data-ps-available-count></div>
+            <label class="ps-repeat-row">
+              <input type="checkbox" data-ps-repeat-closed />
+              <span>${escapeHTML(tr3(
+                "Повторять уже закрытые вопросы",
+                "Yopilgan savollarni ham qaytarish",
+                "Repeat already closed questions"
+              ))}</span>
+            </label>
           </div>
 
           <div class="ps-builder-filter">
@@ -12753,9 +12902,9 @@ function openPostSeasonPreviewPracticeBuilder(subjectKey = null) {
 
         <div class="ps-disclaimer">
           ${escapeHTML(tr3(
-            "В preview режимы практики меняют mock-набор вопросов. В main они будут собираться из реального банка.",
-            "Previewda amaliyot rejimlari mock savollar to‘plamini o‘zgartiradi. Mainda ular real bazadan yig‘iladi.",
-            "In preview, practice modes change the mock question set. In main, they will be built from the real bank."
+            "В preview показана будущая логика. В main доступность будет считаться по реальному банку и уже закрытым вопросам.",
+            "Previewda kelajakdagi logika ko‘rsatilgan. Mainda mavjudlik real bank va yopilgan savollar asosida hisoblanadi.",
+            "Preview shows the future logic. In main, availability will be calculated from the real bank and already closed questions."
           ))}
         </div>
 
@@ -12793,7 +12942,7 @@ function openPostSeasonPreviewGrandRules(subjectKey = null) {
             <div class="ps-plan-subject-title">${escapeHTML(s.subjectTitle)}</div>
             <div class="ps-muted">${s.toursCompleted}/${s.totalTours} ${escapeHTML(tr3("туров", "tur", "tours"))} · ${s.avgPercent}% · #${s.regionRank} ${escapeHTML(tr3("регион", "hudud", "region"))}</div>
           </div>
-          <span class="ps-clean-weak">${escapeHTML(tr3(
+          <span class="ps-plan-topic-count">${escapeHTML(tr3(
             `${s.weakCount} темы`,
             `${s.weakCount} mavzu`,
             `${s.weakCount} topics`
@@ -12801,7 +12950,7 @@ function openPostSeasonPreviewGrandRules(subjectKey = null) {
         </div>
         <div class="ps-plan-subject-actions">
           <button type="button" class="btn primary" data-ps-action="season-review" data-subject-key="${escapeHTML(key)}">
-            ${escapeHTML(tr3("Открыть итог", "Yakunlarni ochish", "Open summary"))}
+            ${escapeHTML(tr3("Итог сезона", "Mavsum yakuni", "Season summary"))}
           </button>
           <button type="button" class="btn" data-ps-action="practice-builder" data-subject-key="${escapeHTML(key)}">
             ${escapeHTML(tr3("Практика", "Amaliyot", "Practice"))}
@@ -12828,12 +12977,12 @@ function openPostSeasonPreviewGrandRules(subjectKey = null) {
         </div>
 
         <div class="ps-panel">
-          <div class="ps-panel-title">${escapeHTML(tr3("Что это?", "Bu nima?", "What is it?"))}</div>
-          <div class="ps-muted">${escapeHTML(tr3(
-            "Финальный этап сезона после 7 туров. Это не 8-й тур.",
-            "7 turdan keyingi final bosqich. Bu 8-tur emas.",
-            "The final stage after 7 tours. It is not Tour 8."
-          ))}</div>
+          <div class="ps-panel-title">${escapeHTML(tr3("Формат", "Format", "Format"))}</div>
+          <div class="ps-grand-format-grid">
+            <div><b>20</b><span>${escapeHTML(tr3("вопросов", "savol", "questions"))}</span></div>
+            <div><b>Mixed</b><span>${escapeHTML(tr3("сложность", "qiyinlik", "difficulty"))}</span></div>
+            <div><b>${escapeHTML(tr3("точность", "aniqlik", "accuracy"))}</b><span>${escapeHTML(tr3("+ время", "+ vaqt", "+ time"))}</span></div>
+          </div>
         </div>
 
         <div class="ps-panel">
@@ -12841,7 +12990,7 @@ function openPostSeasonPreviewGrandRules(subjectKey = null) {
           <div class="ps-plan-list">
             <div><b>1</b><span>${escapeHTML(tr3("Выберите предмет ниже.", "Quyida fanni tanlang.", "Choose a subject below."))}</span></div>
             <div><b>2</b><span>${escapeHTML(tr3("Откройте итог и посмотрите слабые темы.", "Yakunlarni ochib, zaif mavzularni ko‘ring.", "Open the summary and check weak topics."))}</span></div>
-            <div><b>3</b><span>${escapeHTML(tr3("Выберите формат практики.", "Amaliyot turini tanlang.", "Choose a practice format."))}</span></div>
+            <div><b>3</b><span>${escapeHTML(tr3("Соберите практику по нужным турам и темам.", "Kerakli tur va mavzular bo‘yicha amaliyot yig‘ing.", "Build practice by selected tours and topics."))}</span></div>
             <div><b>4</b><span>${escapeHTML(tr3("Закройте слабые темы до финала.", "Finalgacha zaif mavzularni mustahkamlang.", "Close weak topics before the final."))}</span></div>
           </div>
         </div>
@@ -13400,22 +13549,56 @@ function getPostSeasonPreviewSubjectKeysSafe() {
   return ["economics", "mathematics"];
 }
 
-function getPostSeasonSubjectCardSafeHTML(subjectKey) {
+function getPostSeasonSubjectVisualMapSafe(oldList) {
+  const map = {};
+  if (!oldList) return map;
+
+  const cards = Array.from(oldList.children || []);
+  cards.forEach((card) => {
+    const key = getSubjectKeyFromTextPreview?.(card.textContent || "");
+    if (!key) return;
+
+    const img = card.querySelector("img");
+    if (img?.src) {
+      map[key] = `<div class="ps-safe-visual"><img src="${escapeHTML(img.src)}" alt="" /></div>`;
+      return;
+    }
+
+    const visual =
+      card.querySelector("[style*='background']") ||
+      card.querySelector(".subject-visual") ||
+      card.querySelector(".course-card-media") ||
+      card.querySelector(".card-media");
+
+    if (visual) {
+      const clone = visual.cloneNode(true);
+      clone.classList.add("ps-safe-visual-clone");
+      map[key] = `<div class="ps-safe-visual">${clone.outerHTML}</div>`;
+      return;
+    }
+
+    map[key] = `<div class="ps-safe-visual ps-safe-visual-${escapeHTML(key)}"></div>`;
+  });
+
+  return map;
+}
+
+function getPostSeasonSubjectCardSafeHTML(subjectKey, visualHTML = "") {
   const s = getPostSeasonPreviewSummary(subjectKey);
 
   return `
     <div class="ps-safe-subject-card" data-subject-key="${escapeHTML(subjectKey)}">
+      ${visualHTML || `<div class="ps-safe-visual ps-safe-visual-${escapeHTML(subjectKey)}"></div>`}
+
       <div class="ps-safe-card-top">
         <div>
-          <div class="ps-kicker">${escapeHTML(tr3("ИТОГ ГОТОВ", "YAKUN TAYYOR", "SUMMARY READY"))}</div>
           <div class="ps-safe-subject-title">${escapeHTML(s.subjectTitle)}</div>
           <div class="ps-safe-subject-sub">${escapeHTML(tr3(
-            "Финальный отчёт и практика доступны.",
-            "Final hisobot va amaliyot mavjud.",
-            "Final summary and practice are available."
+            "Итог сезона и практика доступны.",
+            "Mavsum yakuni va amaliyot mavjud.",
+            "Season summary and practice are available."
           ))}</div>
         </div>
-        <span class="ps-safe-status">Review</span>
       </div>
 
       <div class="ps-safe-metrics">
@@ -13443,7 +13626,7 @@ function getPostSeasonSubjectCardSafeHTML(subjectKey) {
 
       <div class="ps-safe-actions">
         <button type="button" class="btn primary" data-ps-action="season-review" data-subject-key="${escapeHTML(subjectKey)}">
-          ${escapeHTML(tr3("Открыть итог", "Yakunlarni ochish", "Open summary"))}
+          ${escapeHTML(tr3("Итог сезона", "Mavsum yakuni", "Season summary"))}
         </button>
         <button type="button" class="btn" data-ps-action="practice-builder" data-subject-key="${escapeHTML(subjectKey)}">
           ${escapeHTML(tr3("Практика", "Amaliyot", "Practice"))}
@@ -13464,10 +13647,8 @@ function renderPostSeasonHomeSafePreview() {
   if (!oldBlock || !oldBlock.parentNode) return;
 
   const subjectKeys = getPostSeasonPreviewSubjectKeysSafe();
-  const activeSubject = subjectKeys[0] || getPostSeasonPreviewSubjectKey();
-  const s = getPostSeasonPreviewSummary(activeSubject);
+  const visualMap = getPostSeasonSubjectVisualMapSafe(oldList);
 
-  // Hide the old active-tour cards instead of rewriting them.
   oldBlock.style.display = "none";
   oldBlock.dataset.psOldCompetitiveHidden = "1";
 
@@ -13480,17 +13661,32 @@ function renderPostSeasonHomeSafePreview() {
   }
 
   grand.innerHTML = `
-    <div class="ps-grand-strip ps-grand-strip-top">
-      <div class="ps-grand-strip-main">
+    <div class="ps-grand-card-pro">
+      <div class="ps-grand-main">
         <div class="ps-kicker">${escapeHTML(tr3("ФИНАЛ СЕЗОНА", "MAVSUM FINALI", "SEASON FINAL"))}</div>
         <div class="ps-title">Grand Olympiad</div>
         <div class="ps-sub">${escapeHTML(tr3(
-          "Откроется через 5 дней. Подготовьтесь через итоги предметов и практику.",
-          "5 kundan keyin ochiladi. Fan yakunlari va amaliyot orqali tayyorlaning.",
-          "Opens in 5 days. Prepare through subject summaries and practice."
+          "Финальный этап после 7 туров.",
+          "7 turdan keyingi final bosqich.",
+          "Final stage after 7 tours."
         ))}</div>
       </div>
-      <button type="button" class="btn ps-grand-strip-btn" data-ps-action="grand-rules" data-subject-key="${escapeHTML(s.subjectKey)}">
+
+      <div class="ps-grand-specs">
+        <span>20 ${escapeHTML(tr3("вопросов", "savol", "questions"))}</span>
+        <span>Mixed</span>
+        <span>${escapeHTML(tr3("точность + время", "aniqlik + vaqt", "accuracy + time"))}</span>
+      </div>
+
+      <div class="ps-grand-copy">
+        ${escapeHTML(tr3(
+          "Откроется через 5 дней. Подготовка идёт через итоги предметов и практику.",
+          "5 kundan keyin ochiladi. Tayyorgarlik fan yakunlari va amaliyot orqali boradi.",
+          "Opens in 5 days. Preparation goes through subject summaries and practice."
+        ))}
+      </div>
+
+      <button type="button" class="btn primary ps-grand-main-btn" data-ps-action="grand-rules">
         ${escapeHTML(tr3("План финала", "Final rejasi", "Final plan"))}
       </button>
     </div>
@@ -13504,7 +13700,7 @@ function renderPostSeasonHomeSafePreview() {
     oldBlock.parentNode.insertBefore(summaries, oldBlock);
   }
 
-  const signature = subjectKeys.join("|");
+  const signature = subjectKeys.join("|") + "|visual-v2";
   if (summaries.dataset.signature !== signature) {
     summaries.dataset.signature = signature;
     summaries.innerHTML = `
@@ -13517,7 +13713,7 @@ function renderPostSeasonHomeSafePreview() {
         ))}</p>
       </div>
       <div class="ps-safe-subject-list">
-        ${subjectKeys.map(getPostSeasonSubjectCardSafeHTML).join("")}
+        ${subjectKeys.map(key => getPostSeasonSubjectCardSafeHTML(key, visualMap[key])).join("")}
       </div>
     `;
   }

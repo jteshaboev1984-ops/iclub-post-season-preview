@@ -6768,3 +6768,173 @@ button.is-loading { opacity: .85; }
     grid-template-columns: 1fr;
   }
 }
+
+
+
+/* Final post-season logic polish */
+
+.ps-grand-card-pro {
+  background: #fff;
+  border: 1px solid rgba(245, 158, 11, .32);
+  border-radius: 18px;
+  padding: 14px;
+  box-shadow: 0 12px 28px rgba(245, 158, 11, .08);
+}
+
+.ps-grand-main-btn {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.ps-grand-specs,
+.ps-grand-format-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 11px;
+}
+
+.ps-grand-specs span,
+.ps-grand-format-grid div {
+  min-width: 0;
+  border-radius: 13px;
+  padding: 8px 6px;
+  background: rgba(248, 250, 252, .95);
+  border: 1px solid rgba(226, 232, 240, .92);
+  text-align: center;
+  font-size: 10px;
+  line-height: 1.15;
+  font-weight: 900;
+  color: rgba(15, 23, 42, .66);
+}
+
+.ps-grand-format-grid b {
+  display: block;
+  font-size: 14px;
+  color: var(--primary);
+  line-height: 1.05;
+}
+
+.ps-grand-format-grid span {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  color: rgba(15, 23, 42, .58);
+}
+
+.ps-grand-copy {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid rgba(226, 232, 240, .9);
+  color: rgba(15, 23, 42, .62);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.ps-safe-visual {
+  height: 82px;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 11px;
+  background: linear-gradient(135deg, #0f3f8f, #a7f3d0);
+}
+
+.ps-safe-visual img,
+.ps-safe-visual .ps-safe-visual-clone {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* fallback visuals if original image cannot be cloned */
+.ps-safe-visual-economics { background: linear-gradient(135deg, #0d3b78, #95f0df); }
+.ps-safe-visual-mathematics { background: linear-gradient(135deg, #103a74, #a7f3d0); }
+.ps-safe-visual-biology { background: linear-gradient(135deg, #064e3b, #a7f3d0); }
+.ps-safe-visual-chemistry { background: linear-gradient(135deg, #1e3a8a, #bfdbfe); }
+.ps-safe-visual-informatics { background: linear-gradient(135deg, #111827, #93c5fd); }
+
+.ps-safe-card-top {
+  margin-top: 0;
+}
+
+.ps-topic-list {
+  display: grid;
+  gap: 7px;
+  margin-top: 8px;
+}
+
+.ps-topic-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid rgba(226, 232, 240, .95);
+  border-radius: 12px;
+  background: #fff;
+  padding: 8px 9px;
+  text-align: left;
+}
+
+.ps-topic-row span {
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 850;
+  color: rgba(15, 23, 42, .76);
+}
+
+.ps-topic-row small {
+  border-radius: 999px;
+  padding: 4px 7px;
+  background: rgba(37, 99, 235, .09);
+  color: #2563eb;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.ps-topic-row.is-on {
+  border-color: rgba(37, 99, 235, .35);
+  background: rgba(37, 99, 235, .055);
+}
+
+.ps-available-count {
+  margin-top: 8px;
+  font-size: 11px;
+  line-height: 1.25;
+  color: rgba(15, 23, 42, .62);
+  font-weight: 850;
+}
+
+.ps-repeat-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 9px;
+  font-size: 12px;
+  line-height: 1.3;
+  color: rgba(15, 23, 42, .70);
+  font-weight: 800;
+}
+
+.ps-filter-pills span.is-disabled {
+  opacity: .42;
+  pointer-events: none;
+}
+
+.ps-plan-topic-count {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 6px 9px;
+  background: rgba(245, 158, 11, .13);
+  color: #b45309;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+@media (max-width: 360px) {
+  .ps-grand-specs,
+  .ps-grand-format-grid {
+    grid-template-columns: 1fr;
+  }
+}
