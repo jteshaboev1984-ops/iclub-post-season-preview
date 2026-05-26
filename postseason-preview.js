@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "postseason-v12-20260526";
+  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "practice-study-v13-20260526";
   console.info("[iClub Preview] post-season build:", window.ICLUB_POSTSEASON_PREVIEW_BUILD);
 
 
@@ -965,6 +965,58 @@
     `).join("");
   }
 
+  function practiceTopicRows(key, tour, mode = "regular", scope = "direct") {
+    const d = DATA[key] || DATA.economics;
+    const tourNo = Number(tour || 7);
+    const normalizedMode = String(mode || "regular");
+    const normalizedScope = String(scope || "direct");
+
+    let rows = [];
+
+    if (normalizedMode === "weak") {
+      if (normalizedScope === "season") {
+        rows = getAcademicReportBasis(key).seasonWeak.map((topic, idx) => ({
+          name: topic.name,
+          available: Math.max(5, 12 - idx * 2),
+          total: Math.max(8, 16 - idx * 2)
+        }));
+      } else if (normalizedScope.startsWith("tour") && hasParticipatedInTour(key, tourNo)) {
+        rows = getTourReportData(key, tourNo).weak.map((topic, idx) => ({
+          name: topic.name,
+          available: Math.max(4, 10 - idx * 2),
+          total: Math.max(7, 14 - idx * 2)
+        }));
+      } else if (normalizedScope.startsWith("tour")) {
+        const progress = getPracticeProgress(key, tourNo);
+        rows = progress?.study?.length ? progress.study : getTourStudyTopics(key, tourNo);
+      } else {
+        rows = getTourStudyTopics(key, tourNo);
+      }
+    } else {
+      const sourceRows = d.topics[tourNo] || d.topics[7] || [];
+      rows = sourceRows.map(row => ({
+        name: row[0],
+        available: row[1],
+        total: row[2]
+      }));
+    }
+
+    if (!rows.length) {
+      rows = getTourStudyTopics(key, tourNo);
+    }
+
+    return rows.map((row, i) => `
+      <button type="button"
+        class="ps2-topic ${i === 0 ? "is-on" : ""}"
+        data-topic="${esc(row.name)}"
+        data-available="${Number(row.available || 0)}"
+        data-total="${Number(row.total || row.available || 0)}">
+        <span>${esc(row.name)}</span>
+        <small>${Number(row.available || 0)}/${Number(row.total || row.available || 0)}</small>
+      </button>
+    `).join("");
+  }
+
   function showPractice(key, context = {}) {
     const d = DATA[key] || DATA.economics;
     const scope = String(context.scope || "");
@@ -1032,7 +1084,7 @@
 
           <div class="ps2-filter">
             <div class="ps2-panel-title">${esc(tr("Темы тура", "Tur mavzulari", "Tour topics"))}</div>
-            <div class="ps2-topic-list">${topicRows(key, defaultTour)}</div>
+            <div class="ps2-topic-list">${practiceTopicRows(key, defaultTour, initialMode, scope || "direct")}</div>
             <div class="ps2-available">${esc(tr("Доступно новых вопросов", "Yangi savollar mavjud", "Available new questions"))}: <b>13</b></div>
             <label class="ps2-check">
               <input type="checkbox" data-repeat />
@@ -1080,22 +1132,44 @@
     const start = modal.querySelector('[data-ps2-action="start-practice"]');
     const hint = modal.querySelector(".ps2-hint");
     const builder = modal.querySelector(".ps2-builder");
+    const key = modal.dataset.practiceSubject || "economics";
+    const tour = modal.querySelector('[data-filter="tour"] .is-on')?.dataset.value || modal.dataset.practiceTour || "7";
+    const scope = modal.dataset.practiceScope || "direct";
 
     modal.querySelectorAll(".ps2-mode").forEach(x => {
       x.classList.toggle("is-selected", x.dataset.mode === mode);
     });
 
-    if (builder) builder.classList.toggle("is-open", mode === "custom");
+    if (builder) {
+      const shouldOpenBuilder = mode === "custom" || mode === "weak";
+      builder.classList.toggle("is-open", shouldOpenBuilder);
+      builder.classList.toggle("is-study-mode", mode === "weak");
+      builder.classList.toggle("is-custom-mode", mode === "custom");
+    }
+
+    updateTopicsForTour(modal, key, tour);
 
     if (mode === "weak") {
-      if (start) start.textContent = "Тренировать темы для изучения";
-      if (hint) hint.textContent = "Фокус — темы, которые нужно изучить или закрепить.";
+      if (start) start.textContent = tr("Начать изучение", "O‘rganishni boshlash", "Start studying");
+      if (hint) hint.textContent = tr(
+        "Выберите тур и темы, которые нужно изучить или закрепить.",
+        "O‘rganish yoki mustahkamlash kerak bo‘lgan tur va mavzularni tanlang.",
+        "Choose the tour and topics you need to study or reinforce."
+      );
     } else if (mode === "custom") {
       if (start) start.textContent = tr("Собрать практику", "Amaliyotni yig‘ish", "Build practice");
-      if (hint) hint.textContent = tr("Практика будет собрана по выбранному туру, темам и сложности.", "Amaliyot tanlangan tur, mavzu va qiyinlik bo‘yicha yig‘iladi.", "Practice will be built by selected tour, topics and difficulty.");
+      if (hint) hint.textContent = tr(
+        "Настройте практику по туру, темам, сложности и количеству вопросов.",
+        "Amaliyotni tur, mavzu, qiyinlik va savollar soni bo‘yicha sozlang.",
+        "Build practice by tour, topics, difficulty and count."
+      );
     } else {
       if (start) start.textContent = tr("Начать обычную практику", "Oddiy amaliyotni boshlash", "Start regular practice");
-      if (hint) hint.textContent = "Запустится привычная практика по предмету.";
+      if (hint) hint.textContent = tr(
+        "Быстрый запуск привычной практики по предмету.",
+        "Fan bo‘yicha odatiy amaliyotni tez boshlash.",
+        "Quick start for the usual subject practice."
+      );
     }
 
     updateAvailability();
@@ -1104,7 +1178,15 @@
   function updateTopicsForTour(modal, key, tour) {
     const list = modal.querySelector(".ps2-topic-list");
     if (!list) return;
-    list.innerHTML = topicRows(key, tour);
+
+    const mode = modal.dataset.mode || "regular";
+    const scope = modal.dataset.practiceScope || "direct";
+    const currentSignature = `${key}|${tour}|${mode}|${scope}`;
+
+    if (list.dataset.signature === currentSignature) return;
+
+    list.dataset.signature = currentSignature;
+    list.innerHTML = practiceTopicRows(key, tour, mode, scope);
   }
 
   function updateAvailability() {
@@ -1140,6 +1222,14 @@
     const key = modal.dataset.practiceSubject;
     const d = DATA[key] || DATA.economics;
     const mode = modal.dataset.mode || "regular";
+    const selectedTour = modal.querySelector('[data-filter="tour"] .is-on')?.dataset.value || modal.dataset.practiceTour || "";
+
+    window.__ps2LastPracticeContext = {
+      key,
+      scope: modal.dataset.practiceScope || "",
+      tour: selectedTour,
+      mode
+    };
 
     const modeText =
       mode === "weak" ? "Темы для изучения" :
@@ -1158,7 +1248,7 @@
         <div class="ps2-modal-top">
           <button type="button" class="ps2-back" data-ps2-action="practice" data-subject="${esc(key)}" data-scope="${esc(window.__ps2LastPracticeContext?.scope || "")}" data-tour="${esc(window.__ps2LastPracticeContext?.tour || "")}" data-mode="${esc(window.__ps2LastPracticeContext?.mode || "regular")}">←</button>
           <div>
-            <div class="ps2-kicker">ПРАКТИКА ГОТОВА</div>
+            <div class="ps2-kicker">ПРАКТИКА СОБРАНА</div>
             <div class="ps2-modal-title">${esc(d.title)}</div>
             <div class="ps2-muted">${esc(modeText)} · ${esc(count)} вопросов · ${esc(diff)}</div>
           </div>
@@ -1183,11 +1273,11 @@
 
         <div class="ps2-panel soft">
           <div class="ps2-panel-title">Preview</div>
-          <div class="ps2-muted">Здесь показана логика сборки. В рабочем app этот запуск должен открывать обычный Practice Quiz, а не отдельную заглушку.</div>
+          <div class="ps2-muted">В рабочем app эта кнопка должна открывать обычный Practice Quiz с выбранными вопросами.</div>
         </div>
 
         <div class="ps2-actions">
-          <button type="button" class="btn primary" data-ps2-action="practice" data-subject="${esc(key)}">Изменить практику</button>
+          <button type="button" class="btn primary" data-ps2-action="practice" data-subject="${esc(key)}" data-scope="${esc(window.__ps2LastPracticeContext?.scope || "")}" data-tour="${esc(window.__ps2LastPracticeContext?.tour || "")}" data-mode="${esc(window.__ps2LastPracticeContext?.mode || "regular")}">Изменить практику</button>
           <button type="button" class="btn" data-ps2-action="close">Закрыть</button>
         </div>
       </div>
@@ -1225,6 +1315,18 @@
         const modal = modeBtn.closest(".ps2-modal");
         if (modal) {
           modal.dataset.mode = modeBtn.dataset.mode || "regular";
+
+          const currentTour = modal.querySelector('[data-filter="tour"] .is-on')?.dataset.value || modal.dataset.practiceTour || "";
+          window.__ps2LastPracticeContext = {
+            key: modal.dataset.practiceSubject || "economics",
+            scope: modal.dataset.practiceScope || "",
+            tour: currentTour,
+            mode: modal.dataset.mode || "regular"
+          };
+
+          const topicList = modal.querySelector(".ps2-topic-list");
+          if (topicList) topicList.dataset.signature = "";
+
           updatePracticeModal();
         }
         return;
@@ -1242,6 +1344,16 @@
 
         const modal = pill.closest(".ps2-modal");
         if (modal && group?.dataset.filter === "tour") {
+          const topicList = modal.querySelector(".ps2-topic-list");
+          if (topicList) topicList.dataset.signature = "";
+
+          window.__ps2LastPracticeContext = {
+            key: modal.dataset.practiceSubject || "economics",
+            scope: modal.dataset.practiceScope || "",
+            tour: pill.dataset.value || "7",
+            mode: modal.dataset.mode || "regular"
+          };
+
           updateTopicsForTour(modal, modal.dataset.practiceSubject, pill.dataset.value || "7");
         }
 
@@ -1591,36 +1703,63 @@
         color:#2563eb !important;
       }
 
+
+      .ps2-builder.is-study-mode {
+        border:1px solid rgba(245,158,11,.22);
+        border-radius:16px;
+        padding:10px;
+        background:linear-gradient(135deg, rgba(245,158,11,.055), rgba(255,255,255,.92));
+      }
+      .ps2-builder.is-study-mode .ps2-filter {
+        background:#fff;
+      }
+      .ps2-builder.is-study-mode .ps2-topic.is-on {
+        border-color:rgba(245,158,11,.38);
+        background:rgba(245,158,11,.09);
+      }
+      .ps2-builder.is-study-mode .ps2-topic small {
+        background:rgba(245,158,11,.14);
+        color:#b45309;
+      }
+
     `;
     document.head.appendChild(style);
   }
 
   function hideProfileAcademicSeasonReview() {
-    const candidates = Array.from(document.querySelectorAll("section, .home-block, .profile-section, .card, .panel-card, div"));
+    const all = Array.from(document.querySelectorAll("section, .home-block, .profile-section, .card, .panel-card, div"));
 
-    candidates.forEach(block => {
-      const text = String(block.textContent || "").replace(/\s+/g, " ").trim();
+    const matches = all
+      .map(el => ({
+        el,
+        text: String(el.textContent || "").replace(/\s+/g, " ").trim()
+      }))
+      .filter(item => {
+        const text = item.text;
+        if (!text) return false;
 
-      const looksLikeAcademicReview =
-        text.includes("Academic Season Review") ||
-        (
-          text.includes("Practice Mastery") &&
-          text.includes("Error-Driven Learner") &&
-          text.includes("Fair Play")
-        ) ||
-        (
-          text.includes("Обзор результатов") &&
-          text.includes("Стабильность")
+        return (
+          text.includes("Academic Season Review") ||
+          (
+            text.includes("Practice Mastery") &&
+            text.includes("Error-Driven Learner") &&
+            text.includes("Fair Play")
+          ) ||
+          (
+            text.includes("Открыть отчёт") &&
+            text.includes("Practice Mastery") &&
+            text.includes("Fair Play")
+          )
         );
+      })
+      .filter(item => item.text.length < 3500)
+      .sort((a, b) => a.text.length - b.text.length);
 
-      if (!looksLikeAcademicReview) return;
+    const target = matches[0]?.el;
+    if (!target) return;
 
-      const tooLarge = text.length > 1800;
-      if (tooLarge) return;
-
-      block.style.display = "none";
-      block.dataset.ps2HiddenAcademicSeasonReview = "1";
-    });
+    target.style.display = "none";
+    target.dataset.ps2HiddenAcademicSeasonReview = "1";
   }
 
   function schedule() {
