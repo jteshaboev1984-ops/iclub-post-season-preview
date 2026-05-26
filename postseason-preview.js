@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "practice-study-v13-20260526";
+  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "profile-hide-v14-final-20260526";
   console.info("[iClub Preview] post-season build:", window.ICLUB_POSTSEASON_PREVIEW_BUILD);
 
 
@@ -1722,47 +1722,183 @@
         color:#b45309;
       }
 
+
+      [data-ps2-force-hidden="1"],
+      [data-ps2-hidden-academic-season-review="1"] {
+        display:none !important;
+      }
+
     `;
     document.head.appendChild(style);
   }
 
+  function ps2Text(el) {
+    return String(el?.textContent || "").replace(/\s+/g, " ").trim();
+  }
+
+  function ps2DirectText(el) {
+    if (!el) return "";
+    return String(Array.from(el.childNodes || [])
+      .filter(node => node.nodeType === Node.TEXT_NODE)
+      .map(node => node.textContent || "")
+      .join(" "))
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function ps2ForceHide(el) {
+    if (!el) return;
+    el.dataset.ps2ForceHidden = "1";
+    el.style.setProperty("display", "none", "important");
+  }
+
+  function ps2LooksLikeAcademicReview(text) {
+    const t = String(text || "").replace(/\s+/g, " ").trim();
+
+    return (
+      t.includes("Academic Season Review") ||
+      (
+        t.includes("Practice Mastery") &&
+        t.includes("Error-Driven Learner") &&
+        t.includes("Fair Play")
+      ) ||
+      (
+        t.includes("Открыть отчёт") &&
+        t.includes("Практика") &&
+        t.includes("Practice Mastery")
+      ) ||
+      (
+        t.includes("Экономика") &&
+        t.includes("6/7 туров") &&
+        t.includes("средний результат 74%") &&
+        t.includes("Practice Mastery")
+      )
+    );
+  }
+
+  function ps2NextProfileSectionStarts(text) {
+    const t = String(text || "").replace(/\s+/g, " ").trim();
+
+    return (
+      t === "Обзор результатов" ||
+      t.includes("Обзор результатов") ||
+      t.includes("Слоты соревновательного режима") ||
+      t.includes("Достижения") ||
+      t.includes("Мои сертификаты") ||
+      t.includes("Мои рекомендации") ||
+      t.includes("Поддержка")
+    );
+  }
+
   function hideProfileAcademicSeasonReview() {
-    const all = Array.from(document.querySelectorAll("section, .home-block, .profile-section, .card, .panel-card, div"));
+    const profileRoot =
+      document.querySelector("#view-profile") ||
+      document.querySelector("[data-view='profile']") ||
+      document.querySelector(".view-profile") ||
+      document.querySelector(".profile-view") ||
+      document.body;
 
-    const matches = all
-      .map(el => ({
-        el,
-        text: String(el.textContent || "").replace(/\s+/g, " ").trim()
-      }))
-      .filter(item => {
-        const text = item.text;
-        if (!text) return false;
+    if (!profileRoot) return;
 
-        return (
-          text.includes("Academic Season Review") ||
-          (
-            text.includes("Practice Mastery") &&
-            text.includes("Error-Driven Learner") &&
-            text.includes("Fair Play")
-          ) ||
-          (
-            text.includes("Открыть отчёт") &&
-            text.includes("Practice Mastery") &&
-            text.includes("Fair Play")
-          )
-        );
-      })
-      .filter(item => item.text.length < 3500)
-      .sort((a, b) => a.text.length - b.text.length);
+    const all = Array.from(profileRoot.querySelectorAll("*"));
 
-    const target = matches[0]?.el;
-    if (!target) return;
+    // A) Hide compact cards that contain the whole duplicated Academic Season Review block.
+    all.forEach(el => {
+      const text = ps2Text(el);
+      if (!text || text.length > 3600) return;
+      if (!ps2LooksLikeAcademicReview(text)) return;
 
-    target.style.display = "none";
-    target.dataset.ps2HiddenAcademicSeasonReview = "1";
+      const card =
+        el.closest(".profile-section, .profile-card, .home-block, .card, .panel-card, section") ||
+        el;
+
+      const cardText = ps2Text(card);
+
+      if (cardText.length <= 3600 && ps2LooksLikeAcademicReview(cardText)) {
+        ps2ForceHide(card);
+      } else {
+        ps2ForceHide(el);
+      }
+    });
+
+    // B) Hide heading "Academic Season Review" and the card immediately after it.
+    const heading = all.find(el => {
+      const direct = ps2DirectText(el);
+      const total = ps2Text(el);
+      return direct === "Academic Season Review" || total === "Academic Season Review";
+    });
+
+    if (!heading) return;
+
+    const headingBlock =
+      heading.closest("h1, h2, h3, .section-title, .block-title") ||
+      heading;
+
+    ps2ForceHide(headingBlock);
+
+    let next = headingBlock.nextElementSibling;
+    let guard = 0;
+
+    while (next && guard < 4) {
+      const text = ps2Text(next);
+
+      if (ps2NextProfileSectionStarts(text)) break;
+
+      if (
+        text.includes("Экономика") ||
+        text.includes("Practice Mastery") ||
+        text.includes("Error-Driven Learner") ||
+        text.includes("Fair Play") ||
+        text.includes("Открыть отчёт") ||
+        text.includes("Практика")
+      ) {
+        const toHide = next;
+        next = next.nextElementSibling;
+        ps2ForceHide(toHide);
+        guard += 1;
+        continue;
+      }
+
+      break;
+    }
+  }
+
+  function startProfileAcademicReviewHider() {
+    if (window.__ps2ProfileReviewHiderStarted) return;
+    window.__ps2ProfileReviewHiderStarted = true;
+
+    const run = () => {
+      try { hideProfileAcademicSeasonReview(); } catch {}
+    };
+
+    run();
+    setTimeout(run, 100);
+    setTimeout(run, 350);
+    setTimeout(run, 900);
+    setTimeout(run, 1800);
+    setTimeout(run, 3000);
+
+    document.addEventListener("click", () => {
+      setTimeout(run, 80);
+      setTimeout(run, 350);
+      setTimeout(run, 900);
+    }, true);
+
+    try {
+      const observer = new MutationObserver(run);
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true
+      });
+      window.__ps2ProfileReviewObserver = observer;
+    } catch {}
+
+    setInterval(run, 1000);
   }
 
   function schedule() {
+    startProfileAcademicReviewHider();
     let tries = 0;
     const timer = setInterval(() => {
       tries += 1;
@@ -1781,6 +1917,9 @@
   document.addEventListener("DOMContentLoaded", schedule);
   window.addEventListener("load", schedule);
   setTimeout(schedule, 100);
+  setTimeout(startProfileAcademicReviewHider, 100);
+  setTimeout(startProfileAcademicReviewHider, 800);
+  setTimeout(startProfileAcademicReviewHider, 1800);
   setTimeout(hideProfileAcademicSeasonReview, 500);
   setTimeout(hideProfileAcademicSeasonReview, 1500);
   setInterval(hideProfileAcademicSeasonReview, 1200);
