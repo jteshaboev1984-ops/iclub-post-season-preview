@@ -1,7 +1,10 @@
 (function () {
   "use strict";
 
-  if (!window.ICLUB_PREVIEW_MODE) return;
+  if (!window.ICLUB_PREVIEW_MODE) return;\n\n  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "report-scope-v6-20260526";
+  console.info("[iClub Preview] postseason-preview build:", window.ICLUB_POSTSEASON_PREVIEW_BUILD);
+
+
 
   const DATA = {
     economics: {
@@ -498,18 +501,6 @@
     `).join("");
   }
 
-  function topicRows(key, tour) {
-    const d = DATA[key] || DATA.economics;
-    const rows = d.topics[tour] || d.topics[7] || [];
-
-    return rows.map((r, i) => `
-      <button type="button" class="ps2-topic ${i === 0 ? "is-on" : ""}" data-topic="${esc(r[0])}" data-available="${r[1]}" data-total="${r[2]}">
-        <span>${esc(r[0])}</span>
-        <small>${r[1]}/${r[2]}</small>
-      </button>
-    `).join("");
-  }
-
   function showPractice(key, context = {}) {
     const d = DATA[key] || DATA.economics;
     const scope = String(context.scope || "season");
@@ -923,6 +914,29 @@
       .ps2-next-action { font-size:15px; line-height:1.25; font-weight:950; color:var(--text); margin-bottom:10px; }
       .ps2-steps.mini { gap:7px; }
       .ps2-report-btn { width:100%; margin-top:10px; min-height:40px; }
+      .ps2-scope-tabs {
+        position:sticky; top:-14px; z-index:5;
+        background:#f3f6fb; padding:8px 0 10px;
+        display:flex; gap:7px; overflow-x:auto; scrollbar-width:none;
+        border-bottom:1px solid rgba(226,232,240,.85);
+        margin:0 -2px 10px;
+      }
+      .ps2-scope-tabs::-webkit-scrollbar { display:none; }
+      .ps2-scope-tabs button {
+        flex:0 0 auto;
+        border:1px solid rgba(226,232,240,.95);
+        background:#fff;
+        color:rgba(15,23,42,.68);
+        border-radius:999px;
+        padding:8px 10px;
+        font-size:11px;
+        font-weight:900;
+      }
+      .ps2-scope-tabs button.is-on {
+        background:rgba(37,99,235,.12);
+        border-color:rgba(37,99,235,.24);
+        color:#2563eb;
+      }
 
     `;
     document.head.appendChild(style);
