@@ -164,22 +164,60 @@
     bind(wrap);
   }
 
+  let ps2ScrollY = 0;
+
+  function lockPs2Scroll() {
+    ps2ScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+
+    document.documentElement.classList.add("ps2-modal-open");
+    document.body.classList.add("ps2-modal-open");
+
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${ps2ScrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
+    document.body.style.overflow = "hidden";
+  }
+
+  function unlockPs2Scroll() {
+    document.documentElement.classList.remove("ps2-modal-open");
+    document.body.classList.remove("ps2-modal-open");
+
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
+    document.body.style.overflow = "";
+
+    try {
+      window.scrollTo(0, ps2ScrollY || 0);
+    } catch {}
+  }
+
   function openModal(html) {
     const root = document.getElementById("modal-root");
     if (!root) return;
 
+    lockPs2Scroll();
+
     root.innerHTML = `<div class="ps2-backdrop">${html}</div>`;
     root.setAttribute("aria-hidden", "false");
     root.classList.add("is-open");
+
     bind(root);
   }
 
   function closeModal() {
     const root = document.getElementById("modal-root");
     if (!root) return;
+
     root.innerHTML = "";
     root.setAttribute("aria-hidden", "true");
     root.classList.remove("is-open");
+
+    unlockPs2Scroll();
   }
 
   function subjectChoiceCards() {
@@ -487,16 +525,33 @@
   }
 
   function bind(root = document) {
-    root.querySelectorAll("[data-ps2-bound]").forEach(() => {});
+    if (!root) return;
+    if (root.__ps2Bound === true) return;
+    root.__ps2Bound = true;
 
     root.addEventListener("click", function (ev) {
+      const backdrop = ev.target.closest(".ps2-backdrop");
+      if (backdrop && ev.target === backdrop) {
+        ev.preventDefault();
+        closeModal();
+        return;
+      }
+
       const actionBtn = ev.target.closest("[data-ps2-action]");
       const modeBtn = ev.target.closest(".ps2-mode");
       const pill = ev.target.closest(".ps2-pills span");
       const topic = ev.target.closest(".ps2-topic");
+      const repeat = ev.target.closest("[data-repeat]");
+
+      if (repeat) {
+        updateAvailability();
+        return;
+      }
 
       if (modeBtn) {
         ev.preventDefault();
+        ev.stopPropagation();
+
         const modal = modeBtn.closest(".ps2-modal");
         if (modal) {
           modal.dataset.mode = modeBtn.dataset.mode || "regular";
@@ -507,6 +562,8 @@
 
       if (pill) {
         ev.preventDefault();
+        ev.stopPropagation();
+
         if (pill.classList.contains("is-disabled")) return;
 
         const group = pill.closest(".ps2-pills");
@@ -517,12 +574,15 @@
         if (modal && group?.dataset.filter === "tour") {
           updateTopicsForTour(modal, modal.dataset.practiceSubject, pill.dataset.value || "7");
         }
+
         updateAvailability();
         return;
       }
 
       if (topic) {
         ev.preventDefault();
+        ev.stopPropagation();
+
         topic.classList.toggle("is-on");
         updateAvailability();
         return;
@@ -531,15 +591,36 @@
       if (!actionBtn) return;
 
       ev.preventDefault();
+      ev.stopPropagation();
+
       const action = actionBtn.dataset.ps2Action;
       const key = actionBtn.dataset.subject || "economics";
 
-      if (action === "plan") showPlan();
-      if (action === "report") showReport(key);
-      if (action === "practice") showPractice(key);
-      if (action === "close") closeModal();
-      if (action === "start-practice") showPracticePreview();
-    }, { once: true });
+      if (action === "plan") {
+        showPlan();
+        return;
+      }
+
+      if (action === "report") {
+        showReport(key);
+        return;
+      }
+
+      if (action === "practice") {
+        showPractice(key);
+        return;
+      }
+
+      if (action === "close") {
+        closeModal();
+        return;
+      }
+
+      if (action === "start-practice") {
+        showPracticePreview();
+        return;
+      }
+    });
   }
 
   function injectStyles() {
@@ -574,6 +655,9 @@
       .ps2-weak.mini { margin-top:0; }
       .ps2-actions { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:11px; }
       .ps2-actions .btn { min-height:40px; padding-left:8px; padding-right:8px; }
+      html.ps2-modal-open, body.ps2-modal-open { overscroll-behavior:none; }
+      .ps2-backdrop { overscroll-behavior:none; touch-action:none; }
+      .ps2-modal { overscroll-behavior:contain; touch-action:auto; }
       .ps2-backdrop { position:fixed; inset:0; z-index:10000; background:rgba(15,23,42,.58); display:flex; align-items:flex-end; justify-content:center; }
       .ps2-modal { width:min(390px, calc(100vw - 16px)); max-height:calc(100vh - 28px); overflow:auto; padding:14px; margin-bottom:8px; }
       .ps2-modal-top { display:flex; gap:12px; align-items:flex-start; margin-bottom:12px; }
