@@ -1,7 +1,7 @@
 (function () {
   "use strict";
 
-  if (!window.ICLUB_PREVIEW_MODE) return;\n\n  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "report-scope-v6-20260526";
+  if (!window.ICLUB_PREVIEW_MODE) return;\n\n  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "report-scope-v7-20260526";
   console.info("[iClub Preview] postseason-preview build:", window.ICLUB_POSTSEASON_PREVIEW_BUILD);
 
 
