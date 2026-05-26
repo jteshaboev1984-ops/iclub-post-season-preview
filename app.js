@@ -13639,9 +13639,8 @@ function getPostSeasonSubjectCardSafeHTML(subjectKey, visualHTML = "") {
 function renderPostSeasonHomeSafePreview() {
   if (!isPostSeasonPreviewEnabled()) return;
 
-  const content = document.querySelector("#view-home .content");
   const oldList = document.getElementById("home-competitive-list");
-  if (!content || !oldList) return;
+  if (!oldList) return;
 
   const oldBlock = oldList.closest(".home-block") || oldList.parentElement;
   if (!oldBlock || !oldBlock.parentNode) return;
@@ -13783,13 +13782,41 @@ function renderPostSeasonSubjectHubSafePreview(subjectKey) {
   bindPostSeasonPreviewActions(block);
 }
 
-// Small stabilizer only. No MutationObserver. No interval.
-window.addEventListener("load", () => {
+// Small stabilizer only. No MutationObserver.
+function schedulePostSeasonSafePreviewRender() {
   if (!isPostSeasonPreviewEnabled()) return;
-  setTimeout(() => { try { renderPostSeasonHomeSafePreview(); } catch {} }, 100);
-  setTimeout(() => { try { renderPostSeasonHomeSafePreview(); } catch {} }, 500);
-  setTimeout(() => { try { bindPostSeasonPreviewActions(document); } catch {} }, 600);
-});
+
+  let tries = 0;
+  const run = () => {
+    tries += 1;
+    try { renderPostSeasonHomeSafePreview(); } catch {}
+    try { bindPostSeasonPreviewActions(document); } catch {}
+
+    if (tries >= 24) {
+      clearInterval(timer);
+    }
+  };
+
+  const timer = setInterval(run, 180);
+  run();
+  setTimeout(run, 80);
+  setTimeout(run, 350);
+  setTimeout(run, 900);
+}
+
+schedulePostSeasonSafePreviewRender();
+
+document.addEventListener("DOMContentLoaded", schedulePostSeasonSafePreviewRender);
+window.addEventListener("load", schedulePostSeasonSafePreviewRender);
+
+document.addEventListener("click", (ev) => {
+  if (!isPostSeasonPreviewEnabled()) return;
+
+  const navHit = ev.target?.closest?.(".bottom-nav button, .tab-btn, [data-tab], .home-competitive-btn, .nav-btn");
+  if (!navHit) return;
+
+  setTimeout(schedulePostSeasonSafePreviewRender, 80);
+}, true);
 
 
      // ---------------------------
@@ -14663,6 +14690,9 @@ function renderHome() {
 
 // ✅ Home extra accordion (restore open/closed)
 applyHomeExtraState();
+try { renderPostSeasonHomeSafePreview(); } catch {}
+try { schedulePostSeasonSafePreviewRender(); } catch {}
+
 try { renderPostSeasonHomeSafePreview(); } catch {}
 
 }
