@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "report-logic-v9-20260526";
+  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "report-layout-v10-20260526";
   console.info("[iClub Preview] post-season build:", window.ICLUB_POSTSEASON_PREVIEW_BUILD);
 
 
@@ -527,15 +527,34 @@
           <div class="ps2-muted">${esc(analysisText)}</div>
         </div>
 
+        <div class="ps2-panel soft">
+          <div class="ps2-panel-title">Подробный отчёт</div>
+          <div class="ps2-muted">${isTour
+            ? `Отдельный отчёт по Тур ${tourNo}: результат, время, темы, ошибки и обезличенное сравнение с группой.`
+            : "Общий отчёт за сезон: активность, динамика, слабые темы и обезличенное сравнение по классу, району и региону."}</div>
+          <button type="button"
+            class="btn ps2-report-btn"
+            data-ps2-action="detailed-report"
+            data-subject="${esc(key)}"
+            data-scope="${esc(activeScope)}"
+            data-tour="${esc(tourNo || "")}">${esc(detailedButton)}</button>
+        </div>
+
         <div class="ps2-panel">
           <div class="ps2-panel-title">Сильные темы</div>
           <div class="ps2-muted ps2-academic-note">Показаны темы с высокой точностью и достаточным числом ответов.</div>
           <div class="ps2-chip-row">${strong.map(x => `<span class="good">${esc(formatStrongTopic(x))}</span>`).join("")}</div>
         </div>
 
-        <div class="ps2-panel">
+        <div class="ps2-panel ps2-weak-panel">
           <div class="ps2-panel-title">Темы для усиления</div>
           <div class="ps2-chip-row">${weak.map(x => `<span class="warn">${esc(formatWeakTopic(x))}</span>`).join("")}</div>
+          <button type="button"
+            class="btn primary ps2-weak-practice-btn"
+            data-ps2-action="practice"
+            data-subject="${esc(key)}"
+            data-scope="${esc(activeScope)}"
+            data-tour="${esc(tourNo || "")}">${esc(isTour ? `Практика по Тур ${tourNo}` : "Практика по этим темам")}</button>
         </div>
 
         <div class="ps2-panel">
@@ -546,29 +565,6 @@
             <div><b>2</b><span>${isTour ? "Соберите практику по темам этого тура." : "Соберите mixed practice."}</span></div>
             <div><b>3</b><span>Повторите вопросы до стабильного результата.</span></div>
           </div>
-        </div>
-
-        <div class="ps2-panel soft">
-          <div class="ps2-panel-title">Подробный отчёт</div>
-          <div class="ps2-muted">${isTour
-            ? `Можно сформировать отдельный отчёт по Тур ${tourNo}: результат, время, темы, ошибки и сравнение с группой.`
-            : "Можно сформировать общий отчёт за сезон: активность, динамика, слабые темы и обезличенное сравнение по классу, району и региону."}</div>
-          <button type="button"
-            class="btn ps2-report-btn"
-            data-ps2-action="detailed-report"
-            data-subject="${esc(key)}"
-            data-scope="${esc(activeScope)}"
-            data-tour="${esc(tourNo || "")}">${esc(detailedButton)}</button>
-        </div>
-
-        <div class="ps2-actions">
-          <button type="button"
-            class="btn primary"
-            data-ps2-action="practice"
-            data-subject="${esc(key)}"
-            data-scope="${esc(activeScope)}"
-            data-tour="${esc(tourNo || "")}">Практика</button>
-          <button type="button" class="btn" data-ps2-action="close">Закрыть</button>
         </div>
       </div>
     `);
@@ -627,14 +623,13 @@
             : "Общий отчёт считается по всем турам, практике, активности и повторяющимся ошибкам."}</div>
         </div>
 
-        <div class="ps2-actions">
+        <div class="ps2-actions ps2-single-action">
           <button type="button"
             class="btn primary"
             data-ps2-action="practice"
             data-subject="${esc(key)}"
             data-scope="${esc(scope)}"
-            data-tour="${esc(tourNo || "")}">Практика</button>
-          <button type="button" class="btn" data-ps2-action="close">Закрыть</button>
+            data-tour="${esc(tourNo || "")}">Перейти к практике</button>
         </div>
       </div>
     `);
@@ -1068,6 +1063,18 @@
       .ps2-next-action { font-size:15px; line-height:1.25; font-weight:950; color:var(--text); margin-bottom:10px; }
       .ps2-steps.mini { gap:7px; }
       .ps2-report-btn { width:100%; margin-top:10px; min-height:40px; }
+      .ps2-weak-panel {
+        border-color:rgba(245,158,11,.24);
+        background:linear-gradient(135deg, rgba(245,158,11,.055), #fff);
+      }
+      .ps2-weak-practice-btn {
+        width:100%;
+        margin-top:12px;
+        min-height:42px;
+      }
+      .ps2-single-action {
+        grid-template-columns:1fr;
+      }
       .ps2-academic-note {
         margin-top:-2px;
         margin-bottom:8px;
