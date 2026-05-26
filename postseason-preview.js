@@ -293,40 +293,189 @@
     `);
   }
 
-  function showReport(key) {
+  function getTourReportData(key, tourNo) {
     const d = DATA[key] || DATA.economics;
+    const n = Number(tourNo || 7);
+
+    const resultMap = {
+      economics: { 1: 56, 2: 64, 3: 85, 4: 72, 5: 76, 6: 70, 7: 74 },
+      mathematics: { 1: 48, 2: 61, 3: 66, 4: 59, 5: 82, 6: 68, 7: 71 }
+    };
+
+    const base = resultMap[key] || resultMap.economics;
+    const result = base[n] || Number(String(d.avg).replace("%", "")) || 70;
+    const mistakes = Math.max(2, Math.round((100 - result) / 5));
+    const regionRank = key === "mathematics" ? 18 + (7 - n) : 12 + (7 - n);
+
+    const rows = d.topics[n] || d.topics[7] || [];
+    const tourWeak = rows.slice(0, 2).map(r => r[0]);
+
+    return {
+      tourNo: n,
+      result,
+      mistakes,
+      regionRank,
+      time: n % 2 === 0 ? "14:20" : "12:45",
+      weak: tourWeak.length ? tourWeak : d.weakList.slice(0, 2),
+      strong: d.strong.slice(0, 2)
+    };
+  }
+
+  function reportScopeTabs(key, activeScope) {
+    const chips = [
+      ["season", "Все 7 туров"],
+      ["tour1", "Тур 1"],
+      ["tour2", "Тур 2"],
+      ["tour3", "Тур 3"],
+      ["tour4", "Тур 4"],
+      ["tour5", "Тур 5"],
+      ["tour6", "Тур 6"],
+      ["tour7", "Тур 7"]
+    ];
+
+    return `
+      <div class="ps2-scope-tabs">
+        ${chips.map(([scope, label]) => `
+          <button type="button"
+            class="${scope === activeScope ? "is-on" : ""}"
+            data-ps2-action="report"
+            data-subject="${esc(key)}"
+            data-scope="${esc(scope)}">${esc(label)}</button>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function showReport(key, scope = "season") {
+    const d = DATA[key] || DATA.economics;
+    const activeScope = String(scope || "season");
+    const isTour = activeScope.startsWith("tour");
+    const tourNo = isTour ? Number(activeScope.replace("tour", "")) || 7 : null;
+    const t = isTour ? getTourReportData(key, tourNo) : null;
+
+    const title = isTour ? `${d.title} · Тур ${tourNo}` : d.title;
+    const subtitle = isTour
+      ? "Итог выбранного тура."
+      : "Общий итог по всем 7 турам.";
+
+    const metrics = isTour
+      ? `
+        <div><b>${t.result}%</b><span>Результат</span></div>
+        <div><b>#${t.regionRank}</b><span>Регион</span></div>
+        <div><b>${t.mistakes}</b><span>Ошибки</span></div>
+        <div><b>${t.time}</b><span>Время</span></div>
+      `
+      : `
+        <div><b>${esc(d.tours)}</b><span>Туры</span></div>
+        <div><b>${esc(d.avg)}</b><span>Средний результат</span></div>
+        <div><b>${esc(d.rank)}</b><span>Место в регионе</span></div>
+        <div><b>18</b><span>Практики</span></div>
+      `;
+
+    const strong = isTour ? t.strong : d.strong;
+    const weak = isTour ? t.weak : d.weakList;
+
+    const readiness = isTour
+      ? `Тур ${tourNo}: ${t.mistakes} ошибок для разбора`
+      : "Средняя готовность: 3 темы требуют усиления";
+
+    const dynamics = isTour
+      ? `В этом туре главный фокус — ${weak.slice(0, 2).join(" и ")}.`
+      : "С начала сезона результат вырос примерно на 18 пунктов, но часть тем остаётся нестабильной.";
+
+    const nextAction = isTour
+      ? `Тренировать ошибки Тур ${tourNo}`
+      : "Собрать практику по 3 темам перед Grand Olympiad";
 
     openModal(`
       <div class="ps2-modal">
         <div class="ps2-modal-top">
           <button type="button" class="ps2-back" data-ps2-action="close">←</button>
           <div>
-            <div class="ps2-kicker">ИТОГ СЕЗОНА</div>
-            <div class="ps2-modal-title">${esc(d.title)}</div>
-            <div class="ps2-muted">Краткий итог сезона по предмету.</div>
+            <div class="ps2-kicker">${isTour ? "ИТОГ ТУРА" : "ИТОГ СЕЗОНА"}</div>
+            <div class="ps2-modal-title">${esc(title)}</div>
+            <div class="ps2-muted">${esc(subtitle)}</div>
           </div>
         </div>
 
+        ${reportScopeTabs(key, activeScope)}
+
         <div class="ps2-report-grid">
-          <div><b>${esc(d.tours)}</b><span>Туры</span></div>
-          <div><b>${esc(d.avg)}</b><span>Средний результат</span></div>
-          <div><b>${esc(d.rank)}</b><span>Место в регионе</span></div>
-          <div><b>18</b><span>Практики</span></div>
+          ${metrics}
+        </div>
+
+        <div class="ps2-panel ps2-readiness">
+          <div class="ps2-panel-title">Готовность к Grand Olympiad</div>
+          <div class="ps2-readiness-main">${esc(readiness)}</div>
+          <div class="ps2-muted">${esc(dynamics)}</div>
         </div>
 
         <div class="ps2-panel">
           <div class="ps2-panel-title">Сильные темы</div>
-          <div class="ps2-chip-row">${d.strong.map(x => `<span class="good">${esc(x)}</span>`).join("")}</div>
+          <div class="ps2-chip-row">${strong.map(x => `<span class="good">${esc(x)}</span>`).join("")}</div>
         </div>
 
         <div class="ps2-panel">
           <div class="ps2-panel-title">Темы для усиления</div>
-          <div class="ps2-chip-row">${d.weakList.map(x => `<span class="warn">${esc(x)}</span>`).join("")}</div>
+          <div class="ps2-chip-row">${weak.map(x => `<span class="warn">${esc(x)}</span>`).join("")}</div>
+        </div>
+
+        <div class="ps2-panel">
+          <div class="ps2-panel-title">Следующий шаг</div>
+          <div class="ps2-next-action">${esc(nextAction)}</div>
+          <div class="ps2-steps mini">
+            <div><b>1</b><span>${isTour ? "Разберите ошибки этого тура." : "Выберите темы для усиления."}</span></div>
+            <div><b>2</b><span>${isTour ? "Соберите практику по темам тура." : "Соберите mixed practice."}</span></div>
+            <div><b>3</b><span>Повторите вопросы до стабильного результата.</span></div>
+          </div>
         </div>
 
         <div class="ps2-panel soft">
           <div class="ps2-panel-title">Подробный отчёт</div>
-          <div class="ps2-muted">Позже здесь можно дать расширенный отчёт по запросу: активность, динамика, слабые темы и обезличенное сравнение по классу, району и региону.</div>
+          <div class="ps2-muted">Можно сформировать расширенный отчёт: активность, динамика, слабые темы и обезличенное сравнение по классу, району и региону.</div>
+          <button type="button" class="btn ps2-report-btn" data-ps2-action="detailed-report" data-subject="${esc(key)}">Сформировать подробный отчёт</button>
+        </div>
+
+        <div class="ps2-actions">
+          <button type="button"
+            class="btn primary"
+            data-ps2-action="practice"
+            data-subject="${esc(key)}"
+            data-scope="${esc(activeScope)}"
+            data-tour="${esc(tourNo || "")}">Практика</button>
+          <button type="button" class="btn" data-ps2-action="close">Закрыть</button>
+        </div>
+      </div>
+    `);
+  }
+
+  function showDetailedReport(key) {
+    const d = DATA[key] || DATA.economics;
+
+    openModal(`
+      <div class="ps2-modal">
+        <div class="ps2-modal-top">
+          <button type="button" class="ps2-back" data-ps2-action="report" data-subject="${esc(key)}">←</button>
+          <div>
+            <div class="ps2-kicker">ПОДРОБНЫЙ ОТЧЁТ</div>
+            <div class="ps2-modal-title">${esc(d.title)}</div>
+            <div class="ps2-muted">Preview структуры расширенного отчёта.</div>
+          </div>
+        </div>
+
+        <div class="ps2-panel">
+          <div class="ps2-panel-title">Что войдёт</div>
+          <div class="ps2-steps">
+            <div><b>1</b><span>Активные дни и регулярность занятий.</span></div>
+            <div><b>2</b><span>Динамика по турам и практике.</span></div>
+            <div><b>3</b><span>Темы, где ошибки повторялись чаще всего.</span></div>
+            <div><b>4</b><span>Обезличенное сравнение по классу, району и региону.</span></div>
+          </div>
+        </div>
+
+        <div class="ps2-panel soft">
+          <div class="ps2-panel-title">Важно</div>
+          <div class="ps2-muted">В main такой отчёт лучше считать заранее SQL-ом и показывать только по запросу, чтобы не перегружать основной экран.</div>
         </div>
 
         <div class="ps2-actions">
@@ -349,17 +498,36 @@
     `).join("");
   }
 
-  function showPractice(key) {
+  function topicRows(key, tour) {
     const d = DATA[key] || DATA.economics;
+    const rows = d.topics[tour] || d.topics[7] || [];
+
+    return rows.map((r, i) => `
+      <button type="button" class="ps2-topic ${i === 0 ? "is-on" : ""}" data-topic="${esc(r[0])}" data-available="${r[1]}" data-total="${r[2]}">
+        <span>${esc(r[0])}</span>
+        <small>${r[1]}/${r[2]}</small>
+      </button>
+    `).join("");
+  }
+
+  function showPractice(key, context = {}) {
+    const d = DATA[key] || DATA.economics;
+    const scope = String(context.scope || "season");
+    const tourFromContext = Number(context.tour || 0);
+    const defaultTour = tourFromContext || 7;
+
+    const sourceText = scope.startsWith("tour")
+      ? `Источник: Тур ${defaultTour}`
+      : "Источник: все 7 туров";
 
     openModal(`
-      <div class="ps2-modal" data-practice-subject="${esc(key)}" data-mode="regular">
+      <div class="ps2-modal" data-practice-subject="${esc(key)}" data-mode="regular" data-practice-scope="${esc(scope)}" data-practice-tour="${esc(defaultTour)}">
         <div class="ps2-modal-top">
           <button type="button" class="ps2-back" data-ps2-action="close">←</button>
           <div>
             <div class="ps2-kicker">ПРАКТИКА</div>
             <div class="ps2-modal-title">Выберите практику</div>
-            <div class="ps2-muted">${esc(d.title)} · подготовка к финалу</div>
+            <div class="ps2-muted">${esc(d.title)} · ${esc(sourceText)}</div>
           </div>
         </div>
 
@@ -369,8 +537,8 @@
             <span>Продолжайте привычную практику по предмету.</span>
           </button>
           <button type="button" class="ps2-mode" data-mode="weak">
-            <b>Слабые темы</b>
-            <span>${esc(d.weak)} темы для усиления по итогам сезона.</span>
+            <b>${scope.startsWith("tour") ? `Ошибки Тур ${defaultTour}` : "Слабые темы сезона"}</b>
+            <span>${esc(d.weak)} темы для усиления по выбранному итогу.</span>
           </button>
           <button type="button" class="ps2-mode" data-mode="custom">
             <b>Собрать практику</b>
@@ -382,15 +550,15 @@
           <div class="ps2-filter">
             <div class="ps2-panel-title">Тур</div>
             <div class="ps2-pills" data-filter="tour">
-              <span data-value="5">5</span>
-              <span data-value="6">6</span>
-              <span class="is-on" data-value="7">7</span>
+              <span class="${defaultTour === 5 ? "is-on" : ""}" data-value="5">5</span>
+              <span class="${defaultTour === 6 ? "is-on" : ""}" data-value="6">6</span>
+              <span class="${defaultTour === 7 ? "is-on" : ""}" data-value="7">7</span>
             </div>
           </div>
 
           <div class="ps2-filter">
             <div class="ps2-panel-title">Темы тура</div>
-            <div class="ps2-topic-list">${topicRows(key, 7)}</div>
+            <div class="ps2-topic-list">${topicRows(key, defaultTour)}</div>
             <div class="ps2-available">Доступно новых вопросов: <b>13</b></div>
             <label class="ps2-check">
               <input type="checkbox" data-repeat />
@@ -631,12 +799,20 @@
       }
 
       if (action === "report") {
-        showReport(key);
+        showReport(key, actionBtn.dataset.scope || "season");
+        return;
+      }
+
+      if (action === "detailed-report") {
+        showDetailedReport(key);
         return;
       }
 
       if (action === "practice") {
-        showPractice(key);
+        showPractice(key, {
+          scope: actionBtn.dataset.scope || "season",
+          tour: actionBtn.dataset.tour || ""
+        });
         return;
       }
 
@@ -733,6 +909,21 @@
       .ps2-chip-row span { border-radius:999px; padding:7px 9px; font-size:11px; font-weight:900; }
       .ps2-chip-row .good { background:rgba(34,197,94,.12); color:#15803d; }
       .ps2-chip-row .warn { background:rgba(245,158,11,.13); color:#b45309; }
+      .ps2-scope-tabs { display:flex; gap:7px; overflow-x:auto; padding:2px 0 10px; margin-top:-2px; scrollbar-width:none; }
+      .ps2-scope-tabs::-webkit-scrollbar { display:none; }
+      .ps2-scope-tabs button {
+        flex:0 0 auto; border:1px solid rgba(226,232,240,.95); background:#fff; color:rgba(15,23,42,.68);
+        border-radius:999px; padding:8px 10px; font-size:11px; font-weight:900;
+      }
+      .ps2-scope-tabs button.is-on {
+        background:rgba(37,99,235,.12); border-color:rgba(37,99,235,.24); color:#2563eb;
+      }
+      .ps2-readiness { border-color:rgba(37,99,235,.20); background:linear-gradient(135deg, rgba(37,99,235,.07), #fff); }
+      .ps2-readiness-main { font-size:15px; line-height:1.25; font-weight:950; color:var(--text); margin-bottom:5px; }
+      .ps2-next-action { font-size:15px; line-height:1.25; font-weight:950; color:var(--text); margin-bottom:10px; }
+      .ps2-steps.mini { gap:7px; }
+      .ps2-report-btn { width:100%; margin-top:10px; min-height:40px; }
+
     `;
     document.head.appendChild(style);
   }
