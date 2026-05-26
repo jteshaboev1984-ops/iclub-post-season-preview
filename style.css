@@ -6714,3 +6714,57 @@ button.is-loading { opacity: .85; }
     grid-template-columns: 1fr;
   }
 }
+
+
+
+/* Final plan subject chooser */
+
+.ps-plan-subject-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.ps-plan-subject-card {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+  padding: 12px;
+}
+
+.ps-plan-subject-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ps-plan-subject-title {
+  font-size: 15px;
+  line-height: 1.2;
+  font-weight: 950;
+  color: var(--text);
+}
+
+.ps-plan-subject-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  margin-top: 10px;
+}
+
+.ps-plan-subject-actions .btn {
+  min-height: 40px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+@media (max-width: 360px) {
+  .ps-plan-subject-main {
+    flex-direction: column;
+  }
+
+  .ps-plan-subject-actions {
+    grid-template-columns: 1fr;
+  }
+}
