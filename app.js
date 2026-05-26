@@ -13789,7 +13789,7 @@ function schedulePostSeasonSafePreviewRender() {
   let tries = 0;
   const run = () => {
     tries += 1;
-    try { renderPostSeasonHomeSafePreview(); } catch {}
+    
     try { bindPostSeasonPreviewActions(document); } catch {}
 
     if (tries >= 24) {
@@ -14690,10 +14690,10 @@ function renderHome() {
 
 // ✅ Home extra accordion (restore open/closed)
 applyHomeExtraState();
-try { renderPostSeasonHomeSafePreview(); } catch {}
-try { schedulePostSeasonSafePreviewRender(); } catch {}
 
-try { renderPostSeasonHomeSafePreview(); } catch {}
+
+
+
 
 }
 
@@ -15812,7 +15812,7 @@ async function renderSubjectHubMentorCard(subjectKey) {
 
         // ✅ Subject mentor card
     await renderSubjectHubMentorCard(subjectKey).catch(() => null);
-    try { renderPostSeasonSubjectHubSafePreview(subjectKey); } catch {}
+    
 
   }
   // ---------------------------
