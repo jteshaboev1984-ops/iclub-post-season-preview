@@ -252,27 +252,42 @@
         </div>
 
         <div class="ps2-panel">
-          <div class="ps2-panel-title">Формат</div>
+          <div class="ps2-panel-title">Формат финала</div>
           <div class="ps2-grand-stats inside">
             <div><b>20</b><span>вопросов</span></div>
             <div><b>Mixed</b><span>сложность</span></div>
-            <div><b>точность</b><span>+ время</span></div>
+            <div><b>1</b><span>попытка</span></div>
           </div>
         </div>
 
         <div class="ps2-panel">
-          <div class="ps2-panel-title">Как подготовиться</div>
+          <div class="ps2-panel-title">Что будет оцениваться</div>
           <div class="ps2-steps">
-            <div><b>1</b><span>Выберите предмет ниже.</span></div>
-            <div><b>2</b><span>Откройте итог и посмотрите слабые темы.</span></div>
-            <div><b>3</b><span>Соберите практику по нужным турам и темам.</span></div>
-            <div><b>4</b><span>Закройте слабые темы до финала.</span></div>
+            <div><b>1</b><span>Точность ответов.</span></div>
+            <div><b>2</b><span>Работа со смешанными темами, а не с одним разделом.</span></div>
+            <div><b>3</b><span>Умение не повторять ошибки из 7 туров.</span></div>
+            <div><b>4</b><span>Время прохождения при равных результатах.</span></div>
           </div>
         </div>
 
         <div class="ps2-panel">
-          <div class="ps2-panel-title">Выберите предмет</div>
-          <div class="ps2-plan-list">${subjectChoiceCards()}</div>
+          <div class="ps2-panel-title">Как готовиться</div>
+          <div class="ps2-steps">
+            <div><b>1</b><span>Откройте итог сезона по каждому предмету.</span></div>
+            <div><b>2</b><span>Посмотрите темы для усиления.</span></div>
+            <div><b>3</b><span>Соберите практику по нужным турам и темам.</span></div>
+            <div><b>4</b><span>Повторите уже закрытые вопросы только если хотите закрепить материал.</span></div>
+          </div>
+        </div>
+
+        <div class="ps2-panel soft">
+          <div class="ps2-panel-title">Важно</div>
+          <div class="ps2-muted">Grand Olympiad — это отдельный финальный этап сезона, а не ещё один обычный тур.</div>
+        </div>
+
+        <div class="ps2-actions">
+          <button type="button" class="btn primary" data-ps2-action="to-summaries">К итогам по предметам</button>
+          <button type="button" class="btn" data-ps2-action="close">Закрыть</button>
         </div>
       </div>
     `);
@@ -408,7 +423,7 @@
 
         <div class="ps2-actions">
           <button type="button" class="btn primary" data-ps2-action="start-practice">Начать обычную практику</button>
-          <button type="button" class="btn" data-ps2-action="report" data-subject="${esc(key)}">Итог сезона</button>
+          <button type="button" class="btn" data-ps2-action="close">Закрыть</button>
         </div>
       </div>
     `);
@@ -484,7 +499,11 @@
     const key = modal.dataset.practiceSubject;
     const d = DATA[key] || DATA.economics;
     const mode = modal.dataset.mode || "regular";
-    const modeText = mode === "weak" ? "Слабые темы" : mode === "custom" ? "Собранная практика" : "Обычная практика";
+
+    const modeText =
+      mode === "weak" ? "Слабые темы" :
+      mode === "custom" ? "Собранная практика" :
+      "Обычная практика";
 
     const topics = Array.from(modal.querySelectorAll(".ps2-topic.is-on"))
       .map(x => x.dataset.topic)
@@ -498,22 +517,32 @@
         <div class="ps2-modal-top">
           <button type="button" class="ps2-back" data-ps2-action="practice" data-subject="${esc(key)}">←</button>
           <div>
-            <div class="ps2-kicker">ПРАКТИКА СОБРАНА</div>
+            <div class="ps2-kicker">ПРАКТИКА ГОТОВА</div>
             <div class="ps2-modal-title">${esc(d.title)}</div>
             <div class="ps2-muted">${esc(modeText)} · ${esc(count)} вопросов · ${esc(diff)}</div>
           </div>
         </div>
 
         <div class="ps2-panel">
-          <div class="ps2-panel-title">Фокус</div>
+          <div class="ps2-panel-title">Фокус практики</div>
           <div class="ps2-chip-row">
             ${(topics.length ? topics : d.weakList).slice(0, 4).map(x => `<span class="warn">${esc(x)}</span>`).join("")}
           </div>
         </div>
 
+        <div class="ps2-panel">
+          <div class="ps2-panel-title">Как это должно работать в main</div>
+          <div class="ps2-steps">
+            <div><b>1</b><span>Загружаются вопросы из выбранного пула.</span></div>
+            <div><b>2</b><span>Пользователь отвечает в привычном quiz-экране.</span></div>
+            <div><b>3</b><span>Ответы сохраняются после каждого вопроса.</span></div>
+            <div><b>4</b><span>После завершения открываются результат, ошибки и рекомендации.</span></div>
+          </div>
+        </div>
+
         <div class="ps2-panel soft">
           <div class="ps2-panel-title">Preview</div>
-          <div class="ps2-muted">Здесь показана логика сборки. В main этот запуск будет открывать обычный экран Practice Quiz с вопросами из реального банка.</div>
+          <div class="ps2-muted">Здесь показана логика сборки. В рабочем app этот запуск должен открывать обычный Practice Quiz, а не отдельную заглушку.</div>
         </div>
 
         <div class="ps2-actions">
@@ -616,6 +645,15 @@
         return;
       }
 
+      if (action === "to-summaries") {
+        closeModal();
+        setTimeout(() => {
+          const target = document.querySelector(".ps2-section");
+          if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 60);
+        return;
+      }
+
       if (action === "start-practice") {
         showPracticePreview();
         return;
@@ -658,8 +696,8 @@
       html.ps2-modal-open, body.ps2-modal-open { overscroll-behavior:none; }
       .ps2-backdrop { overscroll-behavior:none; touch-action:none; }
       .ps2-modal { overscroll-behavior:contain; touch-action:auto; }
-      .ps2-backdrop { position:fixed; inset:0; z-index:10000; background:rgba(15,23,42,.58); display:flex; align-items:flex-end; justify-content:center; }
-      .ps2-modal { width:min(390px, calc(100vw - 16px)); max-height:calc(100vh - 28px); overflow:auto; padding:14px; margin-bottom:8px; }
+      .ps2-backdrop { position:fixed; inset:0; z-index:10000; background:#f3f6fb; display:flex; align-items:stretch; justify-content:center; }
+      .ps2-modal { width:min(390px, 100vw); height:100dvh; max-height:100dvh; overflow:auto; padding:14px; margin:0; border-radius:0; box-shadow:none; }
       .ps2-modal-top { display:flex; gap:12px; align-items:flex-start; margin-bottom:12px; }
       .ps2-back { width:36px; height:36px; border-radius:13px; border:1px solid var(--border); background:#fff; font-size:18px; font-weight:950; }
       .ps2-panel { padding:12px; margin-top:10px; }
