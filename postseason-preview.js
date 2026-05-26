@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "profile-hide-v15-safe-20260526";
+  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "grand-plan-actions-v16-20260526";
   console.info("[iClub Preview] post-season build:", window.ICLUB_POSTSEASON_PREVIEW_BUILD);
 
 
@@ -314,9 +314,8 @@
           <div class="ps2-muted">Grand Olympiad — это отдельный финальный этап сезона, а не ещё один обычный тур.</div>
         </div>
 
-        <div class="ps2-actions">
+        <div class="ps2-actions ps2-single-action">
           <button type="button" class="btn primary" data-ps2-action="to-summaries">К итогам по предметам</button>
-          <button type="button" class="btn" data-ps2-action="close">Закрыть</button>
         </div>
       </div>
     `);
