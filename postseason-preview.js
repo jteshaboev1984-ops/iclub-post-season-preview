@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "grand-final-flow-v17-20260530";
+  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "grand-final-polish-v18-20260530";
   console.info("[iClub Preview] post-season build:", window.ICLUB_POSTSEASON_PREVIEW_BUILD);
 
 
@@ -109,12 +109,12 @@
   const GRAND_FINAL_SUBJECT_KEY = "iclub_preview_grand_final_subject_v17";
 
   const GRAND_STATES = [
-    ["scheduled", "До финала"],
-    ["open", "Открыт"],
-    ["in_progress", "Начат"],
-    ["submitted", "Ответы приняты"],
-    ["finalizing", "Расчёт"],
-    ["results_ready", "Результаты"]
+    ["scheduled", "До открытия"],
+    ["open", "Финал открыт"],
+    ["in_progress", "Попытка начата"],
+    ["submitted", "Ответы сданы"],
+    ["finalizing", "Идёт расчёт"],
+    ["results_ready", "Итоги готовы"]
   ];
 
   const GRAND_RESULTS = {
@@ -180,13 +180,17 @@
 
   function grandStateSwitchHTML() {
     return `
-      <div class="ps2-grand-switch" aria-label="Grand Final preview states">
-        ${GRAND_STATES.map(([key, label]) => `
-          <button type="button"
-            class="${getGrandState() === key ? "is-on" : ""}"
-            data-ps2-action="grand-state"
-            data-state="${esc(key)}">${esc(label)}</button>
-        `).join("")}
+      <div class="ps2-grand-dev">
+        <div class="ps2-grand-switch-title">Проверка сценария</div>
+        <div class="ps2-grand-switch-hint">Выберите этап и посмотрите, как будет вести себя финальный блок.</div>
+        <div class="ps2-grand-switch" aria-label="Grand Final scenario states">
+          ${GRAND_STATES.map(([key, label]) => `
+            <button type="button"
+              class="${getGrandState() === key ? "is-on" : ""}"
+              data-ps2-action="grand-state"
+              data-state="${esc(key)}">${esc(label)}</button>
+          `).join("")}
+        </div>
       </div>
     `;
   }
@@ -201,15 +205,15 @@
       scheduled: {
         kicker: "ФИНАЛ СЕЗОНА",
         title: "Grand Olympiad",
-        sub: "Финальный этап после 7 туров.",
-        note: "Откроется через 5 дней. Подготовка идёт через итоги предметов и практику.",
+        sub: "Финальный этап по выбранным предметам.",
+        note: "Пока финал закрыт. Готовьтесь через итоги по предметам и практику.",
         actions: `<button type="button" class="btn primary ps2-full-btn" data-ps2-action="plan">Подробнее</button>`
       },
       open: {
         kicker: "ФИНАЛ ОТКРЫТ",
         title: "Grand Olympiad",
-        sub: "Доступен до 23:59.",
-        note: "Выберите предмет и начните финальную попытку. Результаты откроются после завершения финала.",
+        sub: "Выберите предмет и начните финальную попытку.",
+        note: "Результат, рейтинг и сертификат откроются после закрытия финала.",
         actions: `
           <div class="ps2-actions">
             <button type="button" class="btn primary" data-ps2-action="grand-select">Начать финал</button>
@@ -218,31 +222,31 @@
         `
       },
       in_progress: {
-        kicker: "ФИНАЛ НАЧАТ",
+        kicker: "ПОПЫТКА НАЧАТА",
         title: `${subject.title} · Grand Final`,
-        sub: "Таймер идёт.",
-        note: "Продолжите попытку. В main это будет существующий tour_attempt по финальному туру.",
+        sub: "Финальная попытка ещё не завершена.",
+        note: "Продолжите попытку. После сдачи ответы изменить нельзя.",
         actions: `<button type="button" class="btn primary ps2-full-btn" data-ps2-action="grand-continue" data-subject="${esc(subjectKey)}">Продолжить финал</button>`
       },
       submitted: {
-        kicker: "ОТВЕТЫ ПРИНЯТЫ",
+        kicker: "ОТВЕТЫ СДАНЫ",
         title: `${subject.title} · Grand Final`,
-        sub: "Результаты пока закрыты.",
-        note: "Рейтинг и сертификат откроются после завершения финального окна.",
+        sub: "Попытка принята.",
+        note: "Итоги появятся после закрытия финала и расчёта рейтинга.",
         actions: `<button type="button" class="btn primary ps2-full-btn" data-ps2-action="grand-submitted" data-subject="${esc(subjectKey)}">Статус попытки</button>`
       },
       finalizing: {
         kicker: "ИДЁТ РАСЧЁТ",
         title: "Grand Olympiad",
-        sub: "Результаты рассчитываются.",
-        note: "Сервер закрывает попытки, считает рейтинг и готовит сертификаты.",
-        actions: `<button type="button" class="btn primary ps2-full-btn" data-ps2-action="grand-finalizing">Подробнее о расчёте</button>`
+        sub: "Рейтинг и сертификаты готовятся.",
+        note: "Система считает результаты, места и сертификаты финала.",
+        actions: `<button type="button" class="btn primary ps2-full-btn" data-ps2-action="grand-finalizing">Как идёт расчёт</button>`
       },
       results_ready: {
-        kicker: "РЕЗУЛЬТАТЫ ГОТОВЫ",
+        kicker: "ИТОГИ ГОТОВЫ",
         title: `${subject.title} · ${result.score}/${result.total}`,
-        sub: `#${result.rankRegion} регион · #${result.rankCountry} общий`,
-        note: "Финальный рейтинг и сертификат доступны.",
+        sub: `#${result.rankRegion} в регионе · #${result.rankCountry} общий рейтинг`,
+        note: "Откройте результат, рейтинг или сертификат финала.",
         actions: `
           <div class="ps2-actions">
             <button type="button" class="btn primary" data-ps2-action="grand-result" data-subject="${esc(subjectKey)}">Открыть результат</button>
@@ -261,180 +265,17 @@
 
         <div class="ps2-grand-stats">
           <div><b>20</b><span>вопросов</span></div>
-          <div><b>Mixed</b><span>сложность</span></div>
-          <div><b>точность</b><span>+ время</span></div>
+          <div><b>1</b><span>попытка</span></div>
+          <div><b>score</b><span>+ время</span></div>
         </div>
 
         <div class="ps2-grand-note">${esc(cfg.note)}</div>
 
         ${cfg.actions}
 
-        <div class="ps2-grand-dev">
-          <div class="ps2-muted">Тест состояния финала:</div>
-          ${grandStateSwitchHTML()}
-        </div>
+        ${grandStateSwitchHTML()}
       </section>
     `;
-  }
-
-
-  function getCompList() {
-    return document.getElementById("home-competitive-list");
-  }
-
-  function getOldBlock() {
-    const list = getCompList();
-    return list ? (list.closest(".home-block") || list.parentElement) : null;
-  }
-
-  function subjectKeys() {
-    const list = getCompList();
-    if (!list) return ["economics", "mathematics"];
-
-    const keys = Array.from(list.querySelectorAll(".home-competitive-card"))
-      .map(card => String(card.dataset.subject || "").trim())
-      .filter(Boolean);
-
-    const uniq = Array.from(new Set(keys));
-    return uniq.length ? uniq.slice(0, 2) : ["economics", "mathematics"];
-  }
-
-  function cardHTML(key) {
-    const d = DATA[key] || DATA.economics;
-
-    return `
-      <div class="home-competitive-card ps2-subject-card" data-subject="${esc(key)}">
-        <div class="home-competitive-hero">
-          <div class="home-competitive-hero-img" aria-hidden="true"></div>
-        </div>
-
-        <div class="home-competitive-body">
-          <div class="home-competitive-title">${esc(d.title)}</div>
-          <div class="home-competitive-note">Итог сезона и практика доступны.</div>
-
-          <div class="ps2-metrics">
-            <div><b>${esc(d.tours)}</b><span>туров</span></div>
-            <div><b>${esc(d.avg)}</b><span>средний</span></div>
-            <div><b>${esc(d.rank)}</b><span>регион</span></div>
-          </div>
-
-          <div class="ps2-weak">${esc(d.weak)} темы изучить</div>
-
-          <div class="ps2-actions">
-            <button type="button" class="btn primary" data-ps2-action="report" data-subject="${esc(key)}">Итог сезона</button>
-            <button type="button" class="btn" data-ps2-action="practice" data-subject="${esc(key)}">Практика</button>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  function renderHome() {
-    const oldBlock = getOldBlock();
-    if (!oldBlock || !oldBlock.parentNode) return;
-
-    document.getElementById("home-post-season-preview")?.remove();
-    document.getElementById("ps-safe-grand-card")?.remove();
-    document.getElementById("ps-safe-subject-summaries")?.remove();
-
-    const keys = subjectKeys();
-    oldBlock.style.display = "none";
-
-    let wrap = document.getElementById("ps2-postseason-home");
-    if (!wrap) {
-      wrap = document.createElement("div");
-      wrap.id = "ps2-postseason-home";
-      oldBlock.parentNode.insertBefore(wrap, oldBlock);
-    }
-
-    wrap.innerHTML = `
-      ${grandHomeHTML()}
-
-      <section class="ps2-section">
-        <h2>Итоги по предметам</h2>
-        <p>Откройте итог и начните изучение нужных тем.</p>
-        <div class="ps2-subject-list">
-          ${keys.map(cardHTML).join("")}
-        </div>
-      </section>
-    `;
-
-    bind(wrap);
-  }
-
-  let ps2ScrollY = 0;
-
-  function lockPs2Scroll() {
-    ps2ScrollY = window.scrollY || document.documentElement.scrollTop || 0;
-
-    document.documentElement.classList.add("ps2-modal-open");
-    document.body.classList.add("ps2-modal-open");
-
-    document.body.style.position = "fixed";
-    document.body.style.top = `-${ps2ScrollY}px`;
-    document.body.style.left = "0";
-    document.body.style.right = "0";
-    document.body.style.width = "100%";
-    document.body.style.overflow = "hidden";
-  }
-
-  function unlockPs2Scroll() {
-    document.documentElement.classList.remove("ps2-modal-open");
-    document.body.classList.remove("ps2-modal-open");
-
-    document.body.style.position = "";
-    document.body.style.top = "";
-    document.body.style.left = "";
-    document.body.style.right = "";
-    document.body.style.width = "";
-    document.body.style.overflow = "";
-
-    try {
-      window.scrollTo(0, ps2ScrollY || 0);
-    } catch {}
-  }
-
-  function openModal(html) {
-    const root = document.getElementById("modal-root");
-    if (!root) return;
-
-    lockPs2Scroll();
-
-    root.innerHTML = `<div class="ps2-backdrop">${html}</div>`;
-    root.setAttribute("aria-hidden", "false");
-    root.classList.add("is-open");
-
-    bind(root);
-  }
-
-  function closeModal() {
-    const root = document.getElementById("modal-root");
-    if (!root) return;
-
-    root.innerHTML = "";
-    root.setAttribute("aria-hidden", "true");
-    root.classList.remove("is-open");
-
-    unlockPs2Scroll();
-  }
-
-  function subjectChoiceCards() {
-    return subjectKeys().map(key => {
-      const d = DATA[key] || DATA.economics;
-      return `
-        <div class="ps2-plan-subject">
-          <div>
-            <div class="ps2-plan-title">${esc(d.title)}</div>
-            <div class="ps2-muted">${esc(d.tours)} туров · ${esc(d.avg)} · ${esc(d.rank)} регион</div>
-          </div>
-          <span class="ps2-weak mini">${esc(d.weak)} темы</span>
-          <div class="ps2-actions">
-            <button type="button" class="btn primary" data-ps2-action="report" data-subject="${esc(key)}">Итог сезона</button>
-            <button type="button" class="btn" data-ps2-action="practice" data-subject="${esc(key)}">Практика</button>
-          </div>
-        </div>
-      `;
-    }).join("");
   }
 
   function grandSubjectCards(action = "grand-confirm") {
@@ -444,13 +285,13 @@
         <div class="ps2-plan-subject ps2-grand-subject">
           <div>
             <div class="ps2-plan-title">${esc(d.title)}</div>
-            <div class="ps2-muted">20 вопросов · Mixed · 1 попытка</div>
+            <div class="ps2-muted">20 вопросов · mixed · 1 попытка</div>
           </div>
           <span class="ps2-final-badge">Final</span>
           <button type="button"
             class="btn primary ps2-full-btn"
             data-ps2-action="${esc(action)}"
-            data-subject="${esc(key)}">Выбрать</button>
+            data-subject="${esc(key)}">Выбрать предмет</button>
         </div>
       `;
     }).join("");
@@ -464,13 +305,17 @@
           <div>
             <div class="ps2-kicker">GRAND OLYMPIAD</div>
             <div class="ps2-modal-title">Выберите предмет финала</div>
-            <div class="ps2-muted">В preview база не используется. Future main: tours.tour_no = ${GRAND_FINAL_TOUR_NO}.</div>
+            <div class="ps2-muted">Финал проходит отдельно по каждому предмету.</div>
           </div>
         </div>
 
-        <div class="ps2-panel soft">
-          <div class="ps2-panel-title">Как это подключится потом</div>
-          <div class="ps2-muted">Финал будет обычным туром в текущей системе: tour_attempts, tour_answers, ratings_cache и issue_tour_certificate.</div>
+        <div class="ps2-panel">
+          <div class="ps2-panel-title">Формат</div>
+          <div class="ps2-grand-stats inside">
+            <div><b>20</b><span>вопросов</span></div>
+            <div><b>mixed</b><span>темы</span></div>
+            <div><b>1</b><span>попытка</span></div>
+          </div>
         </div>
 
         <div class="ps2-subject-list">
@@ -491,25 +336,17 @@
           <div>
             <div class="ps2-kicker">ПЕРЕД СТАРТОМ</div>
             <div class="ps2-modal-title">${esc(d.title)} · Grand Final</div>
-            <div class="ps2-muted">Финальная попытка по предмету.</div>
+            <div class="ps2-muted">Проверьте правила перед началом.</div>
           </div>
         </div>
 
         <div class="ps2-panel">
-          <div class="ps2-panel-title">Правила попытки</div>
-          <div class="ps2-grand-stats inside">
-            <div><b>20</b><span>вопросов</span></div>
-            <div><b>1</b><span>попытка</span></div>
-            <div><b>time</b><span>tie-break</span></div>
-          </div>
-        </div>
-
-        <div class="ps2-panel">
-          <div class="ps2-panel-title">Важно</div>
+          <div class="ps2-panel-title">Что важно</div>
           <div class="ps2-steps">
-            <div><b>1</b><span>После старта попытка считается начатой.</span></div>
-            <div><b>2</b><span>Результат и рейтинг откроются после закрытия финала.</span></div>
-            <div><b>3</b><span>Сертификат появится после финализации.</span></div>
+            <div><b>1</b><span>У вас одна финальная попытка по этому предмету.</span></div>
+            <div><b>2</b><span>Время учитывается только при равных результатах.</span></div>
+            <div><b>3</b><span>После сдачи ответы изменить нельзя.</span></div>
+            <div><b>4</b><span>Результат откроется после расчёта рейтинга.</span></div>
           </div>
         </div>
 
@@ -541,19 +378,19 @@
         </div>
 
         <div class="ps2-panel ps2-final-question">
-          <div class="ps2-panel-title">Mock-вопрос preview</div>
-          <div class="ps2-final-question-text">Какой ответ лучше всего показывает умение применить тему, а не просто вспомнить термин?</div>
+          <div class="ps2-panel-title">Вопрос финала</div>
+          <div class="ps2-final-question-text">Какой вариант лучше показывает применение темы, а не простое запоминание термина?</div>
           <div class="ps2-final-options">
-            <button>A. Запомнить определение</button>
+            <button>A. Просто вспомнить определение</button>
             <button class="is-picked">B. Применить идею к новой ситуации</button>
-            <button>C. Угадать по ключевому слову</button>
+            <button>C. Выбрать ответ по ключевому слову</button>
             <button>D. Пропустить вопрос</button>
           </div>
         </div>
 
         <div class="ps2-panel soft">
-          <div class="ps2-panel-title">Future DB mapping</div>
-          <div class="ps2-muted">В main этот экран откроет обычный quiz по финальному tour_id. Каждый ответ сохранится в tour_answers.</div>
+          <div class="ps2-panel-title">Сохранение ответов</div>
+          <div class="ps2-muted">В рабочем приложении каждый ответ будет сохраняться сразу после выбора. При возврате ученик продолжит начатую попытку.</div>
         </div>
 
         <div class="ps2-actions">
@@ -578,7 +415,7 @@
         <div class="ps2-modal-top">
           <button type="button" class="ps2-back" data-ps2-action="close">←</button>
           <div>
-            <div class="ps2-kicker">ОТВЕТЫ ПРИНЯТЫ</div>
+            <div class="ps2-kicker">ОТВЕТЫ СДАНЫ</div>
             <div class="ps2-modal-title">${esc(d.title)} · Grand Final</div>
             <div class="ps2-muted">Попытка завершена.</div>
           </div>
@@ -586,13 +423,13 @@
 
         <div class="ps2-panel ps2-readiness">
           <div class="ps2-panel-title">Статус</div>
-          <div class="ps2-readiness-main">Ответы сохранены</div>
-          <div class="ps2-muted">Результат, рейтинг и сертификат откроются после завершения финального окна.</div>
+          <div class="ps2-readiness-main">Ответы приняты</div>
+          <div class="ps2-muted">Результат, рейтинг и сертификат появятся после завершения финального окна.</div>
         </div>
 
         <div class="ps2-panel soft">
           <div class="ps2-panel-title">Почему рейтинг закрыт</div>
-          <div class="ps2-muted">Финальный рейтинг нельзя показывать live, чтобы участники были в равных условиях.</div>
+          <div class="ps2-muted">До закрытия финала рейтинг не показывается, чтобы все участники были в равных условиях.</div>
         </div>
 
         <div class="ps2-actions ps2-single-action">
@@ -611,24 +448,24 @@
         <div class="ps2-modal-top">
           <button type="button" class="ps2-back" data-ps2-action="close">←</button>
           <div>
-            <div class="ps2-kicker">ФИНАЛИЗАЦИЯ</div>
-            <div class="ps2-modal-title">Результаты рассчитываются</div>
-            <div class="ps2-muted">Preview будущего серверного этапа.</div>
+            <div class="ps2-kicker">РАСЧЁТ ИТОГОВ</div>
+            <div class="ps2-modal-title">Результаты готовятся</div>
+            <div class="ps2-muted">Рейтинг и сертификаты скоро откроются.</div>
           </div>
         </div>
 
         <div class="ps2-panel">
-          <div class="ps2-panel-title">Что делает сервер</div>
+          <div class="ps2-panel-title">Что происходит</div>
           <div class="ps2-steps">
-            <div><b>1</b><span>Закрывает незавершённые попытки.</span></div>
-            <div><b>2</b><span>Считает рейтинг: score desc, time asc.</span></div>
-            <div><b>3</b><span>Создаёт сертификаты через issue_tour_certificate.</span></div>
-            <div><b>4</b><span>Открывает результаты пользователям.</span></div>
+            <div><b>1</b><span>Завершаются все открытые попытки.</span></div>
+            <div><b>2</b><span>Считается рейтинг: сначала балл, затем время.</span></div>
+            <div><b>3</b><span>Готовятся сертификаты финала.</span></div>
+            <div><b>4</b><span>После проверки итоги открываются ученикам.</span></div>
           </div>
         </div>
 
         <div class="ps2-actions ps2-single-action">
-          <button type="button" class="btn primary" data-ps2-action="grand-state" data-state="results_ready">Показать results_ready</button>
+          <button type="button" class="btn primary" data-ps2-action="grand-state" data-state="results_ready">Показать готовые итоги</button>
         </div>
       </div>
     `);
@@ -644,9 +481,9 @@
         <div class="ps2-modal-top">
           <button type="button" class="ps2-back" data-ps2-action="close">←</button>
           <div>
-            <div class="ps2-kicker">РЕЗУЛЬТАТ ФИНАЛА</div>
+            <div class="ps2-kicker">ИТОГ ФИНАЛА</div>
             <div class="ps2-modal-title">${esc(d.title)} · Grand Final</div>
-            <div class="ps2-muted">Финальный результат после расчёта.</div>
+            <div class="ps2-muted">Финальный результат по предмету.</div>
           </div>
         </div>
 
@@ -708,7 +545,7 @@
           <div>
             <div class="ps2-kicker">РЕЙТИНГ</div>
             <div class="ps2-modal-title">${esc(d.title)} · ${tab === GRAND_FINAL_TOUR_VALUE ? "Финал" : "Сезон"}</div>
-            <div class="ps2-muted">Preview: финал — отдельный пункт, не входит в “Все 7 туров”.</div>
+            <div class="ps2-muted">Финал считается отдельно и не входит в “Все 7 туров”.</div>
           </div>
         </div>
 
@@ -723,7 +560,7 @@
         </div>
 
         <div class="ps2-panel">
-          <div class="ps2-panel-title">${tab === GRAND_FINAL_TOUR_VALUE ? "Grand Final leaderboard" : "Season leaderboard"}</div>
+          <div class="ps2-panel-title">${tab === GRAND_FINAL_TOUR_VALUE ? "Рейтинг финала" : "Рейтинг сезона"}</div>
           <div class="ps2-leaderboard-mini">
             ${rows.map(row => `
               <div class="ps2-lb-mini-row ${row.me ? "is-me" : ""}">
@@ -736,8 +573,8 @@
         </div>
 
         <div class="ps2-panel soft">
-          <div class="ps2-panel-title">Future main rule</div>
-          <div class="ps2-muted">“Все 7 туров” = tour_no 1–7. “Финал” = tour_no ${GRAND_FINAL_TOUR_NO} и отдельный рейтинг.</div>
+          <div class="ps2-panel-title">Правило рейтинга</div>
+          <div class="ps2-muted">Сначала сравнивается результат. Если результат равный, выше будет участник с меньшим временем.</div>
         </div>
       </div>
     `);
@@ -754,7 +591,7 @@
           <div>
             <div class="ps2-kicker">СЕРТИФИКАТ</div>
             <div class="ps2-modal-title">Grand Final Certificate</div>
-            <div class="ps2-muted">${esc(d.title)} · ${r.percent}% · #${r.rankRegion} регион</div>
+            <div class="ps2-muted">${esc(d.title)} · ${r.percent}% · #${r.rankRegion} в регионе</div>
           </div>
         </div>
 
@@ -767,8 +604,8 @@
         </div>
 
         <div class="ps2-panel soft">
-          <div class="ps2-panel-title">Future main rule</div>
-          <div class="ps2-muted">В main это будет обычный tour certificate по финальному tour_id, но UI label будет “Grand Final Certificate”, а не “Tour 8”.</div>
+          <div class="ps2-panel-title">Как будет в приложении</div>
+          <div class="ps2-muted">Сертификат откроется после завершения финала и расчёта рейтинга.</div>
         </div>
 
         <div class="ps2-actions ps2-single-action">
@@ -778,7 +615,6 @@
     `);
   }
 
-
   function showPlan() {
     openModal(`
       <div class="ps2-modal">
@@ -787,7 +623,7 @@
           <div>
             <div class="ps2-kicker">ФИНАЛ СЕЗОНА</div>
             <div class="ps2-modal-title">Grand Olympiad</div>
-            <div class="ps2-muted">Откроется через 5 дней</div>
+            <div class="ps2-muted">Финальный этап по выбранным предметам.</div>
           </div>
         </div>
 
@@ -795,7 +631,7 @@
           <div class="ps2-panel-title">Формат финала</div>
           <div class="ps2-grand-stats inside">
             <div><b>20</b><span>вопросов</span></div>
-            <div><b>Mixed</b><span>сложность</span></div>
+            <div><b>mixed</b><span>темы</span></div>
             <div><b>1</b><span>попытка</span></div>
           </div>
         </div>
@@ -804,25 +640,25 @@
           <div class="ps2-panel-title">Что будет оцениваться</div>
           <div class="ps2-steps">
             <div><b>1</b><span>Точность ответов.</span></div>
-            <div><b>2</b><span>Работа со смешанными темами, а не с одним разделом.</span></div>
-            <div><b>3</b><span>Умение не повторять ошибки из 7 туров.</span></div>
-            <div><b>4</b><span>Время прохождения при равных результатах.</span></div>
+            <div><b>2</b><span>Умение применять темы из разных туров.</span></div>
+            <div><b>3</b><span>Работа без повторения старых ошибок.</span></div>
+            <div><b>4</b><span>Время — только при равных результатах.</span></div>
           </div>
         </div>
 
         <div class="ps2-panel">
           <div class="ps2-panel-title">Как готовиться</div>
           <div class="ps2-steps">
-            <div><b>1</b><span>Откройте итог сезона по каждому предмету.</span></div>
+            <div><b>1</b><span>Откройте итог сезона по предмету.</span></div>
             <div><b>2</b><span>Посмотрите темы для изучения.</span></div>
             <div><b>3</b><span>Соберите практику по нужным турам и темам.</span></div>
-            <div><b>4</b><span>Повторите уже закрытые вопросы только если хотите закрепить материал.</span></div>
+            <div><b>4</b><span>Сделайте mixed practice перед финалом.</span></div>
           </div>
         </div>
 
         <div class="ps2-panel soft">
           <div class="ps2-panel-title">Важно</div>
-          <div class="ps2-muted">Grand Olympiad — это отдельный финальный этап сезона, а не ещё один обычный тур.</div>
+          <div class="ps2-muted">Финал будет иметь отдельный рейтинг. Он не смешивается с рейтингом “Все 7 туров”.</div>
         </div>
 
         <div class="ps2-actions ps2-single-action">
@@ -2459,6 +2295,53 @@
         background:rgba(255,255,255,.16);
         color:#fff;
         border-color:rgba(255,255,255,.28);
+      }
+
+
+      .ps2-grand-dev {
+        margin-top:12px;
+        padding:10px;
+        border:1px solid rgba(37,99,235,.14);
+        border-radius:16px;
+        background:rgba(37,99,235,.055);
+      }
+      .ps2-grand-switch-title {
+        color:rgba(15,23,42,.78);
+        font-size:11px;
+        line-height:1.2;
+        font-weight:950;
+        text-transform:uppercase;
+        letter-spacing:.04em;
+      }
+      .ps2-grand-switch-hint {
+        margin-top:3px;
+        color:rgba(15,23,42,.58);
+        font-size:11px;
+        line-height:1.3;
+        font-weight:750;
+      }
+      .ps2-grand-switch {
+        display:flex;
+        gap:6px;
+        overflow-x:auto;
+        padding:8px 0 1px;
+        scrollbar-width:none;
+      }
+      .ps2-grand-switch::-webkit-scrollbar { display:none; }
+      .ps2-grand-switch button {
+        flex:0 0 auto;
+        border:1px solid rgba(226,232,240,.96);
+        background:#fff;
+        color:rgba(15,23,42,.68);
+        border-radius:999px;
+        padding:7px 9px;
+        font-size:10px;
+        font-weight:900;
+      }
+      .ps2-grand-switch button.is-on {
+        background:rgba(37,99,235,.12);
+        color:#2563eb;
+        border-color:rgba(37,99,235,.32);
       }
 
     `;
