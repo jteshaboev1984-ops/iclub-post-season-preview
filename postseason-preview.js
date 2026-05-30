@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "preview-control-system-v25-20260530";
+  const BUILD = "preview-panel-persist-v26-20260530";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] post-season build:", BUILD);
 
@@ -207,8 +207,6 @@
 
   function removePreviewHome() {
     document.getElementById("psp-home")?.remove();
-    document.getElementById("psp-modal")?.remove();
-
     const block = getCompetitiveBlock();
     if (block) block.style.display = "";
   }
