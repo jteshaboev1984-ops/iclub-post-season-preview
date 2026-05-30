@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "restore-preview-core-v19-20260530";
+  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "grand-final-v20-polish-fix-20260530";
   console.info("[iClub Preview] post-season build:", window.ICLUB_POSTSEASON_PREVIEW_BUILD);
 
 
@@ -111,9 +111,9 @@
   const GRAND_STATES = [
     ["scheduled", "До открытия"],
     ["open", "Финал открыт"],
-    ["in_progress", "Попытка начата"],
-    ["submitted", "Ответы сданы"],
-    ["finalizing", "Идёт расчёт"],
+    ["in_progress", "В процессе"],
+    ["submitted", "Ответы приняты"],
+    ["finalizing", "Расчёт"],
     ["results_ready", "Итоги готовы"]
   ];
 
@@ -181,8 +181,8 @@
   function grandStateSwitchHTML() {
     return `
       <div class="ps2-grand-dev">
-        <div class="ps2-grand-switch-title">Проверка сценария</div>
-        <div class="ps2-grand-switch-hint">Выберите этап и посмотрите, как будет вести себя финальный блок.</div>
+        <div class="ps2-grand-switch-title">Сценарий финала</div>
+        <div class="ps2-grand-switch-hint">Для проверки выберите этап финала.</div>
         <div class="ps2-grand-switch" aria-label="Grand Final scenario states">
           ${GRAND_STATES.map(([key, label]) => `
             <button type="button"
@@ -222,31 +222,31 @@
         `
       },
       in_progress: {
-        kicker: "ПОПЫТКА НАЧАТА",
+        kicker: "ФИНАЛ НАЧАТ",
         title: `${subject.title} · Grand Final`,
-        sub: "Финальная попытка ещё не завершена.",
+        sub: "Финальная попытка в процессе.",
         note: "Продолжите попытку. После сдачи ответы изменить нельзя.",
         actions: `<button type="button" class="btn primary ps2-full-btn" data-ps2-action="grand-continue" data-subject="${esc(subjectKey)}">Продолжить финал</button>`
       },
       submitted: {
-        kicker: "ОТВЕТЫ СДАНЫ",
+        kicker: "ОТВЕТЫ ПРИНЯТЫ",
         title: `${subject.title} · Grand Final`,
-        sub: "Попытка принята.",
-        note: "Итоги появятся после закрытия финала и расчёта рейтинга.",
-        actions: `<button type="button" class="btn primary ps2-full-btn" data-ps2-action="grand-submitted" data-subject="${esc(subjectKey)}">Статус попытки</button>`
+        sub: "Ответы сохранены.",
+        note: "Результат появится после закрытия финала и расчёта рейтинга.",
+        actions: `<button type="button" class="btn primary ps2-full-btn" data-ps2-action="grand-submitted" data-subject="${esc(subjectKey)}">Статус финала</button>`
       },
       finalizing: {
-        kicker: "ИДЁТ РАСЧЁТ",
+        kicker: "РАСЧЁТ ИТОГОВ",
         title: "Grand Olympiad",
-        sub: "Рейтинг и сертификаты готовятся.",
-        note: "Система считает результаты, места и сертификаты финала.",
+        sub: "Рейтинг и сертификаты рассчитываются.",
+        note: "Система считает результаты, места и готовит сертификаты.",
         actions: `<button type="button" class="btn primary ps2-full-btn" data-ps2-action="grand-finalizing">Как идёт расчёт</button>`
       },
       results_ready: {
-        kicker: "ИТОГИ ГОТОВЫ",
+        kicker: "РЕЗУЛЬТАТ ГОТОВ",
         title: `${subject.title} · ${result.score}/${result.total}`,
         sub: `#${result.rankRegion} в регионе · #${result.rankCountry} общий рейтинг`,
-        note: "Откройте результат, рейтинг или сертификат финала.",
+        note: "Откройте результат, рейтинг и сертификат финала.",
         actions: `
           <div class="ps2-actions">
             <button type="button" class="btn primary" data-ps2-action="grand-result" data-subject="${esc(subjectKey)}">Открыть результат</button>
@@ -266,7 +266,7 @@
         <div class="ps2-grand-stats">
           <div><b>20</b><span>вопросов</span></div>
           <div><b>1</b><span>попытка</span></div>
-          <div><b>score</b><span>+ время</span></div>
+          <div><b>балл</b><span>+ время</span></div>
         </div>
 
         <div class="ps2-grand-note">${esc(cfg.note)}</div>
@@ -446,7 +446,7 @@
         <div class="ps2-plan-subject ps2-grand-subject">
           <div>
             <div class="ps2-plan-title">${esc(d.title)}</div>
-            <div class="ps2-muted">20 вопросов · mixed · 1 попытка</div>
+            <div class="ps2-muted">20 вопросов · Mixed · 1 попытка</div>
           </div>
           <span class="ps2-final-badge">Final</span>
           <button type="button"
@@ -474,7 +474,7 @@
           <div class="ps2-panel-title">Формат</div>
           <div class="ps2-grand-stats inside">
             <div><b>20</b><span>вопросов</span></div>
-            <div><b>mixed</b><span>темы</span></div>
+            <div><b>Mixed</b><span>темы</span></div>
             <div><b>1</b><span>попытка</span></div>
           </div>
         </div>
@@ -558,8 +558,8 @@
           <button type="button"
             class="btn primary"
             data-ps2-action="grand-submit"
-            data-subject="${esc(key)}">Сдать ответы</button>
-          <button type="button" class="btn" data-ps2-action="close">Выйти</button>
+            data-subject="${esc(key)}">Завершить и отправить</button>
+          <button type="button" class="btn" data-ps2-action="close">Сохранить и выйти</button>
         </div>
       </div>
     `);
@@ -576,7 +576,7 @@
         <div class="ps2-modal-top">
           <button type="button" class="ps2-back" data-ps2-action="close">←</button>
           <div>
-            <div class="ps2-kicker">ОТВЕТЫ СДАНЫ</div>
+            <div class="ps2-kicker">ОТВЕТЫ ПРИНЯТЫ</div>
             <div class="ps2-modal-title">${esc(d.title)} · Grand Final</div>
             <div class="ps2-muted">Попытка завершена.</div>
           </div>
@@ -792,7 +792,7 @@
           <div class="ps2-panel-title">Формат финала</div>
           <div class="ps2-grand-stats inside">
             <div><b>20</b><span>вопросов</span></div>
-            <div><b>mixed</b><span>темы</span></div>
+            <div><b>Mixed</b><span>темы</span></div>
             <div><b>1</b><span>попытка</span></div>
           </div>
         </div>
@@ -813,7 +813,7 @@
             <div><b>1</b><span>Откройте итог сезона по предмету.</span></div>
             <div><b>2</b><span>Посмотрите темы для изучения.</span></div>
             <div><b>3</b><span>Соберите практику по нужным турам и темам.</span></div>
-            <div><b>4</b><span>Сделайте mixed practice перед финалом.</span></div>
+            <div><b>4</b><span>Сделайте Mixed practice перед финалом.</span></div>
           </div>
         </div>
 
@@ -1260,7 +1260,7 @@
     const planRows = !isTour
       ? [
           tr("Начните с тем для изучения.", "O‘rganish kerak bo‘lgan mavzulardan boshlang.", "Start with study topics."),
-          tr("Сделайте mixed practice перед финалом.", "Final oldidan mixed practice bajaring.", "Do mixed practice before the final."),
+          tr("Сделайте Mixed practice перед финалом.", "Final oldidan Mixed practice bajaring.", "Do Mixed practice before the final."),
           tr("После практики проверьте обновлённую готовность.", "Amaliyotdan so‘ng tayyorgarlikni tekshiring.", "Check updated readiness after practice.")
         ]
       : participated
@@ -1602,7 +1602,7 @@
           <div class="ps2-filter">
             <div class="ps2-panel-title">${esc(tr("Сложность", "Qiyinlik", "Difficulty"))}</div>
             <div class="ps2-pills" data-filter="difficulty">
-              <span class="is-on" data-value="mixed">Mixed</span>
+              <span class="is-on" data-value="Mixed">Mixed</span>
               <span data-value="easy">Easy</span>
               <span data-value="medium">Medium</span>
               <span data-value="hard">Hard</span>
@@ -1748,7 +1748,7 @@
       .filter(Boolean);
 
     const count = modal.querySelector('[data-filter="count"] .is-on')?.dataset.value || "10";
-    const diff = modal.querySelector('[data-filter="difficulty"] .is-on')?.dataset.value || "mixed";
+    const diff = modal.querySelector('[data-filter="difficulty"] .is-on')?.dataset.value || "Mixed";
 
     openModal(`
       <div class="ps2-modal">
@@ -2750,7 +2750,85 @@
     setInterval(run, 1000);
   }
 
+  function startGrandActionFallback() {
+    if (window.__ps2GrandActionFallbackStarted) return;
+    window.__ps2GrandActionFallbackStarted = true;
+
+    document.addEventListener("click", (event) => {
+      const btn = event.target?.closest?.("[data-ps2-action]");
+      if (!btn) return;
+
+      const action = String(btn.dataset.ps2Action || "");
+      if (!action.startsWith("grand-")) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+
+      const key = btn.dataset.subject || getGrandSubject();
+
+      if (action === "grand-state") {
+        setGrandState(btn.dataset.state || "scheduled");
+        closeModal();
+        renderHome();
+        return;
+      }
+
+      if (action === "grand-select") {
+        showGrandSubjectSelect();
+        return;
+      }
+
+      if (action === "grand-confirm") {
+        showGrandConfirm(key);
+        return;
+      }
+
+      if (action === "grand-start" || action === "grand-continue") {
+        showGrandInProgress(key);
+        return;
+      }
+
+      if (action === "grand-submit" || action === "grand-submitted") {
+        showGrandSubmitted(key);
+        return;
+      }
+
+      if (action === "grand-finalizing") {
+        showGrandFinalizing();
+        return;
+      }
+
+      if (action === "grand-result") {
+        setGrandState("results_ready");
+        renderHome();
+        showGrandResult(key);
+        return;
+      }
+
+      if (action === "grand-ranking") {
+        setGrandState("results_ready");
+        renderHome();
+        showGrandRanking(key, GRAND_FINAL_TOUR_VALUE);
+        return;
+      }
+
+      if (action === "grand-ranking-tab") {
+        showGrandRanking(key, btn.dataset.rankingTab || GRAND_FINAL_TOUR_VALUE);
+        return;
+      }
+
+      if (action === "grand-certificate") {
+        setGrandState("results_ready");
+        renderHome();
+        showGrandCertificate(key);
+        return;
+      }
+    }, true);
+  }
+
   function schedule() {
+    startGrandActionFallback();
     startProfileAcademicReviewHider();
     let tries = 0;
     const timer = setInterval(() => {
@@ -2770,6 +2848,8 @@
   document.addEventListener("DOMContentLoaded", schedule);
   window.addEventListener("load", schedule);
   setTimeout(schedule, 100);
+  setTimeout(startGrandActionFallback, 100);
+  setTimeout(startGrandActionFallback, 800);
   setTimeout(startProfileAcademicReviewHider, 100);
   setTimeout(startProfileAcademicReviewHider, 800);
   setTimeout(startProfileAcademicReviewHider, 1800);
