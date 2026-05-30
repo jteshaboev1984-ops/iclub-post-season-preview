@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "grand-plan-actions-v16-20260526";
+  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "grand-final-flow-v17-20260530";
   console.info("[iClub Preview] post-season build:", window.ICLUB_POSTSEASON_PREVIEW_BUILD);
 
 
@@ -95,6 +95,189 @@
   }
 
 
+  // Grand Final preview mapping.
+  // Future main DB mapping:
+  // - GRAND_FINAL_TOUR_NO -> tours.tour_no = 8
+  // - Grand Final attempt -> existing tour_attempts row
+  // - Grand Final answers -> existing tour_answers rows
+  // - Grand Final ranking -> existing ratings_cache / fallback tour_attempts logic
+  // - Grand Final certificate -> existing issue_tour_certificate(final_attempt_id)
+  // Important: "Все 7 туров" must stay tour_no 1..7; Final is separate.
+  const GRAND_FINAL_TOUR_NO = 8;
+  const GRAND_FINAL_TOUR_VALUE = "__final__";
+  const GRAND_FINAL_STORAGE_KEY = "iclub_preview_grand_final_state_v17";
+  const GRAND_FINAL_SUBJECT_KEY = "iclub_preview_grand_final_subject_v17";
+
+  const GRAND_STATES = [
+    ["scheduled", "До финала"],
+    ["open", "Открыт"],
+    ["in_progress", "Начат"],
+    ["submitted", "Ответы приняты"],
+    ["finalizing", "Расчёт"],
+    ["results_ready", "Результаты"]
+  ];
+
+  const GRAND_RESULTS = {
+    economics: {
+      score: 17,
+      total: 20,
+      percent: 85,
+      time: "12:45",
+      rankCountry: 31,
+      rankRegion: 8,
+      rankDistrict: 3,
+      participants: 184,
+      mastered: ["Demand & Supply", "Elasticity"],
+      study: ["Exchange rates", "Balance of payments"]
+    },
+    mathematics: {
+      score: 15,
+      total: 20,
+      percent: 75,
+      time: "14:10",
+      rankCountry: 46,
+      rankRegion: 12,
+      rankDistrict: 4,
+      participants: 201,
+      mastered: ["Quadratics", "Coordinate geometry"],
+      study: ["Trigonometric identities", "Series"]
+    }
+  };
+
+  const GRAND_LEADERBOARD = [
+    { rank: 1, name: "Azizbek", meta: "Toshkent · Region", score: 20, time: "10:58" },
+    { rank: 2, name: "Nigina", meta: "Farg‘ona · Region", score: 19, time: "11:30" },
+    { rank: 3, name: "Sardorbek", meta: "Qoraqalpog‘iston · Region", score: 19, time: "12:20" },
+    { rank: 8, name: "Siz", meta: "Sizning hududingiz", score: 17, time: "12:45", me: true },
+    { rank: 31, name: "Grand overall", meta: "Mamlakat bo‘yicha", score: 17, time: "12:45" }
+  ];
+
+  function getGrandState() {
+    const raw = localStorage.getItem(GRAND_FINAL_STORAGE_KEY);
+    return GRAND_STATES.some(([key]) => key === raw) ? raw : "scheduled";
+  }
+
+  function setGrandState(state) {
+    const next = GRAND_STATES.some(([key]) => key === state) ? state : "scheduled";
+    localStorage.setItem(GRAND_FINAL_STORAGE_KEY, next);
+    return next;
+  }
+
+  function getGrandSubject() {
+    const raw = localStorage.getItem(GRAND_FINAL_SUBJECT_KEY);
+    return raw && DATA[raw] ? raw : (subjectKeys()[0] || "economics");
+  }
+
+  function setGrandSubject(key) {
+    const next = DATA[key] ? key : "economics";
+    localStorage.setItem(GRAND_FINAL_SUBJECT_KEY, next);
+    return next;
+  }
+
+  function grandResultFor(key) {
+    return GRAND_RESULTS[key] || GRAND_RESULTS.economics;
+  }
+
+  function grandStateSwitchHTML() {
+    return `
+      <div class="ps2-grand-switch" aria-label="Grand Final preview states">
+        ${GRAND_STATES.map(([key, label]) => `
+          <button type="button"
+            class="${getGrandState() === key ? "is-on" : ""}"
+            data-ps2-action="grand-state"
+            data-state="${esc(key)}">${esc(label)}</button>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function grandHomeHTML() {
+    const state = getGrandState();
+    const subjectKey = getGrandSubject();
+    const subject = DATA[subjectKey] || DATA.economics;
+    const result = grandResultFor(subjectKey);
+
+    const cfg = {
+      scheduled: {
+        kicker: "ФИНАЛ СЕЗОНА",
+        title: "Grand Olympiad",
+        sub: "Финальный этап после 7 туров.",
+        note: "Откроется через 5 дней. Подготовка идёт через итоги предметов и практику.",
+        actions: `<button type="button" class="btn primary ps2-full-btn" data-ps2-action="plan">Подробнее</button>`
+      },
+      open: {
+        kicker: "ФИНАЛ ОТКРЫТ",
+        title: "Grand Olympiad",
+        sub: "Доступен до 23:59.",
+        note: "Выберите предмет и начните финальную попытку. Результаты откроются после завершения финала.",
+        actions: `
+          <div class="ps2-actions">
+            <button type="button" class="btn primary" data-ps2-action="grand-select">Начать финал</button>
+            <button type="button" class="btn" data-ps2-action="plan">Правила</button>
+          </div>
+        `
+      },
+      in_progress: {
+        kicker: "ФИНАЛ НАЧАТ",
+        title: `${subject.title} · Grand Final`,
+        sub: "Таймер идёт.",
+        note: "Продолжите попытку. В main это будет существующий tour_attempt по финальному туру.",
+        actions: `<button type="button" class="btn primary ps2-full-btn" data-ps2-action="grand-continue" data-subject="${esc(subjectKey)}">Продолжить финал</button>`
+      },
+      submitted: {
+        kicker: "ОТВЕТЫ ПРИНЯТЫ",
+        title: `${subject.title} · Grand Final`,
+        sub: "Результаты пока закрыты.",
+        note: "Рейтинг и сертификат откроются после завершения финального окна.",
+        actions: `<button type="button" class="btn primary ps2-full-btn" data-ps2-action="grand-submitted" data-subject="${esc(subjectKey)}">Статус попытки</button>`
+      },
+      finalizing: {
+        kicker: "ИДЁТ РАСЧЁТ",
+        title: "Grand Olympiad",
+        sub: "Результаты рассчитываются.",
+        note: "Сервер закрывает попытки, считает рейтинг и готовит сертификаты.",
+        actions: `<button type="button" class="btn primary ps2-full-btn" data-ps2-action="grand-finalizing">Подробнее о расчёте</button>`
+      },
+      results_ready: {
+        kicker: "РЕЗУЛЬТАТЫ ГОТОВЫ",
+        title: `${subject.title} · ${result.score}/${result.total}`,
+        sub: `#${result.rankRegion} регион · #${result.rankCountry} общий`,
+        note: "Финальный рейтинг и сертификат доступны.",
+        actions: `
+          <div class="ps2-actions">
+            <button type="button" class="btn primary" data-ps2-action="grand-result" data-subject="${esc(subjectKey)}">Открыть результат</button>
+            <button type="button" class="btn" data-ps2-action="grand-ranking" data-subject="${esc(subjectKey)}">Рейтинг</button>
+          </div>
+          <button type="button" class="btn ps2-full-btn ps2-certificate-link" data-ps2-action="grand-certificate" data-subject="${esc(subjectKey)}">Сертификат</button>
+        `
+      }
+    }[state] || {};
+
+    return `
+      <section class="ps2-grand ps2-grand-state-${esc(state)}">
+        <div class="ps2-kicker">${esc(cfg.kicker)}</div>
+        <div class="ps2-grand-title">${esc(cfg.title)}</div>
+        <div class="ps2-grand-sub">${esc(cfg.sub)}</div>
+
+        <div class="ps2-grand-stats">
+          <div><b>20</b><span>вопросов</span></div>
+          <div><b>Mixed</b><span>сложность</span></div>
+          <div><b>точность</b><span>+ время</span></div>
+        </div>
+
+        <div class="ps2-grand-note">${esc(cfg.note)}</div>
+
+        ${cfg.actions}
+
+        <div class="ps2-grand-dev">
+          <div class="ps2-muted">Тест состояния финала:</div>
+          ${grandStateSwitchHTML()}
+        </div>
+      </section>
+    `;
+  }
+
+
   function getCompList() {
     return document.getElementById("home-competitive-list");
   }
@@ -165,21 +348,7 @@
     }
 
     wrap.innerHTML = `
-      <section class="ps2-grand">
-        <div class="ps2-kicker">ФИНАЛ СЕЗОНА</div>
-        <div class="ps2-grand-title">Grand Olympiad</div>
-        <div class="ps2-grand-sub">Финальный этап после 7 туров.</div>
-
-        <div class="ps2-grand-stats">
-          <div><b>20</b><span>вопросов</span></div>
-          <div><b>Mixed</b><span>сложность</span></div>
-          <div><b>точность</b><span>+ время</span></div>
-        </div>
-
-        <div class="ps2-grand-note">Откроется через 5 дней. Подготовка идёт через итоги предметов и практику.</div>
-
-        <button type="button" class="btn primary ps2-full-btn" data-ps2-action="plan">Подробнее</button>
-      </section>
+      ${grandHomeHTML()}
 
       <section class="ps2-section">
         <h2>Итоги по предметам</h2>
@@ -268,6 +437,348 @@
     }).join("");
   }
 
+  function grandSubjectCards(action = "grand-confirm") {
+    return subjectKeys().map(key => {
+      const d = DATA[key] || DATA.economics;
+      return `
+        <div class="ps2-plan-subject ps2-grand-subject">
+          <div>
+            <div class="ps2-plan-title">${esc(d.title)}</div>
+            <div class="ps2-muted">20 вопросов · Mixed · 1 попытка</div>
+          </div>
+          <span class="ps2-final-badge">Final</span>
+          <button type="button"
+            class="btn primary ps2-full-btn"
+            data-ps2-action="${esc(action)}"
+            data-subject="${esc(key)}">Выбрать</button>
+        </div>
+      `;
+    }).join("");
+  }
+
+  function showGrandSubjectSelect() {
+    openModal(`
+      <div class="ps2-modal">
+        <div class="ps2-modal-top">
+          <button type="button" class="ps2-back" data-ps2-action="close">←</button>
+          <div>
+            <div class="ps2-kicker">GRAND OLYMPIAD</div>
+            <div class="ps2-modal-title">Выберите предмет финала</div>
+            <div class="ps2-muted">В preview база не используется. Future main: tours.tour_no = ${GRAND_FINAL_TOUR_NO}.</div>
+          </div>
+        </div>
+
+        <div class="ps2-panel soft">
+          <div class="ps2-panel-title">Как это подключится потом</div>
+          <div class="ps2-muted">Финал будет обычным туром в текущей системе: tour_attempts, tour_answers, ratings_cache и issue_tour_certificate.</div>
+        </div>
+
+        <div class="ps2-subject-list">
+          ${grandSubjectCards("grand-confirm")}
+        </div>
+      </div>
+    `);
+  }
+
+  function showGrandConfirm(key) {
+    const d = DATA[key] || DATA.economics;
+    setGrandSubject(key);
+
+    openModal(`
+      <div class="ps2-modal">
+        <div class="ps2-modal-top">
+          <button type="button" class="ps2-back" data-ps2-action="grand-select">←</button>
+          <div>
+            <div class="ps2-kicker">ПЕРЕД СТАРТОМ</div>
+            <div class="ps2-modal-title">${esc(d.title)} · Grand Final</div>
+            <div class="ps2-muted">Финальная попытка по предмету.</div>
+          </div>
+        </div>
+
+        <div class="ps2-panel">
+          <div class="ps2-panel-title">Правила попытки</div>
+          <div class="ps2-grand-stats inside">
+            <div><b>20</b><span>вопросов</span></div>
+            <div><b>1</b><span>попытка</span></div>
+            <div><b>time</b><span>tie-break</span></div>
+          </div>
+        </div>
+
+        <div class="ps2-panel">
+          <div class="ps2-panel-title">Важно</div>
+          <div class="ps2-steps">
+            <div><b>1</b><span>После старта попытка считается начатой.</span></div>
+            <div><b>2</b><span>Результат и рейтинг откроются после закрытия финала.</span></div>
+            <div><b>3</b><span>Сертификат появится после финализации.</span></div>
+          </div>
+        </div>
+
+        <div class="ps2-actions ps2-single-action">
+          <button type="button"
+            class="btn primary"
+            data-ps2-action="grand-start"
+            data-subject="${esc(key)}">Начать попытку</button>
+        </div>
+      </div>
+    `);
+  }
+
+  function showGrandInProgress(key = getGrandSubject()) {
+    const d = DATA[key] || DATA.economics;
+    setGrandSubject(key);
+    setGrandState("in_progress");
+    renderHome();
+
+    openModal(`
+      <div class="ps2-modal">
+        <div class="ps2-modal-top">
+          <button type="button" class="ps2-back" data-ps2-action="close">←</button>
+          <div>
+            <div class="ps2-kicker">ФИНАЛ ИДЁТ</div>
+            <div class="ps2-modal-title">${esc(d.title)} · Grand Final</div>
+            <div class="ps2-muted">7/20 · осталось 12:45</div>
+          </div>
+        </div>
+
+        <div class="ps2-panel ps2-final-question">
+          <div class="ps2-panel-title">Mock-вопрос preview</div>
+          <div class="ps2-final-question-text">Какой ответ лучше всего показывает умение применить тему, а не просто вспомнить термин?</div>
+          <div class="ps2-final-options">
+            <button>A. Запомнить определение</button>
+            <button class="is-picked">B. Применить идею к новой ситуации</button>
+            <button>C. Угадать по ключевому слову</button>
+            <button>D. Пропустить вопрос</button>
+          </div>
+        </div>
+
+        <div class="ps2-panel soft">
+          <div class="ps2-panel-title">Future DB mapping</div>
+          <div class="ps2-muted">В main этот экран откроет обычный quiz по финальному tour_id. Каждый ответ сохранится в tour_answers.</div>
+        </div>
+
+        <div class="ps2-actions">
+          <button type="button"
+            class="btn primary"
+            data-ps2-action="grand-submit"
+            data-subject="${esc(key)}">Сдать ответы</button>
+          <button type="button" class="btn" data-ps2-action="close">Выйти</button>
+        </div>
+      </div>
+    `);
+  }
+
+  function showGrandSubmitted(key = getGrandSubject()) {
+    const d = DATA[key] || DATA.economics;
+    setGrandSubject(key);
+    setGrandState("submitted");
+    renderHome();
+
+    openModal(`
+      <div class="ps2-modal">
+        <div class="ps2-modal-top">
+          <button type="button" class="ps2-back" data-ps2-action="close">←</button>
+          <div>
+            <div class="ps2-kicker">ОТВЕТЫ ПРИНЯТЫ</div>
+            <div class="ps2-modal-title">${esc(d.title)} · Grand Final</div>
+            <div class="ps2-muted">Попытка завершена.</div>
+          </div>
+        </div>
+
+        <div class="ps2-panel ps2-readiness">
+          <div class="ps2-panel-title">Статус</div>
+          <div class="ps2-readiness-main">Ответы сохранены</div>
+          <div class="ps2-muted">Результат, рейтинг и сертификат откроются после завершения финального окна.</div>
+        </div>
+
+        <div class="ps2-panel soft">
+          <div class="ps2-panel-title">Почему рейтинг закрыт</div>
+          <div class="ps2-muted">Финальный рейтинг нельзя показывать live, чтобы участники были в равных условиях.</div>
+        </div>
+
+        <div class="ps2-actions ps2-single-action">
+          <button type="button" class="btn primary" data-ps2-action="close">На главную</button>
+        </div>
+      </div>
+    `);
+  }
+
+  function showGrandFinalizing() {
+    setGrandState("finalizing");
+    renderHome();
+
+    openModal(`
+      <div class="ps2-modal">
+        <div class="ps2-modal-top">
+          <button type="button" class="ps2-back" data-ps2-action="close">←</button>
+          <div>
+            <div class="ps2-kicker">ФИНАЛИЗАЦИЯ</div>
+            <div class="ps2-modal-title">Результаты рассчитываются</div>
+            <div class="ps2-muted">Preview будущего серверного этапа.</div>
+          </div>
+        </div>
+
+        <div class="ps2-panel">
+          <div class="ps2-panel-title">Что делает сервер</div>
+          <div class="ps2-steps">
+            <div><b>1</b><span>Закрывает незавершённые попытки.</span></div>
+            <div><b>2</b><span>Считает рейтинг: score desc, time asc.</span></div>
+            <div><b>3</b><span>Создаёт сертификаты через issue_tour_certificate.</span></div>
+            <div><b>4</b><span>Открывает результаты пользователям.</span></div>
+          </div>
+        </div>
+
+        <div class="ps2-actions ps2-single-action">
+          <button type="button" class="btn primary" data-ps2-action="grand-state" data-state="results_ready">Показать results_ready</button>
+        </div>
+      </div>
+    `);
+  }
+
+  function showGrandResult(key = getGrandSubject()) {
+    const d = DATA[key] || DATA.economics;
+    const r = grandResultFor(key);
+    setGrandSubject(key);
+
+    openModal(`
+      <div class="ps2-modal">
+        <div class="ps2-modal-top">
+          <button type="button" class="ps2-back" data-ps2-action="close">←</button>
+          <div>
+            <div class="ps2-kicker">РЕЗУЛЬТАТ ФИНАЛА</div>
+            <div class="ps2-modal-title">${esc(d.title)} · Grand Final</div>
+            <div class="ps2-muted">Финальный результат после расчёта.</div>
+          </div>
+        </div>
+
+        <div class="ps2-report-grid">
+          <div><b>${r.score}/${r.total}</b><span>Ответы</span></div>
+          <div><b>${r.percent}%</b><span>Результат</span></div>
+          <div><b>#${r.rankRegion}</b><span>Регион</span></div>
+          <div><b>${r.time}</b><span>Время</span></div>
+        </div>
+
+        <div class="ps2-panel">
+          <div class="ps2-panel-title">Освоенные темы</div>
+          <div class="ps2-chip-row">${r.mastered.map(x => `<span class="good">${esc(x)}</span>`).join("")}</div>
+        </div>
+
+        <div class="ps2-panel ps2-study-panel">
+          <div class="ps2-panel-title">Темы для изучения</div>
+          <div class="ps2-chip-row">${r.study.map(x => `<span class="warn">${esc(x)}</span>`).join("")}</div>
+          <button type="button"
+            class="btn primary ps2-study-btn"
+            data-ps2-action="practice"
+            data-subject="${esc(key)}"
+            data-mode="weak">Начать изучение</button>
+        </div>
+
+        <div class="ps2-actions">
+          <button type="button" class="btn primary" data-ps2-action="grand-ranking" data-subject="${esc(key)}">Рейтинг</button>
+          <button type="button" class="btn" data-ps2-action="grand-certificate" data-subject="${esc(key)}">Сертификат</button>
+        </div>
+      </div>
+    `);
+  }
+
+  function showGrandRanking(key = getGrandSubject(), tab = GRAND_FINAL_TOUR_VALUE) {
+    const d = DATA[key] || DATA.economics;
+    const tabs = [
+      ["__all7__", "Все 7 туров"],
+      ["tour1", "Тур 1"],
+      ["tour2", "Тур 2"],
+      ["tour3", "Тур 3"],
+      ["tour4", "Тур 4"],
+      ["tour5", "Тур 5"],
+      ["tour6", "Тур 6"],
+      ["tour7", "Тур 7"],
+      [GRAND_FINAL_TOUR_VALUE, "Финал"]
+    ];
+
+    const rows = tab === GRAND_FINAL_TOUR_VALUE
+      ? GRAND_LEADERBOARD
+      : [
+          { rank: 1, name: "Season leader", meta: "Все 7 туров", score: 118, time: "42:20" },
+          { rank: 12, name: "Siz", meta: "Sizning natijangiz", score: 96, time: "48:10", me: true }
+        ];
+
+    openModal(`
+      <div class="ps2-modal">
+        <div class="ps2-modal-top">
+          <button type="button" class="ps2-back" data-ps2-action="grand-result" data-subject="${esc(key)}">←</button>
+          <div>
+            <div class="ps2-kicker">РЕЙТИНГ</div>
+            <div class="ps2-modal-title">${esc(d.title)} · ${tab === GRAND_FINAL_TOUR_VALUE ? "Финал" : "Сезон"}</div>
+            <div class="ps2-muted">Preview: финал — отдельный пункт, не входит в “Все 7 туров”.</div>
+          </div>
+        </div>
+
+        <div class="ps2-scope-tabs ps2-ranking-tabs">
+          ${tabs.map(([value, label]) => `
+            <button type="button"
+              class="${value === tab ? "is-on" : ""} ${value === GRAND_FINAL_TOUR_VALUE ? "is-final" : ""}"
+              data-ps2-action="grand-ranking-tab"
+              data-subject="${esc(key)}"
+              data-ranking-tab="${esc(value)}">${esc(label)}</button>
+          `).join("")}
+        </div>
+
+        <div class="ps2-panel">
+          <div class="ps2-panel-title">${tab === GRAND_FINAL_TOUR_VALUE ? "Grand Final leaderboard" : "Season leaderboard"}</div>
+          <div class="ps2-leaderboard-mini">
+            ${rows.map(row => `
+              <div class="ps2-lb-mini-row ${row.me ? "is-me" : ""}">
+                <b>#${row.rank}</b>
+                <span>${esc(row.name)}</span>
+                <small>${esc(row.meta)} · ${row.score} · ${esc(row.time)}</small>
+              </div>
+            `).join("")}
+          </div>
+        </div>
+
+        <div class="ps2-panel soft">
+          <div class="ps2-panel-title">Future main rule</div>
+          <div class="ps2-muted">“Все 7 туров” = tour_no 1–7. “Финал” = tour_no ${GRAND_FINAL_TOUR_NO} и отдельный рейтинг.</div>
+        </div>
+      </div>
+    `);
+  }
+
+  function showGrandCertificate(key = getGrandSubject()) {
+    const d = DATA[key] || DATA.economics;
+    const r = grandResultFor(key);
+
+    openModal(`
+      <div class="ps2-modal">
+        <div class="ps2-modal-top">
+          <button type="button" class="ps2-back" data-ps2-action="grand-result" data-subject="${esc(key)}">←</button>
+          <div>
+            <div class="ps2-kicker">СЕРТИФИКАТ</div>
+            <div class="ps2-modal-title">Grand Final Certificate</div>
+            <div class="ps2-muted">${esc(d.title)} · ${r.percent}% · #${r.rankRegion} регион</div>
+          </div>
+        </div>
+
+        <div class="ps2-certificate-card">
+          <div class="ps2-cert-logo">iClub</div>
+          <div class="ps2-cert-title">Grand Final Certificate</div>
+          <div class="ps2-cert-name">Preview Student</div>
+          <div class="ps2-cert-meta">${esc(d.title)} · ${r.score}/${r.total} · ${r.time}</div>
+          <div class="ps2-cert-code">ICL-202606-GRANDFINAL-${esc(String(key).toUpperCase())}-PREVIEW</div>
+        </div>
+
+        <div class="ps2-panel soft">
+          <div class="ps2-panel-title">Future main rule</div>
+          <div class="ps2-muted">В main это будет обычный tour certificate по финальному tour_id, но UI label будет “Grand Final Certificate”, а не “Tour 8”.</div>
+        </div>
+
+        <div class="ps2-actions ps2-single-action">
+          <button type="button" class="btn primary" data-ps2-action="grand-result" data-subject="${esc(key)}">Вернуться к результату</button>
+        </div>
+      </div>
+    `);
+  }
+
+
   function showPlan() {
     openModal(`
       <div class="ps2-modal">
@@ -303,7 +814,7 @@
           <div class="ps2-panel-title">Как готовиться</div>
           <div class="ps2-steps">
             <div><b>1</b><span>Откройте итог сезона по каждому предмету.</span></div>
-            <div><b>2</b><span>Посмотрите темы для усиления.</span></div>
+            <div><b>2</b><span>Посмотрите темы для изучения.</span></div>
             <div><b>3</b><span>Соберите практику по нужным турам и темам.</span></div>
             <div><b>4</b><span>Повторите уже закрытые вопросы только если хотите закрепить материал.</span></div>
           </div>
@@ -1382,6 +1893,65 @@
         return;
       }
 
+      if (action === "grand-state") {
+        setGrandState(actionBtn.dataset.state || "scheduled");
+        closeModal();
+        renderHome();
+        return;
+      }
+
+      if (action === "grand-select") {
+        showGrandSubjectSelect();
+        return;
+      }
+
+      if (action === "grand-confirm") {
+        showGrandConfirm(key || getGrandSubject());
+        return;
+      }
+
+      if (action === "grand-start" || action === "grand-continue") {
+        showGrandInProgress(key || getGrandSubject());
+        return;
+      }
+
+      if (action === "grand-submit") {
+        showGrandSubmitted(key || getGrandSubject());
+        return;
+      }
+
+      if (action === "grand-submitted") {
+        showGrandSubmitted(key || getGrandSubject());
+        return;
+      }
+
+      if (action === "grand-finalizing") {
+        showGrandFinalizing();
+        return;
+      }
+
+      if (action === "grand-result") {
+        setGrandState("results_ready");
+        renderHome();
+        showGrandResult(key || getGrandSubject());
+        return;
+      }
+
+      if (action === "grand-ranking") {
+        showGrandRanking(key || getGrandSubject(), GRAND_FINAL_TOUR_VALUE);
+        return;
+      }
+
+      if (action === "grand-ranking-tab") {
+        showGrandRanking(key || getGrandSubject(), actionBtn.dataset.rankingTab || GRAND_FINAL_TOUR_VALUE);
+        return;
+      }
+
+      if (action === "grand-certificate") {
+        showGrandCertificate(key || getGrandSubject());
+        return;
+      }
+
       if (action === "report") {
         showReport(key, actionBtn.dataset.scope || "season");
         return;
@@ -1725,6 +2295,170 @@
       [data-ps2-force-hidden="1"],
       [data-ps2-hidden-academic-season-review="1"] {
         display:none !important;
+      }
+
+
+      .ps2-grand-dev {
+        margin-top:12px;
+        padding-top:10px;
+        border-top:1px solid rgba(255,255,255,.32);
+      }
+      .ps2-grand-switch {
+        display:flex;
+        gap:6px;
+        overflow-x:auto;
+        padding:6px 0 0;
+        scrollbar-width:none;
+      }
+      .ps2-grand-switch::-webkit-scrollbar { display:none; }
+      .ps2-grand-switch button {
+        flex:0 0 auto;
+        border:1px solid rgba(255,255,255,.30);
+        background:rgba(255,255,255,.11);
+        color:#fff;
+        border-radius:999px;
+        padding:7px 9px;
+        font-size:10px;
+        font-weight:900;
+      }
+      .ps2-grand-switch button.is-on {
+        background:#fff;
+        color:#2563eb;
+      }
+      .ps2-grand-state-open,
+      .ps2-grand-state-results_ready {
+        background:linear-gradient(135deg, #1d4ed8, #16a34a);
+      }
+      .ps2-grand-state-in_progress {
+        background:linear-gradient(135deg, #0f172a, #2563eb);
+      }
+      .ps2-grand-state-submitted,
+      .ps2-grand-state-finalizing {
+        background:linear-gradient(135deg, #334155, #2563eb);
+      }
+      .ps2-final-badge {
+        display:inline-flex;
+        width:max-content;
+        border-radius:999px;
+        padding:5px 9px;
+        background:rgba(37,99,235,.10);
+        color:#2563eb;
+        font-size:10px;
+        font-weight:950;
+      }
+      .ps2-final-question-text {
+        margin-top:8px;
+        font-size:15px;
+        line-height:1.35;
+        color:var(--text);
+        font-weight:850;
+      }
+      .ps2-final-options {
+        display:grid;
+        gap:8px;
+        margin-top:12px;
+      }
+      .ps2-final-options button {
+        border:1px solid rgba(226,232,240,.95);
+        background:#fff;
+        color:var(--text);
+        border-radius:14px;
+        padding:11px;
+        text-align:left;
+        font-weight:800;
+      }
+      .ps2-final-options button.is-picked {
+        border-color:rgba(37,99,235,.34);
+        background:rgba(37,99,235,.08);
+        color:#2563eb;
+      }
+      .ps2-ranking-tabs button.is-final {
+        border-color:rgba(245,158,11,.35);
+        background:rgba(245,158,11,.10);
+        color:#b45309;
+      }
+      .ps2-ranking-tabs button.is-final.is-on {
+        background:rgba(245,158,11,.18) !important;
+        border-color:rgba(245,158,11,.45) !important;
+        color:#92400e !important;
+      }
+      .ps2-leaderboard-mini {
+        display:grid;
+        gap:8px;
+        margin-top:8px;
+      }
+      .ps2-lb-mini-row {
+        display:grid;
+        grid-template-columns:42px 1fr;
+        gap:7px;
+        align-items:center;
+        border:1px solid rgba(226,232,240,.92);
+        background:#fff;
+        border-radius:14px;
+        padding:9px;
+      }
+      .ps2-lb-mini-row b {
+        color:#2563eb;
+        font-size:14px;
+      }
+      .ps2-lb-mini-row span {
+        color:var(--text);
+        font-size:13px;
+        font-weight:950;
+      }
+      .ps2-lb-mini-row small {
+        grid-column:2;
+        color:rgba(15,23,42,.58);
+        font-size:11px;
+        font-weight:750;
+      }
+      .ps2-lb-mini-row.is-me {
+        border-color:rgba(37,99,235,.30);
+        background:rgba(37,99,235,.06);
+      }
+      .ps2-certificate-card {
+        border-radius:22px;
+        padding:18px;
+        background:linear-gradient(135deg, #fff, rgba(37,99,235,.08));
+        border:1px solid rgba(37,99,235,.18);
+        box-shadow:0 16px 35px rgba(15,23,42,.10);
+        text-align:center;
+      }
+      .ps2-cert-logo {
+        color:#2563eb;
+        font-weight:950;
+        letter-spacing:.04em;
+      }
+      .ps2-cert-title {
+        margin-top:10px;
+        color:var(--text);
+        font-size:20px;
+        font-weight:950;
+      }
+      .ps2-cert-name {
+        margin-top:12px;
+        color:var(--text);
+        font-size:17px;
+        font-weight:900;
+      }
+      .ps2-cert-meta {
+        margin-top:6px;
+        color:rgba(15,23,42,.65);
+        font-size:12px;
+        font-weight:800;
+      }
+      .ps2-cert-code {
+        margin-top:14px;
+        color:rgba(15,23,42,.48);
+        font-size:10px;
+        font-weight:850;
+        word-break:break-all;
+      }
+      .ps2-certificate-link {
+        margin-top:8px;
+        background:rgba(255,255,255,.16);
+        color:#fff;
+        border-color:rgba(255,255,255,.28);
       }
 
     `;
