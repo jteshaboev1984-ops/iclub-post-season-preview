@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "preview-panel-persist-v26-20260530";
+  const BUILD = "preview-state-select-v27-20260530";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] post-season build:", BUILD);
 
@@ -893,6 +893,14 @@
       interceptPreviewDbOff(event);
     }, true);
 
+    document.addEventListener("pointerdown", (event) => {
+      if (interceptPreviewDbOff(event)) return;
+    }, true);
+
+    document.addEventListener("touchstart", (event) => {
+      if (interceptPreviewDbOff(event)) return;
+    }, true);
+
     document.addEventListener("click", (event) => {
       if (interceptPreviewDbOff(event)) return;
 
@@ -905,7 +913,7 @@
       event.preventDefault();
       event.stopPropagation();
 
-      if (action === "preview-controls") return openPreviewControls();
+      if (action === "preview-controls") return;
 
       if (action === "modal-close") return closeModal();
 
@@ -1571,14 +1579,148 @@
     document.body.appendChild(btn);
   }
 
+
+  function isOldPreviewBadgeElement(el) {
+    if (!el || el === document.body || el === document.documentElement) return false;
+
+    const text = String(el.textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
+    const cls = String(el.className || "").toLowerCase();
+    const id = String(el.id || "").toLowerCase();
+    const href = String(el.getAttribute?.("href") || "").toLowerCase();
+    const title = String(el.getAttribute?.("title") || "").toLowerCase();
+    const aria = String(el.getAttribute?.("aria-label") || "").toLowerCase();
+
+    const combined = `${text} ${cls} ${id} ${href} ${title} ${aria}`;
+
+    return (
+      combined.includes("preview · db off") ||
+      combined.includes("preview db off") ||
+      (combined.includes("preview") && combined.includes("db off")) ||
+      (combined.includes("preview") && combined.includes("дб офф"))
+    );
+  }
+
+  function findOldPreviewBadgeFromTarget(target) {
+    let node = target?.nodeType === Node.TEXT_NODE ? target.parentElement : target;
+
+    for (let i = 0; node && i < 10; i += 1, node = node.parentElement) {
+      if (isOldPreviewBadgeElement(node)) return node;
+    }
+
+    return null;
+  }
+
+  function neutralizeOldPreviewBadges() {
+    const nodes = Array.from(document.querySelectorAll("a, button, div, span"));
+
+    nodes.forEach((el) => {
+      if (!isOldPreviewBadgeElement(el)) return;
+      if (el.id === "psp-phase-select" || el.closest?.("#psp-phase-select-wrap")) return;
+
+      el.dataset.pspPreviewBadgePassive = "1";
+      el.setAttribute("aria-label", "Preview DB off passive label");
+
+      if (el.tagName === "A") {
+        el.setAttribute("href", "javascript:void(0)");
+        el.removeAttribute("target");
+        el.removeAttribute("rel");
+      }
+
+      el.onclick = null;
+    });
+  }
+
+  // Important: old Preview · DB off badge must do nothing.
+  // It must not open Telegram and must not open the preview panel.
+  function interceptPreviewDbOff(event) {
+    const badge = findOldPreviewBadgeFromTarget(event.target);
+    if (!badge) return false;
+
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+
+    neutralizeOldPreviewBadges();
+    return true;
+  }
+
+  // Compatibility override: if older patches call these, they must not create any clickable preview button.
+  function installCleanPreviewControl() {
+    neutralizeOldPreviewBadges();
+  }
+
+  function installPreviewControlButton() {
+    neutralizeOldPreviewBadges();
+  }
+
+  function installPreviewPhaseSelect() {
+    neutralizeOldPreviewBadges();
+
+    const topbarRight =
+      document.querySelector("#topbar .topbar-right") ||
+      document.querySelector(".topbar-right");
+
+    if (!topbarRight) return;
+
+    let wrap = document.getElementById("psp-phase-select-wrap");
+
+    if (!wrap) {
+      wrap = document.createElement("div");
+      wrap.id = "psp-phase-select-wrap";
+      wrap.innerHTML = `
+        <select id="psp-phase-select" aria-label="Preview state">
+          <option value="auto">Auto</option>
+          <option value="postseason">После 7 туров</option>
+          <option value="grand_open">Финал открыт</option>
+          <option value="grand_in_progress">Финал начат</option>
+          <option value="grand_submitted">Ответы приняты</option>
+          <option value="grand_finalizing">Расчёт</option>
+          <option value="grand_ready">Итоги готовы</option>
+        </select>
+      `;
+
+      const bell =
+        document.getElementById("topbar-notifications") ||
+        topbarRight.querySelector("[data-action='open-notifications']") ||
+        topbarRight.firstElementChild;
+
+      topbarRight.insertBefore(wrap, bell || null);
+
+      const select = wrap.querySelector("#psp-phase-select");
+
+      select.addEventListener("change", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const next = select.value || "auto";
+        setPhase(next);
+        closeModal();
+
+        try { renderHomeRouter(); } catch {}
+        try { decorateRatingTab(); } catch {}
+        try { decorateProfileCertificates(); } catch {}
+      });
+    }
+
+    const select = document.getElementById("psp-phase-select");
+    if (select && select.value !== getPhaseRaw()) {
+      select.value = getPhaseRaw();
+    }
+
+    const homeActive = isHomeActive();
+    wrap.style.display = homeActive ? "block" : "none";
+  }
+
   function boot() {
     applyPhaseFromUrl();
     injectStyles();
     bindGlobal();
+    installPreviewPhaseSelect();
     installCleanPreviewControl();
 
     const tick = () => {
       try { installCleanPreviewControl(); } catch {}
+      try { installPreviewPhaseSelect(); } catch {}
       try { renderHomeRouter(); } catch {}
       try { decorateRatingTab(); } catch {}
       try { decorateProfileCertificates(); } catch {}
