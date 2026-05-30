@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "fix-preview-db-off-click-v23-20260530";
+  const BUILD = "preview-control-system-v25-20260530";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] post-season build:", BUILD);
 
@@ -907,6 +907,8 @@
       event.preventDefault();
       event.stopPropagation();
 
+      if (action === "preview-controls") return openPreviewControls();
+
       if (action === "modal-close") return closeModal();
 
       if (action === "set-phase") {
@@ -1472,12 +1474,113 @@
     document.head.appendChild(style);
   }
 
+
+  function looksLikeOldPreviewBadge(el) {
+    if (!el || el === document.body || el === document.documentElement) return false;
+
+    const text = String(el.textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
+    const cls = String(el.className || "").toLowerCase();
+    const id = String(el.id || "").toLowerCase();
+    const href = String(el.getAttribute?.("href") || "").toLowerCase();
+    const title = String(el.getAttribute?.("title") || "").toLowerCase();
+    const aria = String(el.getAttribute?.("aria-label") || "").toLowerCase();
+
+    const combined = `${text} ${cls} ${id} ${href} ${title} ${aria}`;
+
+    return (
+      combined.includes("preview · db off") ||
+      combined.includes("preview db off") ||
+      (combined.includes("preview") && combined.includes("db off")) ||
+      (combined.includes("preview") && combined.includes("дб офф"))
+    );
+  }
+
+  function neutralizeOldPreviewBadges() {
+    const nodes = Array.from(document.querySelectorAll("a, button, div, span"));
+
+    nodes.forEach((el) => {
+      if (!looksLikeOldPreviewBadge(el)) return;
+      if (el.id === "psp-preview-control") return;
+
+      el.dataset.pspOldPreviewBadgeNeutralized = "1";
+
+      if (el.tagName === "A") {
+        el.setAttribute("href", "javascript:void(0)");
+        el.removeAttribute("target");
+        el.removeAttribute("rel");
+      }
+
+      el.onclick = null;
+      el.style.setProperty("display", "none", "important");
+      el.style.setProperty("pointer-events", "none", "important");
+    });
+  }
+
+  function installCleanPreviewControl() {
+    neutralizeOldPreviewBadges();
+
+    if (document.getElementById("psp-preview-control")) return;
+
+    if (!document.getElementById("psp-preview-control-style")) {
+      const style = document.createElement("style");
+      style.id = "psp-preview-control-style";
+      style.textContent = `
+        #psp-preview-control {
+          position: fixed;
+          left: 6px;
+          bottom: 64px;
+          z-index: 2147483647;
+          height: 28px;
+          padding: 0 12px;
+          border: 0;
+          border-radius: 999px;
+          background: #2563eb;
+          color: #fff;
+          font-size: 12px;
+          line-height: 28px;
+          font-weight: 900;
+          box-shadow: 0 8px 18px rgba(37,99,235,.28);
+          cursor: pointer;
+          user-select: none;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        #psp-preview-control:active {
+          transform: translateY(1px);
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    const btn = document.createElement("button");
+    btn.id = "psp-preview-control";
+    btn.type = "button";
+    btn.textContent = "Preview · DB off";
+    btn.setAttribute("aria-label", "Preview DB off");
+    btn.dataset.pspAction = "preview-controls";
+
+    const open = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+      openPreviewControls();
+    };
+
+    btn.addEventListener("pointerdown", open, true);
+    btn.addEventListener("touchstart", open, true);
+    btn.addEventListener("click", open, true);
+
+    document.body.appendChild(btn);
+  }
+
   function boot() {
     applyPhaseFromUrl();
     injectStyles();
     bindGlobal();
+    installCleanPreviewControl();
 
     const tick = () => {
+      try { installCleanPreviewControl(); } catch {}
       try { renderHomeRouter(); } catch {}
       try { decorateRatingTab(); } catch {}
       try { decorateProfileCertificates(); } catch {}
