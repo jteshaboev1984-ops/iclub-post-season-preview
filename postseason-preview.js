@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "preview-state-select-v27-20260530";
+  const BUILD = "grand-final-v29-fullscreen-tour-20260530";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] post-season build:", BUILD);
 
@@ -263,9 +263,9 @@
         kicker: tr("ФИНАЛ НАЧАТ", "FINAL BOSHLANDI", "FINAL STARTED"),
         title: `${subject.title} · Grand Final`,
         sub: tr("Финальная попытка в процессе.", "Final urinishi davom etmoqda.", "Final attempt is in progress."),
-        note: tr("Продолжите попытку. После завершения ответы изменить нельзя.", "Urinishni davom ettiring. Yakunlangandan keyin javoblarni o‘zgartirib bo‘lmaydi.", "Continue the attempt. Answers cannot be changed after submission."),
+        note: tr("Вернитесь к начатой попытке. После завершения ответы изменить нельзя.", "Boshlangan urinishga qayting. Yakunlangandan keyin javoblarni o‘zgartirib bo‘lmaydi.", "Return to the started attempt. Answers cannot be changed after submission."),
         stats: commonStats,
-        actions: `<button type="button" class="btn primary psp-full" data-psp-action="grand-continue" data-subject="${esc(key)}">${tr("Продолжить финал", "Finalni davom ettirish", "Continue final")}</button>`
+        actions: `<button type="button" class="btn primary psp-full" data-psp-action="grand-continue" data-subject="${esc(key)}">${tr("Вернуться к попытке", "Urinishga qaytish", "Return to attempt")}</button>`
       },
       grand_submitted: {
         kicker: tr("ОТВЕТЫ ПРИНЯТЫ", "JAVOBLAR QABUL QILINDI", "ANSWERS RECEIVED"),
@@ -386,9 +386,13 @@
   function openModal(html) {
     document.getElementById("psp-modal")?.remove();
 
+    const isFullScreen = String(html || "").includes("psp-quiz-screen");
+
     const modal = document.createElement("div");
     modal.id = "psp-modal";
-    modal.innerHTML = `<div class="psp-backdrop">${html}</div>`;
+    if (isFullScreen) modal.classList.add("psp-modal-fullscreen");
+
+    modal.innerHTML = `<div class="psp-backdrop${isFullScreen ? " is-fullscreen" : ""}">${html}</div>`;
     document.body.appendChild(modal);
     document.documentElement.classList.add("psp-modal-open");
     document.body.classList.add("psp-modal-open");
@@ -498,33 +502,161 @@
     ));
   }
 
+
+  function grandQuizStorageKey(key) {
+    return `iclub_preview_grand_quiz_v29_${key || getGrandSubject()}`;
+  }
+
+  function resetGrandQuizState(key) {
+    const state = {
+      q: 1,
+      total: 20,
+      selected: "",
+      answered: {}
+    };
+
+    localStorage.setItem(grandQuizStorageKey(key), JSON.stringify(state));
+    return state;
+  }
+
+  function getGrandQuizState(key) {
+    try {
+      const raw = localStorage.getItem(grandQuizStorageKey(key));
+      const parsed = raw ? JSON.parse(raw) : null;
+
+      if (!parsed || typeof parsed !== "object") return resetGrandQuizState(key);
+
+      const q = Math.max(1, Math.min(20, Number(parsed.q || 1)));
+      const total = 20;
+      const selected = ["A", "B", "C", "D"].includes(parsed.selected) ? parsed.selected : "";
+      const answered = parsed.answered && typeof parsed.answered === "object" ? parsed.answered : {};
+
+      return { q, total, selected, answered };
+    } catch {
+      return resetGrandQuizState(key);
+    }
+  }
+
+  function saveGrandQuizState(key, state) {
+    localStorage.setItem(grandQuizStorageKey(key), JSON.stringify(state));
+    return state;
+  }
+
+  function pickGrandAnswer(key, option) {
+    const state = getGrandQuizState(key);
+    state.selected = ["A", "B", "C", "D"].includes(option) ? option : "";
+    saveGrandQuizState(key, state);
+    return state;
+  }
+
+  function answerGrandQuestion(key) {
+    const state = getGrandQuizState(key);
+    if (!state.selected) return state;
+
+    state.answered[String(state.q)] = state.selected;
+
+    if (state.q >= state.total) {
+      saveGrandQuizState(key, state);
+      return { ...state, finished: true };
+    }
+
+    state.q += 1;
+    state.selected = "";
+    saveGrandQuizState(key, state);
+    return state;
+  }
+
+  function grandTimerText(state) {
+    const totalSeconds = 15 * 60;
+    const spent = Math.max(0, (Number(state.q || 1) - 1) * 36);
+    const remain = Math.max(0, totalSeconds - spent);
+    const mm = String(Math.floor(remain / 60)).padStart(2, "0");
+    const ss = String(remain % 60).padStart(2, "0");
+    return `${mm}:${ss}`;
+  }
+
+  function grandQuestionText(key, q) {
+    if (key === "mathematics") {
+      return q % 2 === 0
+        ? "Which transformation is needed before solving this equation?"
+        : "Which method gives the most reliable first step for this problem?";
+    }
+
+    return q % 2 === 0
+      ? "Which policy response best addresses the main cause of the problem?"
+      : "Which option best shows applying the concept rather than only recalling a definition?";
+  }
+
+  function grandOptions(key) {
+    if (key === "mathematics") {
+      return [
+        ["A", "Substitute values without checking the form"],
+        ["B", "Identify the structure of the expression first"],
+        ["C", "Round the answer before solving"],
+        ["D", "Use the longest formula available"]
+      ];
+    }
+
+    return [
+      ["A", "Recall the definition only"],
+      ["B", "Apply the idea to a new situation"],
+      ["C", "Choose by a keyword"],
+      ["D", "Ignore the context of the question"]
+    ];
+  }
+
   function showGrandAttempt(key) {
     const d = DATA[key] || DATA.economics;
     setGrandSubject(key);
     setPhase("grand_in_progress");
     renderHomeRouter();
 
-    openModal(modalShell(
-      tr("ФИНАЛ ИДЁТ", "FINAL DAVOM ETMOQDA", "FINAL IN PROGRESS"),
-      `${d.title} · Grand Final`,
-      "7/20 · 12:45",
-      `
-        <div class="psp-panel">
-          <div class="psp-panel-title">${tr("Вопрос финала", "Final savoli", "Final question")}</div>
-          <div class="psp-question">${tr("Какой вариант лучше показывает применение темы, а не простое запоминание термина?", "Qaysi javob mavzuni shunchaki yodlash emas, qo‘llashni yaxshiroq ko‘rsatadi?", "Which option best shows applying a topic rather than memorising a term?")}</div>
+    const state = getGrandQuizState(key);
+    const options = grandOptions(key, state.q);
+    const selected = state.selected;
+    const isLast = Number(state.q) >= Number(state.total);
+
+    openModal(`
+      <div class="psp-modal-card psp-quiz-screen">
+        <div class="psp-quiz-top">
+          <button type="button" class="psp-back" data-psp-action="modal-close">←</button>
+          <div class="psp-quiz-progress">${state.q}/${state.total}</div>
+          <div class="psp-quiz-timer">${grandTimerText(state)}</div>
+        </div>
+
+        <div class="psp-quiz-subject">${esc(d.title)} · Grand Final</div>
+
+        <div class="psp-quiz-card">
+          <div class="psp-quiz-meta">${tr("Финальный вопрос", "Final savoli", "Final question")}</div>
+          <div class="psp-question">${esc(grandQuestionText(key, state.q))}</div>
+
           <div class="psp-options">
-            <button>A. ${tr("Вспомнить определение", "Ta’rifni eslash", "Recall a definition")}</button>
-            <button class="is-picked">B. ${tr("Применить идею к новой ситуации", "G‘oyani yangi vaziyatda qo‘llash", "Apply the idea to a new situation")}</button>
-            <button>C. ${tr("Выбрать по ключевому слову", "Kalit so‘z orqali tanlash", "Choose by keyword")}</button>
-            <button>D. ${tr("Пропустить вопрос", "Savolni o‘tkazib yuborish", "Skip the question")}</button>
+            ${options.map(([letter, text]) => `
+              <button type="button"
+                class="${selected === letter ? "is-picked" : ""}"
+                data-psp-action="grand-pick"
+                data-subject="${esc(key)}"
+                data-option="${esc(letter)}">
+                <span class="psp-option-letter">${esc(letter)}</span>
+                <span>${esc(text)}</span>
+              </button>
+            `).join("")}
           </div>
         </div>
-        <div class="psp-actions">
-          <button type="button" class="btn primary" data-psp-action="grand-submit" data-subject="${esc(key)}">${tr("Завершить финал", "Finalni yakunlash", "Submit final")}</button>
+
+        <div class="psp-quiz-actions">
+          <button type="button"
+            class="btn primary"
+            data-psp-action="${isLast ? "grand-finish" : "grand-answer"}"
+            data-subject="${esc(key)}"
+            ${selected ? "" : "disabled"}>
+            ${isLast ? tr("Завершить финал", "Finalni yakunlash", "Finish final") : tr("Ответить", "Javob berish", "Answer")}
+          </button>
+
           <button type="button" class="btn" data-psp-action="modal-close">${tr("Выйти", "Chiqish", "Exit")}</button>
         </div>
-      `
-    ));
+      </div>
+    `);
   }
 
   function showGrandSubmitted(key) {
@@ -536,13 +668,19 @@
     openModal(modalShell(
       tr("ОТВЕТЫ ПРИНЯТЫ", "JAVOBLAR QABUL QILINDI", "ANSWERS RECEIVED"),
       `${d.title} · Grand Final`,
-      tr("Ответы сохранены.", "Javoblar saqlandi.", "Answers saved."),
+      tr("Финальная попытка завершена.", "Final urinishi yakunlandi.", "Final attempt submitted."),
       `
         <div class="psp-panel">
           <div class="psp-panel-title">${tr("Статус", "Holat", "Status")}</div>
-          <div class="psp-big-status">${tr("Попытка завершена", "Urinish yakunlandi", "Attempt submitted")}</div>
-          <div class="psp-muted">${tr("Результат, рейтинг и сертификат появятся после завершения финального окна.", "Natija, reyting va sertifikat final oynasi tugagandan keyin chiqadi.", "Result, ranking and certificate appear after the final window closes.")}</div>
+          <div class="psp-big-status">${tr("Ответы сохранены", "Javoblar saqlandi", "Answers saved")}</div>
+          <div class="psp-muted">${tr("Результат, рейтинг и сертификат откроются после закрытия финала.", "Natija, reyting va sertifikat final yopilgandan keyin ochiladi.", "Result, ranking and certificate open after the final closes.")}</div>
         </div>
+
+        <div class="psp-panel soft">
+          <div class="psp-panel-title">${tr("Почему рейтинг закрыт", "Nega reyting yopiq", "Why ranking is closed")}</div>
+          <div class="psp-muted">${tr("Во время финального окна рейтинг не показывается, чтобы участники были в равных условиях.", "Final vaqtida reyting ko‘rsatilmaydi, shunda barcha qatnashchilar teng sharoitda bo‘ladi.", "Ranking is hidden during the final window so all participants stay in equal conditions.")}</div>
+        </div>
+
         <div class="psp-actions single">
           <button type="button" class="btn primary" data-psp-action="modal-close">${tr("На главную", "Bosh sahifaga", "Home")}</button>
         </div>
@@ -615,19 +753,24 @@
     openModal(modalShell(
       tr("СЕРТИФИКАТ", "SERTIFIKAT", "CERTIFICATE"),
       "Grand Final Certificate",
-      `${d.title} · ${r.percent}% · #${r.regionRank} ${tr("в регионе", "hududda", "region")}`,
+      `${d.title} · Grand Final`,
       `
-        <div class="psp-cert">
-          <div class="psp-cert-logo">iClub</div>
-          <div class="psp-cert-title">Grand Final Certificate</div>
-          <div class="psp-cert-name">Preview Student</div>
-          <div class="psp-cert-meta">${esc(d.title)} · ${r.score}/${r.total} · ${r.time}</div>
-          <div class="psp-cert-code">ICL-202606-GF-${esc(String(key).toUpperCase())}-PREVIEW</div>
-        </div>
+        <div class="psp-tour-cert">
+          <div class="psp-tour-cert-head">
+            <div class="psp-cert-logo">iClub</div>
+            <div class="psp-tour-cert-type">Grand Final Certificate</div>
+          </div>
 
-        <div class="psp-panel soft">
-          <div class="psp-panel-title">${tr("Как будет в main", "Main’da qanday bo‘ladi", "Main mapping")}</div>
-          <div class="psp-muted">${tr("В рабочем app это будет текущий tour certificate по финальному туру, но с названием Grand Final.", "Ishchi app’da bu final tur bo‘yicha odatiy sertifikat bo‘ladi, lekin Grand Final nomi bilan.", "In main this uses the current tour certificate for the final tour, labelled Grand Final.")}</div>
+          <div class="psp-tour-cert-name">Preview Student</div>
+          <div class="psp-tour-cert-line">${esc(d.title)} · ${r.score}/${r.total} · ${r.percent}%</div>
+
+          <div class="psp-tour-cert-grid">
+            <div><b>#${r.regionRank}</b><span>${tr("Регион", "Hudud", "Region")}</span></div>
+            <div><b>#${r.overallRank}</b><span>${tr("Общий", "Umumiy", "Overall")}</span></div>
+            <div><b>${r.time}</b><span>${tr("Время", "Vaqt", "Time")}</span></div>
+          </div>
+
+          <div class="psp-tour-cert-code">ICL-202606-GF-${esc(String(key).toUpperCase())}-PREVIEW</div>
         </div>
 
         <div class="psp-actions single">
@@ -933,8 +1076,30 @@
       if (action === "plan") return showPlan();
       if (action === "grand-select") return showGrandSelect();
       if (action === "grand-confirm") return showGrandConfirm(key);
-      if (action === "grand-start" || action === "grand-continue") return showGrandAttempt(key);
-      if (action === "grand-submit" || action === "grand-status") return showGrandSubmitted(key);
+
+      if (action === "grand-start") {
+        resetGrandQuizState(key);
+        return showGrandAttempt(key);
+      }
+
+      if (action === "grand-continue") return showGrandAttempt(key);
+
+      if (action === "grand-pick") {
+        pickGrandAnswer(key, btn.dataset.option || "");
+        return showGrandAttempt(key);
+      }
+
+      if (action === "grand-answer") {
+        answerGrandQuestion(key);
+        return showGrandAttempt(key);
+      }
+
+      if (action === "grand-finish" || action === "grand-submit" || action === "grand-status") {
+        const result = answerGrandQuestion(key);
+        if (result && result.finished) return showGrandSubmitted(key);
+        return showGrandAttempt(key);
+      }
+
       if (action === "grand-finalizing") return showGrandFinalizing();
       if (action === "grand-result") return showGrandResult(key);
       if (action === "grand-certificate") return showGrandCertificate(key);
