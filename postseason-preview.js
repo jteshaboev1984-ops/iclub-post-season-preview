@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "grand-final-polish-v18-20260530";
+  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "restore-preview-core-v19-20260530";
   console.info("[iClub Preview] post-season build:", window.ICLUB_POSTSEASON_PREVIEW_BUILD);
 
 
@@ -277,6 +277,167 @@
       </section>
     `;
   }
+
+
+  function getCompList() {
+    return document.getElementById("home-competitive-list");
+  }
+
+  function getOldBlock() {
+    const list = getCompList();
+    return list ? (list.closest(".home-block") || list.parentElement) : null;
+  }
+
+  function subjectKeys() {
+    const list = getCompList();
+    if (!list) return ["economics", "mathematics"];
+
+    const keys = Array.from(list.querySelectorAll(".home-competitive-card"))
+      .map(card => String(card.dataset.subject || "").trim())
+      .filter(Boolean);
+
+    const uniq = Array.from(new Set(keys));
+    return uniq.length ? uniq.slice(0, 2) : ["economics", "mathematics"];
+  }
+
+  function cardHTML(key) {
+    const d = DATA[key] || DATA.economics;
+
+    return `
+      <div class="home-competitive-card ps2-subject-card" data-subject="${esc(key)}">
+        <div class="home-competitive-hero">
+          <div class="home-competitive-hero-img" aria-hidden="true"></div>
+        </div>
+
+        <div class="home-competitive-body">
+          <div class="home-competitive-title">${esc(d.title)}</div>
+          <div class="home-competitive-note">Итог сезона и практика доступны.</div>
+
+          <div class="ps2-metrics">
+            <div><b>${esc(d.tours)}</b><span>туров</span></div>
+            <div><b>${esc(d.avg)}</b><span>средний</span></div>
+            <div><b>${esc(d.rank)}</b><span>регион</span></div>
+          </div>
+
+          <div class="ps2-weak">${esc(d.weak)} темы изучить</div>
+
+          <div class="ps2-actions">
+            <button type="button" class="btn primary" data-ps2-action="report" data-subject="${esc(key)}">Итог сезона</button>
+            <button type="button" class="btn" data-ps2-action="practice" data-subject="${esc(key)}">Практика</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderHome() {
+    const oldBlock = getOldBlock();
+    if (!oldBlock || !oldBlock.parentNode) return;
+
+    document.getElementById("home-post-season-preview")?.remove();
+    document.getElementById("ps-safe-grand-card")?.remove();
+    document.getElementById("ps-safe-subject-summaries")?.remove();
+
+    const keys = subjectKeys();
+    oldBlock.style.display = "none";
+
+    let wrap = document.getElementById("ps2-postseason-home");
+    if (!wrap) {
+      wrap = document.createElement("div");
+      wrap.id = "ps2-postseason-home";
+      oldBlock.parentNode.insertBefore(wrap, oldBlock);
+    }
+
+    wrap.innerHTML = `
+      ${grandHomeHTML()}
+
+      <section class="ps2-section">
+        <h2>Итоги по предметам</h2>
+        <p>Откройте итог и начните изучение нужных тем.</p>
+        <div class="ps2-subject-list">
+          ${keys.map(cardHTML).join("")}
+        </div>
+      </section>
+    `;
+
+    bind(wrap);
+  }
+
+  let ps2ScrollY = 0;
+
+  function lockPs2Scroll() {
+    ps2ScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+
+    document.documentElement.classList.add("ps2-modal-open");
+    document.body.classList.add("ps2-modal-open");
+
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${ps2ScrollY}px`;
+    document.body.style.left = "0";
+    document.body.style.right = "0";
+    document.body.style.width = "100%";
+    document.body.style.overflow = "hidden";
+  }
+
+  function unlockPs2Scroll() {
+    document.documentElement.classList.remove("ps2-modal-open");
+    document.body.classList.remove("ps2-modal-open");
+
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.left = "";
+    document.body.style.right = "";
+    document.body.style.width = "";
+    document.body.style.overflow = "";
+
+    try {
+      window.scrollTo(0, ps2ScrollY || 0);
+    } catch {}
+  }
+
+  function openModal(html) {
+    const root = document.getElementById("modal-root");
+    if (!root) return;
+
+    lockPs2Scroll();
+
+    root.innerHTML = `<div class="ps2-backdrop">${html}</div>`;
+    root.setAttribute("aria-hidden", "false");
+    root.classList.add("is-open");
+
+    bind(root);
+  }
+
+  function closeModal() {
+    const root = document.getElementById("modal-root");
+    if (!root) return;
+
+    root.innerHTML = "";
+    root.setAttribute("aria-hidden", "true");
+    root.classList.remove("is-open");
+
+    unlockPs2Scroll();
+  }
+
+  function subjectChoiceCards() {
+    return subjectKeys().map(key => {
+      const d = DATA[key] || DATA.economics;
+      return `
+        <div class="ps2-plan-subject">
+          <div>
+            <div class="ps2-plan-title">${esc(d.title)}</div>
+            <div class="ps2-muted">${esc(d.tours)} туров · ${esc(d.avg)} · ${esc(d.rank)} регион</div>
+          </div>
+          <span class="ps2-weak mini">${esc(d.weak)} темы</span>
+          <div class="ps2-actions">
+            <button type="button" class="btn primary" data-ps2-action="report" data-subject="${esc(key)}">Итог сезона</button>
+            <button type="button" class="btn" data-ps2-action="practice" data-subject="${esc(key)}">Практика</button>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
 
   function grandSubjectCards(action = "grand-confirm") {
     return subjectKeys().map(key => {
