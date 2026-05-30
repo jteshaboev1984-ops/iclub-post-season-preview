@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "grand-final-v20-polish-fix-20260530";
+  window.ICLUB_POSTSEASON_PREVIEW_BUILD = "grand-final-v21-clean-flow-20260530";
   console.info("[iClub Preview] post-season build:", window.ICLUB_POSTSEASON_PREVIEW_BUILD);
 
 
@@ -163,6 +163,37 @@
     return next;
   }
 
+  function applyGrandStateFromUrl() {
+    try {
+      const params = new URLSearchParams(window.location.search || "");
+      const raw = params.get("grand");
+      if (!raw) return;
+
+      const aliases = {
+        before: "scheduled",
+        scheduled: "scheduled",
+        open: "open",
+        started: "in_progress",
+        in_progress: "in_progress",
+        submitted: "submitted",
+        finalizing: "finalizing",
+        results: "results_ready",
+        results_ready: "results_ready"
+      };
+
+      if (aliases[raw]) setGrandState(aliases[raw]);
+    } catch {}
+  }
+
+  window.setGrandPreviewState = function setGrandPreviewState(state) {
+    const next = setGrandState(state);
+    try { closeModal(); } catch {}
+    try { renderHome(); } catch {}
+    console.info("[iClub Preview] Grand Final state:", next);
+    return next;
+  };
+
+
   function getGrandSubject() {
     const raw = localStorage.getItem(GRAND_FINAL_SUBJECT_KEY);
     return raw && DATA[raw] ? raw : (subjectKeys()[0] || "economics");
@@ -225,7 +256,7 @@
         kicker: "ФИНАЛ НАЧАТ",
         title: `${subject.title} · Grand Final`,
         sub: "Финальная попытка в процессе.",
-        note: "Продолжите попытку. После сдачи ответы изменить нельзя.",
+        note: "Продолжите попытку. После завершения финала ответы изменить нельзя.",
         actions: `<button type="button" class="btn primary ps2-full-btn" data-ps2-action="grand-continue" data-subject="${esc(subjectKey)}">Продолжить финал</button>`
       },
       submitted: {
@@ -250,9 +281,8 @@
         actions: `
           <div class="ps2-actions">
             <button type="button" class="btn primary" data-ps2-action="grand-result" data-subject="${esc(subjectKey)}">Открыть результат</button>
-            <button type="button" class="btn" data-ps2-action="grand-ranking" data-subject="${esc(subjectKey)}">Рейтинг</button>
+            <button type="button" class="btn" data-ps2-action="grand-certificate" data-subject="${esc(subjectKey)}">Сертификат</button>
           </div>
-          <button type="button" class="btn ps2-full-btn ps2-certificate-link" data-ps2-action="grand-certificate" data-subject="${esc(subjectKey)}">Сертификат</button>
         `
       }
     }[state] || {};
@@ -273,7 +303,7 @@
 
         ${cfg.actions}
 
-        ${grandStateSwitchHTML()}
+
       </section>
     `;
   }
@@ -505,8 +535,8 @@
           <div class="ps2-panel-title">Что важно</div>
           <div class="ps2-steps">
             <div><b>1</b><span>У вас одна финальная попытка по этому предмету.</span></div>
-            <div><b>2</b><span>Время учитывается только при равных результатах.</span></div>
-            <div><b>3</b><span>После сдачи ответы изменить нельзя.</span></div>
+            <div><b>2</b><span>Время влияет только при равных результатах.</span></div>
+            <div><b>3</b><span>После завершения финала ответы изменить нельзя.</span></div>
             <div><b>4</b><span>Результат откроется после расчёта рейтинга.</span></div>
           </div>
         </div>
@@ -559,7 +589,7 @@
             class="btn primary"
             data-ps2-action="grand-submit"
             data-subject="${esc(key)}">Завершить и отправить</button>
-          <button type="button" class="btn" data-ps2-action="close">Сохранить и выйти</button>
+          <button type="button" class="btn" data-ps2-action="close">Выйти</button>
         </div>
       </div>
     `);
@@ -670,9 +700,8 @@
             data-mode="weak">Начать изучение</button>
         </div>
 
-        <div class="ps2-actions">
-          <button type="button" class="btn primary" data-ps2-action="grand-ranking" data-subject="${esc(key)}">Рейтинг</button>
-          <button type="button" class="btn" data-ps2-action="grand-certificate" data-subject="${esc(key)}">Сертификат</button>
+        <div class="ps2-actions ps2-single-action">
+          <button type="button" class="btn primary" data-ps2-action="grand-certificate" data-subject="${esc(key)}">Сертификат</button>
         </div>
       </div>
     `);
@@ -2750,6 +2779,70 @@
     setInterval(run, 1000);
   }
 
+  function decoratePreviewRatingScreen() {
+    const bodyText = String(document.body?.innerText || "");
+    const isRatingView =
+      bodyText.includes("Рейтинг") &&
+      (
+        document.querySelector('[data-tab="rating"].active, [data-view="rating"], #rating-view, .rating-view') ||
+        Array.from(document.querySelectorAll(".bottom-nav a, .bottom-nav button, nav a, nav button"))
+          .some(el => String(el.textContent || "").trim() === "Рейтинг" && el.className.includes("active"))
+      );
+
+    if (!isRatingView) return;
+
+    const existing = document.getElementById("ps2-rating-final-hint");
+    if (existing) return;
+
+    const target =
+      document.querySelector("#rating-view, .rating-view, [data-view='rating']") ||
+      Array.from(document.querySelectorAll("main, .app-screen, .screen, .page, body"))
+        .find(el => String(el.innerText || "").includes("Рейтинг")) ||
+      document.body;
+
+    if (!target) return;
+
+    const box = document.createElement("div");
+    box.id = "ps2-rating-final-hint";
+    box.className = "ps2-rating-final-hint";
+    box.innerHTML = `
+      <div class="ps2-kicker">РЕЙТИНГ</div>
+      <div class="ps2-rating-final-title">Финал будет отдельным пунктом</div>
+      <div class="ps2-rating-final-tabs">
+        <span>Все 7 туров</span>
+        <span>Тур 1</span>
+        <span>...</span>
+        <span>Тур 7</span>
+        <b>Финал</b>
+      </div>
+      <div class="ps2-muted">В main это подключится к текущему рейтингу как tour_no = ${GRAND_FINAL_TOUR_NO}. Финал не входит в “Все 7 туров”.</div>
+    `;
+
+    if (target === document.body) {
+      box.style.margin = "12px";
+      document.body.prepend(box);
+    } else {
+      target.prepend(box);
+    }
+  }
+
+  function startRatingPreviewDecorator() {
+    if (window.__ps2RatingPreviewDecoratorStarted) return;
+    window.__ps2RatingPreviewDecoratorStarted = true;
+
+    const run = () => {
+      try { decoratePreviewRatingScreen(); } catch {}
+    };
+
+    document.addEventListener("click", () => {
+      setTimeout(run, 80);
+      setTimeout(run, 350);
+    }, true);
+
+    setTimeout(run, 300);
+    setInterval(run, 1200);
+  }
+
   function startGrandActionFallback() {
     if (window.__ps2GrandActionFallbackStarted) return;
     window.__ps2GrandActionFallbackStarted = true;
@@ -2828,6 +2921,7 @@
   }
 
   function schedule() {
+    startRatingPreviewDecorator();
     startGrandActionFallback();
     startProfileAcademicReviewHider();
     let tries = 0;
@@ -2847,6 +2941,7 @@
 
   document.addEventListener("DOMContentLoaded", schedule);
   window.addEventListener("load", schedule);
+  applyGrandStateFromUrl();
   setTimeout(schedule, 100);
   setTimeout(startGrandActionFallback, 100);
   setTimeout(startGrandActionFallback, 800);
