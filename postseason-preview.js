@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "clean-postseason-router-v22-20260530";
+  const BUILD = "fix-preview-db-off-click-v23-20260530";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] post-season build:", BUILD);
 
@@ -849,19 +849,54 @@
     target.appendChild(card);
   }
 
+
+  function isPreviewDbOffTrigger(target) {
+    let node = target;
+
+    for (let i = 0; node && i < 8; i += 1, node = node.parentElement) {
+      if (!node || node === document.body || node === document.documentElement) continue;
+
+      const text = String(node.textContent || "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+
+      const cls = String(node.className || "").toLowerCase();
+      const id = String(node.id || "").toLowerCase();
+
+      const looksLikePreviewBadge =
+        (text.includes("preview") && (text.includes("db off") || text.includes("дб офф"))) ||
+        (cls.includes("preview") && cls.includes("db")) ||
+        (id.includes("preview") && id.includes("db"));
+
+      if (looksLikePreviewBadge) return node;
+    }
+
+    return null;
+  }
+
+  function interceptPreviewDbOff(event) {
+    const trigger = isPreviewDbOffTrigger(event.target);
+    if (!trigger) return false;
+
+    event.preventDefault();
+    event.stopPropagation();
+    if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+
+    openPreviewControls();
+    return true;
+  }
+
   function bindGlobal() {
     if (window.__pspCleanBound) return;
     window.__pspCleanBound = true;
 
+    document.addEventListener("pointerdown", (event) => {
+      interceptPreviewDbOff(event);
+    }, true);
+
     document.addEventListener("click", (event) => {
-      const previewBadge = event.target?.closest?.("*");
-      const previewText = String(previewBadge?.textContent || "");
-      if (previewText.trim() === "Preview · DB off" || previewText.trim() === "Preview DB off") {
-        event.preventDefault();
-        event.stopPropagation();
-        openPreviewControls();
-        return;
-      }
+      if (interceptPreviewDbOff(event)) return;
 
       const btn = event.target?.closest?.("[data-psp-action]");
       if (!btn) return;
