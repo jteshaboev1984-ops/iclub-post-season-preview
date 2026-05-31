@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v38-practice-timer-labels-20260531";
+  const BUILD = "grand-final-v39-align-quiz-ui-main-20260531";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -845,13 +845,13 @@
     const left = questionLeft(state);
 
     openFinalScreen(`
-      <div class="psp-final-shell">
-        <div class="psp-final-top">
-          <div class="psp-progress">${state.q}/${FINAL_QUESTIONS_COUNT}</div>
+      <div class="psp-final-shell psp-main-quiz-shell">
+        <div class="psp-main-quiz-top">
+          <div class="psp-main-quiz-progress">${state.q}/${FINAL_QUESTIONS_COUNT}</div>
           <div id="psp-final-timer" class="psp-timer ${left <= 10 ? "is-danger" : ""}">${fmt(left)}</div>
         </div>
 
-        <div class="psp-final-subject">${esc(d.title)} · Grand Final</div>
+        <div class="psp-main-quiz-sub">${esc(d.title)} · Grand Final</div>
 
         <div class="psp-question-card">
           <div class="psp-panel-title">${tr("Финальный вопрос", "Final savoli", "Final question")}</div>
@@ -871,7 +871,7 @@
           </div>
         </div>
 
-        <div class="psp-final-actions">
+        <div class="psp-main-quiz-actions psp-main-quiz-actions-two">
           <button type="button"
             class="btn primary"
             data-psp-action="answer"
@@ -1390,16 +1390,16 @@
     const question = state.questions[Math.max(0, Math.min(total - 1, state.q - 1))];
 
     openPracticeScreen(`
-      <div class="psp-practice-shell">
-        <div class="psp-practice-top">
-          <button type="button" class="psp-back" data-psp-action="practice-finish" data-subject="${esc(key)}">←</button>
-          <div>
-            <div class="psp-kicker">${tr("ПРАКТИКА", "AMALIYOT", "PRACTICE")}</div>
-            <div class="psp-practice-title">${esc(d.title)}</div>
-            <div class="psp-muted">${state.q}/${total} · ${esc(question.sourceTopic || "Practice")}</div>
-          </div>
+      <div class="psp-practice-shell psp-main-quiz-shell">
+        <div class="psp-main-quiz-top">
+          <div class="psp-main-quiz-progress">${state.q}/${total}</div>
           <div id="psp-practice-timer" class="psp-practice-timer">00:00</div>
+          <button type="button" class="psp-main-quiz-stop" data-psp-action="practice-finish" data-subject="${esc(key)}">
+            ${tr("Остановить", "To‘xtatish", "Stop")}
+          </button>
         </div>
+
+        <div class="psp-main-quiz-sub">${esc(d.title)} · ${esc(question.sourceTopic || "Practice")}</div>
 
         <div class="psp-question-card">
           <div class="psp-panel-title">${tr("Вопрос практики", "Amaliyot savoli", "Practice question")}</div>
@@ -1419,7 +1419,7 @@
           </div>
         </div>
 
-        <div class="psp-practice-actions">
+        <div class="psp-main-quiz-actions">
           <button type="button"
             class="btn primary"
             data-psp-action="practice-answer"
@@ -1495,7 +1495,7 @@
 
         <div class="psp-result-actions">
           <button type="button" class="btn" data-psp-action="practice" data-subject="${esc(key)}">${tr("Изменить формат", "Formatni o‘zgartirish", "Change format")}</button>
-          <button type="button" class="btn primary" data-psp-action="practice-start" data-subject="${esc(key)}" data-mode="${esc(state.mode || "regular")}">${tr("Пройти ещё раз", "Yana bir marta o‘tish", "Try again")}</button>
+          <button type="button" class="btn primary" data-psp-action="practice-start" data-subject="${esc(key)}" data-mode="${esc(state.mode || "regular")}">${tr("Пройти снова", "Yana o‘tish", "Try again")}</button>
         </div>
       `
     ));
@@ -2445,11 +2445,103 @@
     document.head.appendChild(style);
   }
 
+
+  function injectMainLikeQuizStyles() {
+    if (document.getElementById("psp-v39-main-like-quiz")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-v39-main-like-quiz";
+    style.textContent = `
+      /* PSP_MAIN_LIKE_QUIZ_V39 */
+      .psp-main-quiz-shell {
+        justify-content: flex-start !important;
+      }
+
+      .psp-main-quiz-top {
+        display: grid !important;
+        grid-template-columns: auto auto 1fr !important;
+        align-items: center !important;
+        gap: 10px !important;
+        padding: 4px 0 12px !important;
+        margin: 0 !important;
+        background: #f8fafc !important;
+      }
+
+      #psp-final-screen .psp-main-quiz-top {
+        grid-template-columns: 1fr auto !important;
+      }
+
+      .psp-main-quiz-progress {
+        color: #0f172a;
+        font-size: 15px;
+        line-height: 1;
+        font-weight: 950;
+      }
+
+      .psp-main-quiz-sub {
+        color: rgba(15,23,42,.62);
+        font-size: 12px;
+        line-height: 1.25;
+        font-weight: 800;
+        margin: 8px 0 10px;
+      }
+
+      .psp-main-quiz-stop {
+        justify-self: end;
+        min-width: 82px;
+        height: 34px;
+        border-radius: 14px;
+        border: 1px solid rgba(226,232,240,.95);
+        background: #fff;
+        color: #0f172a;
+        font-size: 12px;
+        font-weight: 950;
+      }
+
+      .psp-main-quiz-actions {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 9px !important;
+        margin-top: 14px !important;
+        padding-top: 0 !important;
+      }
+
+      .psp-main-quiz-actions-two {
+        grid-template-columns: 1fr 1fr !important;
+      }
+
+      .psp-main-quiz-actions .btn[disabled] {
+        opacity: .45;
+        pointer-events: none;
+      }
+
+      .psp-practice-actions,
+      .psp-final-actions {
+        margin-top: 14px !important;
+        padding-top: 0 !important;
+      }
+
+      #psp-practice-screen .psp-question-card,
+      #psp-final-screen .psp-question-card {
+        margin-top: 0 !important;
+      }
+
+      #psp-practice-screen .psp-practice-timer,
+      #psp-final-screen .psp-timer {
+        min-width: 58px;
+        height: 32px;
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
     injectPracticeFullscreenStyles();
     injectPracticeUXPolishStyles();
+    injectMainLikeQuizStyles();
     bind();
     installPhaseSelect();
 
