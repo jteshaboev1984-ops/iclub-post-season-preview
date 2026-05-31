@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v36-sheet-fullscreen-root-20260531";
+  const BUILD = "grand-final-v37-restore-practice-flow-20260531";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -1017,6 +1017,131 @@
     ));
   }
 
+
+  function getPracticeConfigKey(key) {
+    return "iclub_preview_practice_config_v37_" + (key || getSubject());
+  }
+
+  function getPracticeStateKey(key) {
+    return "iclub_preview_practice_state_v37_" + (key || getSubject());
+  }
+
+  function getPracticeTopics(key, tour) {
+    const d = DATA[key] || DATA.economics;
+    const base = {
+      economics: {
+        "1-7": ["Demand & Supply", "Elasticity", "Market intervention", "Evaluation paragraphs", "Exchange rates", "Balance of payments"],
+        "1": ["Demand & Supply", "Elasticity", "Market intervention"],
+        "2": ["Income elasticity", "Cross elasticity", "Market failure"],
+        "3": ["Macroeconomic objectives", "Inflation", "Unemployment"],
+        "4": ["Fiscal policy", "Monetary policy", "Supply-side policy"],
+        "5": ["International trade", "Protectionism", "Exchange rates"],
+        "6": ["Economic growth", "Money and banking", "Policy effectiveness"],
+        "7": ["Balance of payments", "Development economics", "Globalisation"]
+      },
+      mathematics: {
+        "1-7": ["Quadratics", "Graphs", "Coordinate geometry", "Trigonometric identities", "Binomial coefficients", "Inequalities"],
+        "1": ["Quadratics", "Graphs", "Coordinate geometry"],
+        "2": ["Functions", "Transformations", "Sequences"],
+        "3": ["Differentiation", "Tangents", "Stationary points"],
+        "4": ["Integration", "Area", "Kinematics"],
+        "5": ["Vectors", "Trigonometry", "Radians"],
+        "6": ["Addition formulae", "Double angle", "Trigonometric equations"],
+        "7": ["Inequalities", "Binomial coefficients", "Series"]
+      },
+      biology: {
+        "1-7": ["Homeostasis", "Inheritance", "Photosynthesis", "Genetic technology", "Respiration", "Selection"],
+        "1": ["Cell structure", "Biological molecules", "Enzymes"],
+        "2": ["Transport", "Gas exchange", "Immunity"],
+        "3": ["DNA", "Protein synthesis", "Cell division"],
+        "4": ["Plant transport", "Mammalian transport", "Disease"],
+        "5": ["Control", "Inheritance", "Biodiversity"],
+        "6": ["Respiration", "Photosynthesis", "Homeostasis"],
+        "7": ["Genetic technology", "Selection", "Conservation"]
+      },
+      chemistry: {
+        "1-7": ["Equilibria", "Kinetics", "Organic reactions", "Electrochemistry", "Born-Haber cycles", "Entropy"],
+        "1": ["Atomic structure", "Bonding", "Stoichiometry"],
+        "2": ["Energetics", "Redox", "Equilibria"],
+        "3": ["Periodicity", "Group chemistry", "Organic basics"],
+        "4": ["Alcohols", "Carbonyls", "Carboxylic acids"],
+        "5": ["Arenes", "Nitrogen compounds", "Analysis"],
+        "6": ["Electrochemistry", "Lattice energy", "Entropy"],
+        "7": ["Synthetic routes", "Mechanisms", "Organic analysis"]
+      },
+      informatics: {
+        "1-7": ["Algorithms", "Networks", "Data representation", "Cybersecurity", "Databases", "Boolean logic"],
+        "1": ["Algorithms", "Pseudocode", "Flowcharts"],
+        "2": ["Data representation", "Binary", "Hexadecimal"],
+        "3": ["Programming", "Arrays", "Validation"],
+        "4": ["Databases", "Files", "Testing"],
+        "5": ["Searching", "Sorting", "Trace tables"],
+        "6": ["Networks", "Protocols", "Cybersecurity"],
+        "7": ["Boolean logic", "Systems", "Ethics"]
+      }
+    };
+
+    const subjectTopics = base[key] || {};
+    return subjectTopics[String(tour)] || subjectTopics["1-7"] || d.study || [];
+  }
+
+  function getPracticeConfig(key, mode) {
+    try {
+      const raw = localStorage.getItem(getPracticeConfigKey(key));
+      const parsed = raw ? JSON.parse(raw) : null;
+
+      if (parsed && typeof parsed === "object") {
+        return {
+          mode: parsed.mode || mode || "regular",
+          tour: parsed.tour || "1-7",
+          topics: Array.isArray(parsed.topics) ? parsed.topics : [],
+          difficulty: parsed.difficulty || "mixed",
+          count: Number(parsed.count || 10),
+          repeatSolved: !!parsed.repeatSolved
+        };
+      }
+    } catch {}
+
+    const tour = mode === "regular" ? "1-7" : "1-7";
+    const topics = getPracticeTopics(key, tour).slice(0, 3);
+
+    return {
+      mode: mode || "regular",
+      tour,
+      topics,
+      difficulty: "mixed",
+      count: 10,
+      repeatSolved: false
+    };
+  }
+
+  function savePracticeConfig(key, config) {
+    localStorage.setItem(getPracticeConfigKey(key), JSON.stringify(config));
+    return config;
+  }
+
+  function updatePracticeConfig(key, patch) {
+    const current = getPracticeConfig(key, patch.mode || undefined);
+    const next = { ...current, ...patch };
+
+    if (patch.tour && patch.tour !== current.tour) {
+      next.topics = getPracticeTopics(key, patch.tour).slice(0, 3);
+    }
+
+    savePracticeConfig(key, next);
+    return next;
+  }
+
+  function buildPracticeQuestions(key, config) {
+    const d = DATA[key] || DATA.economics;
+    const questions = d.questions.slice(0, Math.min(3, d.questions.length));
+
+    return questions.map((q, index) => ({
+      ...q,
+      sourceTopic: (config.topics && config.topics[index % Math.max(1, config.topics.length)]) || d.study[index % Math.max(1, d.study.length)] || "Practice"
+    }));
+  }
+
   function showPractice(key) {
     const d = DATA[key] || DATA.economics;
 
@@ -1026,24 +1151,321 @@
       d.title,
       `
         <div class="psp-choice-list">
-          <div class="psp-choice">
+          <button type="button" class="psp-choice psp-choice-button" data-psp-action="practice-regular" data-subject="${esc(key)}">
             <div class="psp-choice-title">${tr("Обычная практика", "Oddiy amaliyot", "Regular practice")}</div>
             <div class="psp-muted">${tr("Быстрый запуск привычной практики по предмету.", "Fan bo‘yicha odatiy amaliyotni tez boshlash.", "Quick start for usual practice.")}</div>
-          </div>
+          </button>
 
-          <div class="psp-choice">
+          <button type="button" class="psp-choice psp-choice-button" data-psp-action="practice-study" data-subject="${esc(key)}">
             <div class="psp-choice-title">${tr("Изучить темы", "Mavzularni o‘rganish", "Study topics")}</div>
-            <div class="psp-muted">${tr("Выбор тура и тем для изучения.", "O‘rganish uchun tur va mavzularni tanlash.", "Choose tour and topics to study.")}</div>
-          </div>
+            <div class="psp-muted">${tr("Выберите тур и темы, которые нужно изучить или закрепить.", "O‘rganish yoki mustahkamlash kerak bo‘lgan tur va mavzularni tanlang.", "Choose tour and topics to study or reinforce.")}</div>
+          </button>
 
-          <div class="psp-choice">
+          <button type="button" class="psp-choice psp-choice-button" data-psp-action="practice-build" data-subject="${esc(key)}">
             <div class="psp-choice-title">${tr("Собрать практику", "Amaliyot yig‘ish", "Build practice")}</div>
-            <div class="psp-muted">${tr("Тур, темы, сложность и количество вопросов.", "Tur, mavzu, qiyinlik va savollar soni.", "Tour, topics, difficulty and number of questions.")}</div>
-          </div>
+            <div class="psp-muted">${tr("Выберите тур, темы, сложность и количество вопросов.", "Tur, mavzu, qiyinlik va savollar sonini tanlang.", "Choose tour, topics, difficulty and number of questions.")}</div>
+          </button>
         </div>
       `
     ));
   }
+
+  function showPracticeBuilder(key, mode) {
+    const d = DATA[key] || DATA.economics;
+    const config = getPracticeConfig(key, mode);
+    config.mode = mode;
+    savePracticeConfig(key, config);
+
+    const topics = getPracticeTopics(key, config.tour);
+    const title = mode === "study"
+      ? tr("Изучить темы", "Mavzularni o‘rganish", "Study topics")
+      : tr("Собрать практику", "Amaliyot yig‘ish", "Build practice");
+
+    const subtitle = mode === "study"
+      ? tr("Фокус на темах, которые требуют изучения или закрепления.", "O‘rganish yoki mustahkamlash kerak bo‘lgan mavzular.", "Focus on topics that need study or reinforcement.")
+      : tr("Настройте практику под свою цель.", "Amaliyotni maqsadingizga moslang.", "Customize practice for your goal.");
+
+    openSheet(sheet(
+      tr("ПРАКТИКА", "AMALIYOT", "PRACTICE"),
+      title,
+      `${d.title} · ${subtitle}`,
+      `
+        <div class="psp-panel">
+          <div class="psp-panel-title">${tr("Тур", "Tur", "Tour")}</div>
+          <div class="psp-filter-row">
+            ${["1-7","1","2","3","4","5","6","7"].map((tour) => `
+              <button type="button"
+                class="${config.tour === tour ? "is-on" : ""}"
+                data-psp-action="practice-set"
+                data-subject="${esc(key)}"
+                data-mode="${esc(mode)}"
+                data-field="tour"
+                data-value="${esc(tour)}">
+                ${tour === "1-7" ? tr("Все 7", "7 tur", "All 7") : `${tr("Тур", "Tur", "Tour")} ${tour}`}
+              </button>
+            `).join("")}
+          </div>
+        </div>
+
+        <div class="psp-panel">
+          <div class="psp-panel-title">${tr("Темы", "Mavzular", "Topics")}</div>
+          <div class="psp-topic-list">
+            ${topics.map((topic) => `
+              <button type="button"
+                class="${config.topics.includes(topic) ? "is-on" : ""}"
+                data-psp-action="practice-topic"
+                data-subject="${esc(key)}"
+                data-mode="${esc(mode)}"
+                data-topic="${esc(topic)}">
+                ${esc(topic)}
+              </button>
+            `).join("")}
+          </div>
+          <div class="psp-muted psp-mini-note">${tr("Выбранные темы попадут в практику. В main список будет приходить из базы вопросов.", "Tanlangan mavzular amaliyotga kiradi. Main’da ro‘yxat savollar bazasidan olinadi.", "Selected topics go into practice. In main, the list comes from the question bank.")}</div>
+        </div>
+
+        ${mode === "build" ? `
+          <div class="psp-panel">
+            <div class="psp-panel-title">${tr("Сложность", "Qiyinlik", "Difficulty")}</div>
+            <div class="psp-filter-row">
+              ${[
+                ["mixed", "Mixed"],
+                ["easy", "Easy"],
+                ["medium", "Medium"],
+                ["hard", "Hard"]
+              ].map(([value, label]) => `
+                <button type="button"
+                  class="${config.difficulty === value ? "is-on" : ""}"
+                  data-psp-action="practice-set"
+                  data-subject="${esc(key)}"
+                  data-mode="${esc(mode)}"
+                  data-field="difficulty"
+                  data-value="${esc(value)}">
+                  ${esc(label)}
+                </button>
+              `).join("")}
+            </div>
+          </div>
+
+          <div class="psp-panel">
+            <div class="psp-panel-title">${tr("Количество", "Soni", "Count")}</div>
+            <div class="psp-filter-row">
+              ${[5,10,20,30].map((count) => `
+                <button type="button"
+                  class="${config.count === count ? "is-on" : ""}"
+                  data-psp-action="practice-set"
+                  data-subject="${esc(key)}"
+                  data-mode="${esc(mode)}"
+                  data-field="count"
+                  data-value="${count}">
+                  ${count}
+                </button>
+              `).join("")}
+            </div>
+          </div>
+
+          <div class="psp-panel">
+            <button type="button"
+              class="psp-repeat-row ${config.repeatSolved ? "is-on" : ""}"
+              data-psp-action="practice-repeat"
+              data-subject="${esc(key)}"
+              data-mode="${esc(mode)}">
+              <span>${tr("Повторять уже решённые", "Yechilganlarni ham takrorlash", "Repeat solved questions")}</span>
+              <b>${config.repeatSolved ? "ON" : "OFF"}</b>
+            </button>
+          </div>
+        ` : ""}
+
+        <div class="psp-actions">
+          <button type="button" class="btn" data-psp-action="practice" data-subject="${esc(key)}">${tr("Назад", "Orqaga", "Back")}</button>
+          <button type="button" class="btn primary" data-psp-action="practice-start" data-subject="${esc(key)}" data-mode="${esc(mode)}">
+            ${mode === "study" ? tr("Начать изучение", "O‘rganishni boshlash", "Start studying") : tr("Начать практику", "Amaliyotni boshlash", "Start practice")}
+          </button>
+        </div>
+      `
+    ));
+  }
+
+  function startPreviewPractice(key, mode) {
+    const config = mode === "regular"
+      ? {
+          mode: "regular",
+          tour: "1-7",
+          topics: getPracticeTopics(key, "1-7").slice(0, 3),
+          difficulty: "mixed",
+          count: 10,
+          repeatSolved: false
+        }
+      : getPracticeConfig(key, mode);
+
+    const questions = buildPracticeQuestions(key, config);
+
+    const state = {
+      subject: key,
+      mode: config.mode,
+      q: 1,
+      selected: "",
+      answers: {},
+      questions,
+      startedAt: Date.now(),
+      finished: false
+    };
+
+    localStorage.setItem(getPracticeStateKey(key), JSON.stringify(state));
+    closeSheet();
+    renderPracticeQuestion(key);
+  }
+
+  function getPracticeState(key) {
+    try {
+      const raw = localStorage.getItem(getPracticeStateKey(key));
+      const parsed = raw ? JSON.parse(raw) : null;
+      if (parsed && typeof parsed === "object" && Array.isArray(parsed.questions) && parsed.questions.length) {
+        return parsed;
+      }
+    } catch {}
+
+    startPreviewPractice(key, "regular");
+    return JSON.parse(localStorage.getItem(getPracticeStateKey(key)));
+  }
+
+  function savePracticeState(key, state) {
+    localStorage.setItem(getPracticeStateKey(key), JSON.stringify(state));
+    return state;
+  }
+
+  function openPracticeScreen(html) {
+    closeSheet();
+    closePracticeScreen();
+
+    const screen = document.createElement("div");
+    screen.id = "psp-practice-screen";
+    screen.innerHTML = html;
+
+    document.body.appendChild(screen);
+    document.documentElement.classList.add("psp-practice-open");
+    document.body.classList.add("psp-practice-open");
+  }
+
+  function closePracticeScreen() {
+    document.getElementById("psp-practice-screen")?.remove();
+    document.documentElement.classList.remove("psp-practice-open");
+    document.body.classList.remove("psp-practice-open");
+  }
+
+  function renderPracticeQuestion(key) {
+    const d = DATA[key] || DATA.economics;
+    const state = getPracticeState(key);
+    const total = state.questions.length;
+    const question = state.questions[Math.max(0, Math.min(total - 1, state.q - 1))];
+
+    openPracticeScreen(`
+      <div class="psp-practice-shell">
+        <div class="psp-practice-top">
+          <button type="button" class="psp-back" data-psp-action="practice-finish" data-subject="${esc(key)}">←</button>
+          <div>
+            <div class="psp-kicker">${tr("ПРАКТИКА", "AMALIYOT", "PRACTICE")}</div>
+            <div class="psp-practice-title">${esc(d.title)}</div>
+            <div class="psp-muted">${state.q}/${total} · ${esc(question.sourceTopic || "Practice")}</div>
+          </div>
+        </div>
+
+        <div class="psp-question-card">
+          <div class="psp-panel-title">${tr("Вопрос практики", "Amaliyot savoli", "Practice question")}</div>
+          <div class="psp-question-text">${esc(question.q)}</div>
+
+          <div class="psp-option-list">
+            ${question.options.map(([letter, text]) => `
+              <button type="button"
+                class="${state.selected === letter ? "is-picked" : ""}"
+                data-psp-action="practice-pick"
+                data-subject="${esc(key)}"
+                data-option="${esc(letter)}">
+                <span>${esc(letter)}</span>
+                <b>${esc(text)}</b>
+              </button>
+            `).join("")}
+          </div>
+        </div>
+
+        <div class="psp-practice-actions">
+          <button type="button"
+            class="btn primary"
+            data-psp-action="practice-answer"
+            data-subject="${esc(key)}"
+            ${state.selected ? "" : "disabled"}>
+            ${state.q >= total ? tr("Завершить практику", "Amaliyotni yakunlash", "Finish practice") : tr("Ответить", "Javob berish", "Answer")}
+          </button>
+        </div>
+      </div>
+    `);
+  }
+
+  function pickPracticeAnswer(key, option) {
+    const state = getPracticeState(key);
+    state.selected = ["A", "B", "C", "D"].includes(option) ? option : "";
+    savePracticeState(key, state);
+    renderPracticeQuestion(key);
+  }
+
+  function answerPracticeQuestion(key) {
+    const state = getPracticeState(key);
+    if (!state.selected) return;
+
+    state.answers[String(state.q)] = state.selected;
+    state.selected = "";
+
+    if (state.q >= state.questions.length) {
+      state.finished = true;
+      savePracticeState(key, state);
+      return finishPractice(key);
+    }
+
+    state.q += 1;
+    savePracticeState(key, state);
+    renderPracticeQuestion(key);
+  }
+
+  function finishPractice(key) {
+    closePracticeScreen();
+
+    const d = DATA[key] || DATA.economics;
+    const state = getPracticeState(key);
+    const total = state.questions.length;
+
+    let correct = 0;
+    state.questions.forEach((question, index) => {
+      if ((state.answers[String(index + 1)] || "") === question.correct) correct += 1;
+    });
+
+    const mistakes = Math.max(0, total - correct);
+    const percent = Math.round((correct / Math.max(1, total)) * 100);
+
+    openSheet(sheet(
+      tr("РЕЗУЛЬТАТ ПРАКТИКИ", "AMALIYOT NATIJASI", "PRACTICE RESULT"),
+      d.title,
+      `${correct}/${total} · ${percent}%`,
+      `
+        <div class="psp-report-grid">
+          <div><b>${correct}/${total}</b><span>${tr("Ответы", "Javoblar", "Answers")}</span></div>
+          <div><b>${percent}%</b><span>${tr("Результат", "Natija", "Result")}</span></div>
+          <div><b>${mistakes}</b><span>${tr("Ошибки", "Xatolar", "Mistakes")}</span></div>
+          <div><b>${state.mode === "regular" ? "Regular" : state.mode === "study" ? "Study" : "Custom"}</b><span>${tr("Формат", "Format", "Mode")}</span></div>
+        </div>
+
+        <div class="psp-panel">
+          <div class="psp-panel-title">${tr("Что дальше", "Keyingi qadam", "Next")}</div>
+          <div class="psp-muted">${mistakes ? tr("Откройте темы для изучения и повторите вопросы по слабым местам.", "O‘rganish mavzularini oching va zaif joylar bo‘yicha savollarni takrorlang.", "Open study topics and repeat weak areas.") : tr("Хороший результат. Можно собрать практику сложнее.", "Yaxshi natija. Qiyinroq amaliyot yig‘ish mumkin.", "Good result. You can build a harder practice.")}</div>
+        </div>
+
+        <div class="psp-actions">
+          <button type="button" class="btn" data-psp-action="practice" data-subject="${esc(key)}">${tr("Выбрать формат", "Format tanlash", "Choose format")}</button>
+          <button type="button" class="btn primary" data-psp-action="practice-start" data-subject="${esc(key)}" data-mode="${esc(state.mode || "regular")}">${tr("Повторить", "Takrorlash", "Repeat")}</button>
+        </div>
+      `
+    ));
+  }
+
 
   function decorateRatingTab() {
     const view = document.querySelector("#view-rating.is-active, [data-view='rating'].is-active, .rating-view.is-active");
@@ -1174,6 +1596,44 @@
 
       if (action === "report") return showReport(key);
       if (action === "practice") return showPractice(key);
+
+      if (action === "practice-regular") return startPreviewPractice(key, "regular");
+      if (action === "practice-study") return showPracticeBuilder(key, "study");
+      if (action === "practice-build") return showPracticeBuilder(key, "build");
+
+      if (action === "practice-set") {
+        const field = btn.dataset.field || "";
+        const value = btn.dataset.value || "";
+        const mode = btn.dataset.mode || "build";
+        const patch = { mode };
+        patch[field] = field === "count" ? Number(value || 10) : value;
+        updatePracticeConfig(key, patch);
+        return showPracticeBuilder(key, mode);
+      }
+
+      if (action === "practice-topic") {
+        const mode = btn.dataset.mode || "study";
+        const topic = btn.dataset.topic || "";
+        const config = getPracticeConfig(key, mode);
+        const has = config.topics.includes(topic);
+        config.topics = has ? config.topics.filter((x) => x !== topic) : [...config.topics, topic];
+        if (!config.topics.length) config.topics = [topic].filter(Boolean);
+        savePracticeConfig(key, config);
+        return showPracticeBuilder(key, mode);
+      }
+
+      if (action === "practice-repeat") {
+        const mode = btn.dataset.mode || "build";
+        const config = getPracticeConfig(key, mode);
+        config.repeatSolved = !config.repeatSolved;
+        savePracticeConfig(key, config);
+        return showPracticeBuilder(key, mode);
+      }
+
+      if (action === "practice-start") return startPreviewPractice(key, btn.dataset.mode || "regular");
+      if (action === "practice-pick") return pickPracticeAnswer(key, btn.dataset.option || "");
+      if (action === "practice-answer") return answerPracticeQuestion(key);
+      if (action === "practice-finish") return finishPractice(key);
     }, true);
   }
 
@@ -1759,9 +2219,156 @@
     document.head.appendChild(style);
   }
 
+
+  function injectPracticeFullscreenStyles() {
+    if (document.getElementById("psp-v37-practice-styles")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-v37-practice-styles";
+    style.textContent = `
+      /* PSP_PRACTICE_FLOW_V37 */
+      html.psp-practice-open,
+      body.psp-practice-open {
+        overflow: hidden !important;
+        height: 100% !important;
+        overscroll-behavior: none !important;
+      }
+
+      #psp-practice-screen {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 2147483647 !important;
+        background: #f8fafc !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: stretch !important;
+        overflow-y: auto !important;
+      }
+
+      .psp-practice-shell {
+        width: min(100%, 430px);
+        min-height: 100dvh;
+        background: #f8fafc;
+        box-sizing: border-box;
+        padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
+        display: flex;
+        flex-direction: column;
+      }
+
+      .psp-practice-top {
+        display: grid;
+        grid-template-columns: 38px 1fr;
+        gap: 10px;
+        align-items: start;
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        background: #f8fafc;
+        padding: 4px 0 10px;
+        margin-bottom: 12px;
+      }
+
+      .psp-practice-title {
+        margin-top: 5px;
+        color: #0f172a;
+        font-size: 19px;
+        line-height: 1.12;
+        font-weight: 950;
+      }
+
+      .psp-practice-actions {
+        margin-top: auto;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 9px;
+        padding-top: 14px;
+      }
+
+      .psp-practice-actions .btn[disabled] {
+        opacity: .45;
+        pointer-events: none;
+      }
+
+      .psp-choice-button {
+        width: 100%;
+        text-align: left;
+        appearance: none;
+        -webkit-appearance: none;
+      }
+
+      .psp-filter-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .psp-filter-row button,
+      .psp-topic-list button {
+        border: 1px solid rgba(226,232,240,.95);
+        border-radius: 999px;
+        background: #fff;
+        color: rgba(15,23,42,.72);
+        padding: 8px 11px;
+        font-size: 11px;
+        line-height: 1;
+        font-weight: 900;
+      }
+
+      .psp-filter-row button.is-on,
+      .psp-topic-list button.is-on {
+        color: #2563eb;
+        border-color: rgba(37,99,235,.30);
+        background: rgba(37,99,235,.08);
+      }
+
+      .psp-topic-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .psp-mini-note {
+        margin-top: 10px;
+      }
+
+      .psp-repeat-row {
+        width: 100%;
+        border: 1px solid rgba(226,232,240,.95);
+        border-radius: 15px;
+        background: #fff;
+        padding: 11px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: rgba(15,23,42,.72);
+        font-size: 12px;
+        font-weight: 850;
+      }
+
+      .psp-repeat-row b {
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 950;
+      }
+
+      .psp-repeat-row.is-on {
+        border-color: rgba(37,99,235,.30);
+        background: rgba(37,99,235,.08);
+        color: #2563eb;
+      }
+
+      .psp-repeat-row.is-on b {
+        color: #2563eb;
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
+    injectPracticeFullscreenStyles();
     bind();
     installPhaseSelect();
 
