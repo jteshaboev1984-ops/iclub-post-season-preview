@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-clean-v33-20260531";
+  const BUILD = "grand-final-v34-fullscreen-plan-20260531";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -550,11 +550,30 @@
     document.body.classList.add("psp-final-open");
   }
 
+  function isFullscreenSheet(html) {
+    const text = String(html || "").toLowerCase();
+
+    return (
+      text.includes("grand olympiad") &&
+      (
+        text.includes("формат финала") ||
+        text.includes("final formati") ||
+        text.includes("final format")
+      )
+    );
+  }
+
   function openSheet(html) {
     closeSheet();
 
     const root = document.createElement("div");
     root.id = "psp-sheet";
+
+    if (isFullscreenSheet(html)) {
+      root.classList.add("psp-sheet-fullscreen");
+      document.documentElement.classList.add("psp-sheet-fullscreen-open");
+    }
+
     root.innerHTML = `<div class="psp-backdrop">${html}</div>`;
     document.body.appendChild(root);
     document.body.classList.add("psp-sheet-open");
@@ -563,6 +582,7 @@
   function closeSheet() {
     document.getElementById("psp-sheet")?.remove();
     document.body.classList.remove("psp-sheet-open");
+    document.documentElement.classList.remove("psp-sheet-fullscreen-open");
   }
 
   function sheet(kicker, title, sub, body) {
