@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v37-restore-practice-flow-20260531";
+  const BUILD = "grand-final-v38-practice-timer-labels-20260531";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -476,6 +476,8 @@
     if (!state.selected) return;
 
     state.answers[String(state.q)] = state.selected;
+    state.timeSpent = state.timeSpent && typeof state.timeSpent === "object" ? state.timeSpent : {};
+    state.timeSpent[String(state.q)] = currentPracticeElapsed(state);
     state.selected = "";
 
     if (state.q >= FINAL_QUESTIONS_COUNT) {
@@ -1308,6 +1310,8 @@
       answers: {},
       questions,
       startedAt: Date.now(),
+      questionStartedAt: Date.now(),
+      timeSpent: {},
       finished: false
     };
 
@@ -1334,6 +1338,31 @@
     return state;
   }
 
+  let practiceTimer = null;
+
+  function stopPracticeTimer() {
+    if (practiceTimer) clearInterval(practiceTimer);
+    practiceTimer = null;
+  }
+
+  function currentPracticeElapsed(state) {
+    const started = Number(state.questionStartedAt || Date.now());
+    return Math.max(0, Math.floor((Date.now() - started) / 1000));
+  }
+
+  function startPracticeTimer(key) {
+    stopPracticeTimer();
+
+    const tick = () => {
+      const state = getPracticeState(key);
+      const el = document.getElementById("psp-practice-timer");
+      if (el) el.textContent = fmt(currentPracticeElapsed(state));
+    };
+
+    tick();
+    practiceTimer = setInterval(tick, 1000);
+  }
+
   function openPracticeScreen(html) {
     closeSheet();
     closePracticeScreen();
@@ -1348,6 +1377,7 @@
   }
 
   function closePracticeScreen() {
+    stopPracticeTimer();
     document.getElementById("psp-practice-screen")?.remove();
     document.documentElement.classList.remove("psp-practice-open");
     document.body.classList.remove("psp-practice-open");
@@ -1368,6 +1398,7 @@
             <div class="psp-practice-title">${esc(d.title)}</div>
             <div class="psp-muted">${state.q}/${total} · ${esc(question.sourceTopic || "Practice")}</div>
           </div>
+          <div id="psp-practice-timer" class="psp-practice-timer">00:00</div>
         </div>
 
         <div class="psp-question-card">
@@ -1399,6 +1430,8 @@
         </div>
       </div>
     `);
+
+    startPracticeTimer(key);
   }
 
   function pickPracticeAnswer(key, option) {
@@ -1422,6 +1455,7 @@
     }
 
     state.q += 1;
+    state.questionStartedAt = Date.now();
     savePracticeState(key, state);
     renderPracticeQuestion(key);
   }
@@ -1440,6 +1474,7 @@
 
     const mistakes = Math.max(0, total - correct);
     const percent = Math.round((correct / Math.max(1, total)) * 100);
+    const totalTime = Object.values(state.timeSpent || {}).reduce((sum, value) => sum + Number(value || 0), 0);
 
     openSheet(sheet(
       tr("РЕЗУЛЬТАТ ПРАКТИКИ", "AMALIYOT NATIJASI", "PRACTICE RESULT"),
@@ -1450,7 +1485,7 @@
           <div><b>${correct}/${total}</b><span>${tr("Ответы", "Javoblar", "Answers")}</span></div>
           <div><b>${percent}%</b><span>${tr("Результат", "Natija", "Result")}</span></div>
           <div><b>${mistakes}</b><span>${tr("Ошибки", "Xatolar", "Mistakes")}</span></div>
-          <div><b>${state.mode === "regular" ? "Regular" : state.mode === "study" ? "Study" : "Custom"}</b><span>${tr("Формат", "Format", "Mode")}</span></div>
+          <div><b>${fmt(totalTime)}</b><span>${tr("Время", "Vaqt", "Time")}</span></div>
         </div>
 
         <div class="psp-panel">
@@ -1458,9 +1493,9 @@
           <div class="psp-muted">${mistakes ? tr("Откройте темы для изучения и повторите вопросы по слабым местам.", "O‘rganish mavzularini oching va zaif joylar bo‘yicha savollarni takrorlang.", "Open study topics and repeat weak areas.") : tr("Хороший результат. Можно собрать практику сложнее.", "Yaxshi natija. Qiyinroq amaliyot yig‘ish mumkin.", "Good result. You can build a harder practice.")}</div>
         </div>
 
-        <div class="psp-actions">
-          <button type="button" class="btn" data-psp-action="practice" data-subject="${esc(key)}">${tr("Выбрать формат", "Format tanlash", "Choose format")}</button>
-          <button type="button" class="btn primary" data-psp-action="practice-start" data-subject="${esc(key)}" data-mode="${esc(state.mode || "regular")}">${tr("Повторить", "Takrorlash", "Repeat")}</button>
+        <div class="psp-result-actions">
+          <button type="button" class="btn" data-psp-action="practice" data-subject="${esc(key)}">${tr("Изменить формат", "Formatni o‘zgartirish", "Change format")}</button>
+          <button type="button" class="btn primary" data-psp-action="practice-start" data-subject="${esc(key)}" data-mode="${esc(state.mode || "regular")}">${tr("Пройти ещё раз", "Yana bir marta o‘tish", "Try again")}</button>
         </div>
       `
     ));
@@ -2365,10 +2400,56 @@
     document.head.appendChild(style);
   }
 
+
+  function injectPracticeUXPolishStyles() {
+    if (document.getElementById("psp-v38-practice-ux")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-v38-practice-ux";
+    style.textContent = `
+      /* PSP_PRACTICE_UX_V38 */
+      .psp-practice-top {
+        grid-template-columns: 38px 1fr auto !important;
+        align-items: center !important;
+      }
+
+      .psp-practice-timer {
+        min-width: 58px;
+        height: 32px;
+        display: grid;
+        place-items: center;
+        border-radius: 999px;
+        border: 1px solid rgba(226,232,240,.95);
+        background: #fff;
+        color: #0f172a;
+        font-size: 12px;
+        font-weight: 950;
+      }
+
+      .psp-result-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 9px;
+        margin-top: 12px;
+      }
+
+      #psp-sheet .psp-result-actions {
+        margin-bottom: 0 !important;
+      }
+
+      .psp-result-actions .btn {
+        min-height: 44px;
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
     injectPracticeFullscreenStyles();
+    injectPracticeUXPolishStyles();
     bind();
     installPhaseSelect();
 
