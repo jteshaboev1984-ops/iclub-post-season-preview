@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v30-short-real-tour-20260530";
+  const BUILD = "grand-final-v31-question-timer-fullscreen-20260530";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] post-season build:", BUILD);
 
@@ -20,6 +20,7 @@
   */
 
   const TEST_FINAL_QUESTIONS = 4;
+  const TEST_QUESTION_SECONDS = 25;
   const TEST_FINAL_SECONDS = 90;
 
   const STORAGE = {
@@ -209,7 +210,8 @@
       selected: "",
       answers: {},
       startedAt: Date.now(),
-      durationSeconds: TEST_FINAL_SECONDS,
+      questionStartedAt: Date.now(),
+      durationSeconds: TEST_QUESTION_SECONDS,
       finished: false,
       finishReason: ""
     };
@@ -233,7 +235,8 @@
         selected: ["A", "B", "C", "D"].includes(parsed.selected) ? parsed.selected : "",
         answers: parsed.answers && typeof parsed.answers === "object" ? parsed.answers : {},
         startedAt: Number(parsed.startedAt || Date.now()),
-        durationSeconds: Number(parsed.durationSeconds || TEST_FINAL_SECONDS),
+        questionStartedAt: Number(parsed.questionStartedAt || Date.now()),
+        durationSeconds: Number(parsed.durationSeconds || TEST_QUESTION_SECONDS),
         finished: !!parsed.finished,
         finishReason: String(parsed.finishReason || "")
       };
@@ -248,8 +251,10 @@
   }
 
   function remainingSeconds(state) {
-    const elapsed = Math.floor((Date.now() - Number(state.startedAt || Date.now())) / 1000);
-    return Math.max(0, Number(state.durationSeconds || TEST_FINAL_SECONDS) - elapsed);
+    const started = Number(state.questionStartedAt || Date.now());
+    const duration = Number(state.durationSeconds || TEST_QUESTION_SECONDS);
+    const elapsed = Math.floor((Date.now() - started) / 1000);
+    return Math.max(0, duration - elapsed);
   }
 
   function timeText(seconds) {
@@ -290,21 +295,21 @@
     return state;
   }
 
-  function saveCurrentAnswerIfSelected(key) {
+  function saveCurrentAnswer(key, allowEmpty = true) {
     const state = getQuizState(key);
-    if (state.selected) {
-      state.answers[String(state.q)] = state.selected;
+    const value = state.selected || "";
+
+    if (value || allowEmpty) {
+      state.answers[String(state.q)] = value;
       state.selected = "";
       saveQuizState(key, state);
     }
+
     return state;
   }
 
-  function answerCurrentQuestion(key) {
+  function moveToNextQuestion(key) {
     const state = getQuizState(key);
-    if (!state.selected) return state;
-
-    state.answers[String(state.q)] = state.selected;
 
     if (state.q >= state.total) {
       return finishFinalAttempt(key, "submitted");
@@ -312,25 +317,64 @@
 
     state.q += 1;
     state.selected = "";
-    return saveQuizState(key, state);
+    state.questionStartedAt = Date.now();
+    state.durationSeconds = TEST_QUESTION_SECONDS;
+
+    saveQuizState(key, state);
+    showGrandAttempt(key);
+    return state;
+  }
+
+  function answerCurrentQuestion(key) {
+    const state = getQuizState(key);
+
+    if (!state.selected) return state;
+
+    state.answers[String(state.q)] = state.selected;
+    state.selected = "";
+    saveQuizState(key, state);
+
+    if (state.q >= state.total) {
+      return finishFinalAttempt(key, "submitted");
+    }
+
+    return moveToNextQuestion(key);
+  }
+
+  function timeoutCurrentQuestion(key) {
+    const state = getQuizState(key);
+
+    // Save selected answer if there is one. If nothing selected, save empty answer = 0.
+    state.answers[String(state.q)] = state.selected || "";
+    state.selected = "";
+    saveQuizState(key, state);
+
+    if (state.q >= state.total) {
+      return finishFinalAttempt(key, "time_expired");
+    }
+
+    return moveToNextQuestion(key);
   }
 
   function finishFinalAttempt(key, reason) {
     const state = getQuizState(key);
 
-    if (state.selected) {
-      state.answers[String(state.q)] = state.selected;
-      state.selected = "";
-    }
-
+    // Early finish also saves current selected answer if there is one; empty stays empty.
+    state.answers[String(state.q)] = state.selected || state.answers[String(state.q)] || "";
+    state.selected = "";
     state.finished = true;
     state.finishReason = reason || "submitted";
+
     saveQuizState(key, state);
+
+    stopTimerLoop();
+    closeFinalScreen();
 
     setGrandSubject(key);
     setPhase("grand_submitted");
     renderHomeRouter();
     showGrandSubmitted(key, reason);
+
     return state;
   }
 
@@ -358,7 +402,7 @@
 
       if (remaining <= 0 && !state.finished) {
         stopTimerLoop();
-        finishFinalAttempt(key, "time_expired");
+        timeoutCurrentQuestion(key);
       }
     };
 
@@ -627,6 +671,26 @@
     renderPostSeasonHome();
   }
 
+  function closeFinalScreen() {
+    stopTimerLoop();
+    document.getElementById("psp-final-screen")?.remove();
+    document.documentElement.classList.remove("psp-final-open");
+    document.body.classList.remove("psp-final-open");
+  }
+
+  function openFinalScreen(html) {
+    closeModal();
+    closeFinalScreen();
+
+    const screen = document.createElement("div");
+    screen.id = "psp-final-screen";
+    screen.innerHTML = html;
+
+    document.body.appendChild(screen);
+    document.documentElement.classList.add("psp-final-open");
+    document.body.classList.add("psp-final-open");
+  }
+
   function openModal(html) {
     document.getElementById("psp-modal")?.remove();
 
@@ -767,9 +831,9 @@
     const remaining = remainingSeconds(state);
     const selected = state.selected;
 
-    openModal(`
-      <div class="psp-quiz-screen">
-        <div class="psp-quiz-top">
+    openFinalScreen(`
+      <div class="psp-final-shell">
+        <div class="psp-final-top">
           <div class="psp-quiz-progress">${state.q}/${state.total}</div>
           <div id="psp-grand-timer" class="psp-quiz-timer ${remaining <= 10 ? "is-danger" : ""}">${timeText(remaining)}</div>
         </div>
@@ -794,7 +858,7 @@
           </div>
         </div>
 
-        <div class="psp-quiz-actions">
+        <div class="psp-final-actions">
           <button type="button"
             class="btn primary"
             data-psp-action="grand-answer"
@@ -807,7 +871,7 @@
             class="btn"
             data-psp-action="grand-finish-now"
             data-subject="${esc(key)}">
-            ${tr("Завершить финал", "Finalni yakunlash", "Finish final")}
+            ${tr("Завершить досрочно", "Muddatidan oldin yakunlash", "Finish early")}
           </button>
         </div>
       </div>
@@ -1107,13 +1171,12 @@
       }
 
       if (action === "grand-answer") {
-        const state = answerCurrentQuestion(key);
-        if (state.finished) return showGrandSubmitted(key, "submitted");
-        return showGrandAttempt(key);
+        answerCurrentQuestion(key);
+        return;
       }
 
       if (action === "grand-finish-now") {
-        return finishFinalAttempt(key, "submitted");
+        return finishFinalAttempt(key, "early_finish");
       }
 
       if (action === "grand-status") return showGrandSubmitted(key);
