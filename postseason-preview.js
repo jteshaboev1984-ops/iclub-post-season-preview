@@ -3,30 +3,17 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v31-question-timer-fullscreen-20260530";
+  const BUILD = "grand-final-clean-v33-20260531";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
-  console.info("[iClub Preview] post-season build:", BUILD);
+  console.info("[iClub Preview] build:", BUILD);
 
-  /*
-    Preview-only. No Supabase writes.
+  const FINAL_QUESTIONS_COUNT = 4;
+  const QUESTION_SECONDS = 25;
 
-    Future main mapping:
-    - Grand Final = tours.tour_no = 8
-    - Attempt = current tour_attempts
-    - Answers = current tour_answers
-    - Ranking = current ratings_cache / fallback tour_attempts
-    - Certificate = issue_tour_certificate(final_attempt_id)
-    - "Все 7 туров" remains tour_no 1..7. Final is separate.
-  */
-
-  const TEST_FINAL_QUESTIONS = 4;
-  const TEST_QUESTION_SECONDS = 25;
-  const TEST_FINAL_SECONDS = 90;
-
-  const STORAGE = {
-    phase: "iclub_preview_phase_v30",
-    subject: "iclub_preview_grand_subject_v30",
-    quizPrefix: "iclub_preview_grand_quiz_v30_"
+  const LS = {
+    phase: "iclub_preview_phase_v33",
+    subject: "iclub_preview_subject_v33",
+    quizPrefix: "iclub_preview_quiz_v33_"
   };
 
   const PHASES = [
@@ -50,50 +37,48 @@
       study: ["Evaluation paragraphs", "Exchange rates", "Balance of payments"],
       questions: [
         {
-          q: "Which option best shows applying the concept rather than only recalling a definition?",
+          q: "Какой вариант лучше всего показывает применение экономической идеи, а не простое запоминание определения?",
           options: [
-            ["A", "Recall the definition only"],
-            ["B", "Apply the idea to a new situation"],
-            ["C", "Choose by a keyword"],
-            ["D", "Ignore the context of the question"]
+            ["A", "Повторить только определение"],
+            ["B", "Применить идею к новой ситуации"],
+            ["C", "Выбрать ответ по одному ключевому слову"],
+            ["D", "Не учитывать контекст вопроса"]
           ],
           correct: "B"
         },
         {
-          q: "Which policy response best addresses the main cause of a balance of payments deficit caused by weak export competitiveness?",
+          q: "Какая мера лучше всего подходит, если дефицит платёжного баланса вызван слабой конкурентоспособностью экспорта?",
           options: [
-            ["A", "A temporary improvement in productivity and product quality"],
-            ["B", "A permanent ban on all imports"],
-            ["C", "Higher consumption without changing output"],
-            ["D", "Ignoring exchange rate effects"]
+            ["A", "Повысить производительность и качество продукции"],
+            ["B", "Навсегда запретить весь импорт"],
+            ["C", "Увеличить потребление без роста выпуска"],
+            ["D", "Игнорировать влияние обменного курса"]
           ],
           correct: "A"
         },
         {
-          q: "A strong evaluation paragraph should mainly show:",
+          q: "Сильный оценочный абзац в Economics должен прежде всего показывать:",
           options: [
-            ["A", "Only one memorised definition"],
-            ["B", "A reasoned judgement with conditions and limits"],
-            ["C", "A longer introduction"],
-            ["D", "A repeated question phrase"]
+            ["A", "Только одно выученное определение"],
+            ["B", "Обоснованное суждение с условиями и ограничениями"],
+            ["C", "Более длинное вступление"],
+            ["D", "Повторение формулировки вопроса"]
           ],
           correct: "B"
         },
         {
-          q: "If demand is price elastic, a fall in price is most likely to:",
+          q: "Если спрос эластичен по цене, снижение цены, скорее всего, приведёт к:",
           options: [
-            ["A", "Reduce total revenue"],
-            ["B", "Leave total revenue unchanged"],
-            ["C", "Increase total revenue"],
-            ["D", "Make demand perfectly inelastic"]
+            ["A", "Снижению общей выручки"],
+            ["B", "Неизменной общей выручке"],
+            ["C", "Росту общей выручки"],
+            ["D", "Полностью неэластичному спросу"]
           ],
           correct: "C"
         }
-      ],
-      topics: {
-        7: [["Balance of payments", 13, 18], ["Development economics", 10, 16], ["Globalisation", 8, 12]]
-      }
+      ]
     },
+
     mathematics: {
       title: "Математика",
       tours: "5/7",
@@ -101,66 +86,219 @@
       rank: "#18",
       weak: 4,
       strong: ["Quadratics", "Graphs", "Coordinate geometry"],
-      study: ["Trigonometric identities", "Binomial coefficients", "Inequalities", "Series"],
+      study: ["Trigonometric identities", "Binomial coefficients", "Inequalities"],
       questions: [
         {
-          q: "Which method gives the most reliable first step for this problem?",
+          q: "Какой первый шаг наиболее надёжен при решении сложного алгебраического выражения?",
           options: [
-            ["A", "Substitute numbers immediately"],
-            ["B", "Identify the structure of the expression first"],
-            ["C", "Round before solving"],
-            ["D", "Use the longest formula available"]
+            ["A", "Сразу подставить случайные числа"],
+            ["B", "Сначала определить структуру выражения"],
+            ["C", "Округлить до начала решения"],
+            ["D", "Использовать самую длинную формулу"]
           ],
           correct: "B"
         },
         {
-          q: "Before solving a trigonometric identity question, the best approach is to:",
+          q: "Перед решением тригонометрического тождества лучше всего:",
           options: [
-            ["A", "Rewrite using known identities"],
-            ["B", "Guess the angle"],
-            ["C", "Ignore the domain"],
-            ["D", "Differentiate both sides always"]
+            ["A", "Преобразовать выражение через известные тождества"],
+            ["B", "Угадать угол"],
+            ["C", "Игнорировать область допустимых значений"],
+            ["D", "Всегда дифференцировать обе части"]
           ],
           correct: "A"
         },
         {
-          q: "For a quadratic equation, the discriminant helps determine:",
+          q: "Дискриминант квадратного уравнения помогает определить:",
           options: [
-            ["A", "The number and type of roots"],
-            ["B", "Only the y-intercept"],
-            ["C", "The gradient of a line"],
-            ["D", "The area under a curve"]
+            ["A", "Количество и тип корней"],
+            ["B", "Только точку пересечения с осью y"],
+            ["C", "Градиент прямой"],
+            ["D", "Площадь под графиком"]
           ],
           correct: "A"
         },
         {
-          q: "In binomial expansion, the coefficient of a term is found using:",
+          q: "В биномиальном разложении коэффициент члена находится с помощью:",
           options: [
-            ["A", "Only substitution"],
-            ["B", "Binomial coefficients and powers"],
-            ["C", "Random estimation"],
-            ["D", "Completing the square"]
+            ["A", "Только подстановки"],
+            ["B", "Биномиальных коэффициентов и степеней"],
+            ["C", "Случайной оценки"],
+            ["D", "Выделения полного квадрата"]
           ],
           correct: "B"
         }
-      ],
-      topics: {
-        7: [["Inequalities", 11, 16], ["Differentiation", 10, 14], ["Integration", 8, 12]]
-      }
+      ]
+    },
+
+    biology: {
+      title: "Биология",
+      tours: "6/7",
+      avg: "71%",
+      rank: "#15",
+      weak: 3,
+      strong: ["Homeostasis", "Inheritance", "Photosynthesis"],
+      study: ["Genetic technology", "Respiration", "Selection"],
+      questions: [
+        {
+          q: "Что лучше всего показывает понимание homeostasis?",
+          options: [
+            ["A", "Запомнить только название органа"],
+            ["B", "Объяснить механизм отрицательной обратной связи"],
+            ["C", "Перечислить несвязанные термины"],
+            ["D", "Игнорировать изменение внутренней среды"]
+          ],
+          correct: "B"
+        },
+        {
+          q: "Почему ферменты чувствительны к высокой температуре?",
+          options: [
+            ["A", "Меняется форма активного центра"],
+            ["B", "Ферменты становятся элементами"],
+            ["C", "Субстрат исчезает всегда"],
+            ["D", "Температура не влияет на белки"]
+          ],
+          correct: "A"
+        },
+        {
+          q: "В наследовании phenotype зависит от:",
+          options: [
+            ["A", "Только цвета клетки"],
+            ["B", "Генотипа и влияния среды"],
+            ["C", "Только размера организма"],
+            ["D", "Случайного выбора хромосомы"]
+          ],
+          correct: "B"
+        },
+        {
+          q: "Главная роль chlorophyll в photosynthesis:",
+          options: [
+            ["A", "Поглощать световую энергию"],
+            ["B", "Разрушать глюкозу"],
+            ["C", "Выделять азот"],
+            ["D", "Останавливать диффузию"]
+          ],
+          correct: "A"
+        }
+      ]
+    },
+
+    chemistry: {
+      title: "Химия",
+      tours: "5/7",
+      avg: "69%",
+      rank: "#17",
+      weak: 4,
+      strong: ["Equilibria", "Kinetics", "Organic reactions"],
+      study: ["Electrochemistry", "Born-Haber cycles", "Entropy"],
+      questions: [
+        {
+          q: "Что произойдёт с равновесием, если увеличить концентрацию реагента?",
+          options: [
+            ["A", "Система сместится, чтобы уменьшить это изменение"],
+            ["B", "Равновесие всегда исчезает"],
+            ["C", "Скорость всех реакций станет нулевой"],
+            ["D", "Концентрация продуктов не может измениться"]
+          ],
+          correct: "A"
+        },
+        {
+          q: "Почему катализатор увеличивает скорость реакции?",
+          options: [
+            ["A", "Повышает температуру кипения"],
+            ["B", "Даёт альтернативный путь с меньшей энергией активации"],
+            ["C", "Меняет массу атомов"],
+            ["D", "Полностью расходуется в реакции"]
+          ],
+          correct: "B"
+        },
+        {
+          q: "В electrochemistry окисление означает:",
+          options: [
+            ["A", "Получение электронов"],
+            ["B", "Потерю электронов"],
+            ["C", "Исчезновение ионов"],
+            ["D", "Образование только воды"]
+          ],
+          correct: "B"
+        },
+        {
+          q: "Для различения органических соединений важнее всего:",
+          options: [
+            ["A", "Функциональная группа и условия реакции"],
+            ["B", "Только цвет пробирки"],
+            ["C", "Длина названия вещества"],
+            ["D", "Порядок букв в формуле"]
+          ],
+          correct: "A"
+        }
+      ]
+    },
+
+    informatics: {
+      title: "Информатика",
+      tours: "6/7",
+      avg: "76%",
+      rank: "#10",
+      weak: 3,
+      strong: ["Algorithms", "Networks", "Data representation"],
+      study: ["Cybersecurity", "Databases", "Boolean logic"],
+      questions: [
+        {
+          q: "Что лучше всего показывает понимание алгоритма?",
+          options: [
+            ["A", "Запомнить название команды"],
+            ["B", "Проследить шаги и результат выполнения"],
+            ["C", "Выбрать самый длинный код"],
+            ["D", "Игнорировать входные данные"]
+          ],
+          correct: "B"
+        },
+        {
+          q: "Почему validation важна при вводе данных?",
+          options: [
+            ["A", "Она проверяет, подходят ли данные заданным правилам"],
+            ["B", "Она всегда исправляет смысловую ошибку"],
+            ["C", "Она удаляет все данные"],
+            ["D", "Она заменяет базу данных"]
+          ],
+          correct: "A"
+        },
+        {
+          q: "В сети protocol нужен для:",
+          options: [
+            ["A", "Украшения интерфейса"],
+            ["B", "Единых правил передачи данных"],
+            ["C", "Увеличения размера файла"],
+            ["D", "Отключения адресов"]
+          ],
+          correct: "B"
+        },
+        {
+          q: "Boolean expression используется для:",
+          options: [
+            ["A", "Работы с условиями true/false"],
+            ["B", "Хранения только изображений"],
+            ["C", "Удаления всех переменных"],
+            ["D", "Измерения скорости интернета"]
+          ],
+          correct: "A"
+        }
+      ]
     }
   };
 
-  const esc = (value) => String(value == null ? "" : value)
+  const esc = (v) => String(v ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 
-  function lang() {
+  function getLang() {
     try {
-      const profileRaw = localStorage.getItem("iclub_profile_v1") || localStorage.getItem("profile") || "";
-      const profile = profileRaw ? JSON.parse(profileRaw) : null;
-      const value = String(profile?.language || profile?.language_code || profile?.uiLanguage || document.documentElement.lang || "ru").toLowerCase();
+      const raw = localStorage.getItem("iclub_profile_v1") || localStorage.getItem("profile") || "";
+      const p = raw ? JSON.parse(raw) : null;
+      const value = String(p?.language || p?.language_code || document.documentElement.lang || "ru").toLowerCase();
       if (value.startsWith("uz")) return "uz";
       if (value.startsWith("en")) return "en";
       return "ru";
@@ -170,94 +308,100 @@
   }
 
   function tr(ru, uz, en) {
-    const l = lang();
+    const l = getLang();
     if (l === "uz") return uz || ru;
     if (l === "en") return en || ru;
     return ru;
   }
 
-  function getPhaseRaw() {
-    const raw = localStorage.getItem(STORAGE.phase) || "auto";
-    return PHASES.some(([key]) => key === raw) ? raw : "auto";
+  function getPhase() {
+    const raw = localStorage.getItem(LS.phase) || "auto";
+    return PHASES.some(([k]) => k === raw) ? raw : "auto";
   }
 
   function setPhase(phase) {
-    const next = PHASES.some(([key]) => key === phase) ? phase : "auto";
-    localStorage.setItem(STORAGE.phase, next);
+    const next = PHASES.some(([k]) => k === phase) ? phase : "auto";
+    localStorage.setItem(LS.phase, next);
     syncPhaseSelect();
     return next;
   }
 
-  function getGrandSubject() {
-    const raw = localStorage.getItem(STORAGE.subject);
-    return raw && DATA[raw] ? raw : subjectKeys()[0] || "economics";
+  function getSubjectKeys() {
+    const list = document.getElementById("home-competitive-list");
+    const keys = list
+      ? Array.from(list.querySelectorAll(".home-competitive-card"))
+          .map((card) => String(card.dataset.subject || "").trim())
+          .filter(Boolean)
+      : [];
+
+    const unique = Array.from(new Set(keys)).filter((k) => DATA[k]);
+    return unique.length ? unique.slice(0, 2) : ["economics", "mathematics"];
   }
 
-  function setGrandSubject(key) {
+  function getSubject() {
+    const raw = localStorage.getItem(LS.subject);
+    return raw && DATA[raw] ? raw : getSubjectKeys()[0] || "economics";
+  }
+
+  function setSubject(key) {
     const next = DATA[key] ? key : "economics";
-    localStorage.setItem(STORAGE.subject, next);
+    localStorage.setItem(LS.subject, next);
     return next;
   }
 
   function quizKey(key) {
-    return STORAGE.quizPrefix + (key || getGrandSubject());
+    return LS.quizPrefix + (key || getSubject());
   }
 
-  function defaultQuizState(key) {
+  function freshQuizState() {
     return {
       q: 1,
-      total: TEST_FINAL_QUESTIONS,
       selected: "",
       answers: {},
-      startedAt: Date.now(),
       questionStartedAt: Date.now(),
-      durationSeconds: TEST_QUESTION_SECONDS,
+      attemptStartedAt: Date.now(),
       finished: false,
       finishReason: ""
     };
   }
 
-  function resetQuizState(key) {
-    const state = defaultQuizState(key);
+  function resetQuiz(key) {
+    const state = freshQuizState();
     localStorage.setItem(quizKey(key), JSON.stringify(state));
     return state;
   }
 
-  function getQuizState(key) {
+  function getQuiz(key) {
     try {
       const raw = localStorage.getItem(quizKey(key));
       const parsed = raw ? JSON.parse(raw) : null;
-      if (!parsed || typeof parsed !== "object") return resetQuizState(key);
+      if (!parsed || typeof parsed !== "object") return resetQuiz(key);
 
       return {
-        q: Math.max(1, Math.min(TEST_FINAL_QUESTIONS, Number(parsed.q || 1))),
-        total: TEST_FINAL_QUESTIONS,
+        q: Math.max(1, Math.min(FINAL_QUESTIONS_COUNT, Number(parsed.q || 1))),
         selected: ["A", "B", "C", "D"].includes(parsed.selected) ? parsed.selected : "",
         answers: parsed.answers && typeof parsed.answers === "object" ? parsed.answers : {},
-        startedAt: Number(parsed.startedAt || Date.now()),
         questionStartedAt: Number(parsed.questionStartedAt || Date.now()),
-        durationSeconds: Number(parsed.durationSeconds || TEST_QUESTION_SECONDS),
+        attemptStartedAt: Number(parsed.attemptStartedAt || Date.now()),
         finished: !!parsed.finished,
         finishReason: String(parsed.finishReason || "")
       };
     } catch {
-      return resetQuizState(key);
+      return resetQuiz(key);
     }
   }
 
-  function saveQuizState(key, state) {
+  function saveQuiz(key, state) {
     localStorage.setItem(quizKey(key), JSON.stringify(state));
     return state;
   }
 
-  function remainingSeconds(state) {
-    const started = Number(state.questionStartedAt || Date.now());
-    const duration = Number(state.durationSeconds || TEST_QUESTION_SECONDS);
-    const elapsed = Math.floor((Date.now() - started) / 1000);
-    return Math.max(0, duration - elapsed);
+  function questionLeft(state) {
+    const elapsed = Math.floor((Date.now() - Number(state.questionStartedAt || Date.now())) / 1000);
+    return Math.max(0, QUESTION_SECONDS - elapsed);
   }
 
-  function timeText(seconds) {
+  function fmt(seconds) {
     const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
     const ss = String(seconds % 60).padStart(2, "0");
     return `${mm}:${ss}`;
@@ -268,214 +412,187 @@
     return d.questions[(state.q || 1) - 1] || d.questions[0];
   }
 
-  function calculateResult(key) {
+  function resultFor(key) {
     const d = DATA[key] || DATA.economics;
-    const state = getQuizState(key);
-    let correct = 0;
+    const state = getQuiz(key);
+    let score = 0;
 
-    d.questions.slice(0, TEST_FINAL_QUESTIONS).forEach((question, index) => {
-      const userAnswer = state.answers[String(index + 1)] || "";
-      if (userAnswer && userAnswer === question.correct) correct += 1;
+    d.questions.slice(0, FINAL_QUESTIONS_COUNT).forEach((q, i) => {
+      const answer = state.answers[String(i + 1)] || "";
+      if (answer === q.correct) score += 1;
     });
 
+    const elapsed = Math.max(0, Math.floor((Date.now() - Number(state.attemptStartedAt || Date.now())) / 1000));
+
     return {
-      score: correct,
-      total: TEST_FINAL_QUESTIONS,
-      percent: Math.round((correct / TEST_FINAL_QUESTIONS) * 100),
-      time: timeText(Math.max(0, TEST_FINAL_SECONDS - remainingSeconds(state))),
-      regionRank: correct >= 3 ? 8 : 18,
-      overallRank: correct >= 3 ? 31 : 76
+      score,
+      total: FINAL_QUESTIONS_COUNT,
+      percent: Math.round((score / FINAL_QUESTIONS_COUNT) * 100),
+      time: fmt(elapsed),
+      regionRank: score >= 3 ? 8 : 18,
+      overallRank: score >= 3 ? 31 : 76
     };
   }
 
-  function pickAnswer(key, option) {
-    const state = getQuizState(key);
-    state.selected = ["A", "B", "C", "D"].includes(option) ? option : "";
-    saveQuizState(key, state);
-    return state;
+  let questionTimer = null;
+
+  function stopQuestionTimer() {
+    if (questionTimer) clearInterval(questionTimer);
+    questionTimer = null;
   }
 
-  function saveCurrentAnswer(key, allowEmpty = true) {
-    const state = getQuizState(key);
-    const value = state.selected || "";
-
-    if (value || allowEmpty) {
-      state.answers[String(state.q)] = value;
-      state.selected = "";
-      saveQuizState(key, state);
-    }
-
-    return state;
-  }
-
-  function moveToNextQuestion(key) {
-    const state = getQuizState(key);
-
-    if (state.q >= state.total) {
-      return finishFinalAttempt(key, "submitted");
-    }
-
-    state.q += 1;
-    state.selected = "";
-    state.questionStartedAt = Date.now();
-    state.durationSeconds = TEST_QUESTION_SECONDS;
-
-    saveQuizState(key, state);
-    showGrandAttempt(key);
-    return state;
-  }
-
-  function answerCurrentQuestion(key) {
-    const state = getQuizState(key);
-
-    if (!state.selected) return state;
-
-    state.answers[String(state.q)] = state.selected;
-    state.selected = "";
-    saveQuizState(key, state);
-
-    if (state.q >= state.total) {
-      return finishFinalAttempt(key, "submitted");
-    }
-
-    return moveToNextQuestion(key);
-  }
-
-  function timeoutCurrentQuestion(key) {
-    const state = getQuizState(key);
-
-    // Save selected answer if there is one. If nothing selected, save empty answer = 0.
-    state.answers[String(state.q)] = state.selected || "";
-    state.selected = "";
-    saveQuizState(key, state);
-
-    if (state.q >= state.total) {
-      return finishFinalAttempt(key, "time_expired");
-    }
-
-    return moveToNextQuestion(key);
-  }
-
-  function finishFinalAttempt(key, reason) {
-    const state = getQuizState(key);
-
-    // Early finish also saves current selected answer if there is one; empty stays empty.
-    state.answers[String(state.q)] = state.selected || state.answers[String(state.q)] || "";
-    state.selected = "";
-    state.finished = true;
-    state.finishReason = reason || "submitted";
-
-    saveQuizState(key, state);
-
-    stopTimerLoop();
-    closeFinalScreen();
-
-    setGrandSubject(key);
-    setPhase("grand_submitted");
-    renderHomeRouter();
-    showGrandSubmitted(key, reason);
-
-    return state;
-  }
-
-  let timerInterval = null;
-
-  function stopTimerLoop() {
-    if (timerInterval) {
-      clearInterval(timerInterval);
-      timerInterval = null;
-    }
-  }
-
-  function startTimerLoop(key) {
-    stopTimerLoop();
+  function startQuestionTimer(key) {
+    stopQuestionTimer();
 
     const tick = () => {
-      const state = getQuizState(key);
-      const remaining = remainingSeconds(state);
+      const state = getQuiz(key);
+      const left = questionLeft(state);
+      const el = document.getElementById("psp-final-timer");
 
-      const timer = document.querySelector("#psp-grand-timer");
-      if (timer) {
-        timer.textContent = timeText(remaining);
-        timer.classList.toggle("is-danger", remaining <= 10);
+      if (el) {
+        el.textContent = fmt(left);
+        el.classList.toggle("is-danger", left <= 10);
       }
 
-      if (remaining <= 0 && !state.finished) {
-        stopTimerLoop();
-        timeoutCurrentQuestion(key);
+      if (left <= 0 && !state.finished) {
+        stopQuestionTimer();
+        timeoutQuestion(key);
       }
     };
 
     tick();
-    timerInterval = setInterval(tick, 1000);
+    questionTimer = setInterval(tick, 300);
   }
 
-  function applyPhaseFromUrl() {
-    try {
-      const params = new URLSearchParams(window.location.search || "");
-      const raw = params.get("phase") || params.get("grand");
-      if (!raw) return;
-
-      const map = {
-        auto: "auto",
-        postseason: "postseason",
-        scheduled: "postseason",
-        open: "grand_open",
-        grand_open: "grand_open",
-        started: "grand_in_progress",
-        in_progress: "grand_in_progress",
-        submitted: "grand_submitted",
-        finalizing: "grand_finalizing",
-        ready: "grand_ready",
-        results: "grand_ready",
-        results_ready: "grand_ready"
-      };
-
-      if (map[raw]) setPhase(map[raw]);
-    } catch {}
+  function pickAnswer(key, option) {
+    const state = getQuiz(key);
+    state.selected = ["A", "B", "C", "D"].includes(option) ? option : "";
+    saveQuiz(key, state);
+    renderFinalQuestion(key);
   }
 
-  function getCompList() {
-    return document.getElementById("home-competitive-list");
+  function answerQuestion(key) {
+    const state = getQuiz(key);
+    if (!state.selected) return;
+
+    state.answers[String(state.q)] = state.selected;
+    state.selected = "";
+
+    if (state.q >= FINAL_QUESTIONS_COUNT) {
+      state.finished = true;
+      state.finishReason = "submitted";
+      saveQuiz(key, state);
+      return finishFinal(key, "submitted");
+    }
+
+    state.q += 1;
+    state.questionStartedAt = Date.now();
+    saveQuiz(key, state);
+    renderFinalQuestion(key);
+  }
+
+  function timeoutQuestion(key) {
+    const state = getQuiz(key);
+
+    state.answers[String(state.q)] = state.selected || "";
+    state.selected = "";
+
+    if (state.q >= FINAL_QUESTIONS_COUNT) {
+      state.finished = true;
+      state.finishReason = "time_expired";
+      saveQuiz(key, state);
+      return finishFinal(key, "time_expired");
+    }
+
+    state.q += 1;
+    state.questionStartedAt = Date.now();
+    saveQuiz(key, state);
+    renderFinalQuestion(key);
+  }
+
+  function finishEarly(key) {
+    const state = getQuiz(key);
+    state.answers[String(state.q)] = state.selected || state.answers[String(state.q)] || "";
+    state.selected = "";
+    state.finished = true;
+    state.finishReason = "early_finish";
+    saveQuiz(key, state);
+    finishFinal(key, "early_finish");
+  }
+
+  function finishFinal(key, reason) {
+    stopQuestionTimer();
+    closeFinalScreen();
+
+    setSubject(key);
+    setPhase("grand_submitted");
+    renderHomeRouter();
+    showSubmitted(key, reason);
+  }
+
+  function closeFinalScreen() {
+    stopQuestionTimer();
+    document.getElementById("psp-final-screen")?.remove();
+    document.documentElement.classList.remove("psp-final-open");
+    document.body.classList.remove("psp-final-open");
+  }
+
+  function openFinalScreen(html) {
+    closeSheet();
+    closeFinalScreen();
+
+    const screen = document.createElement("div");
+    screen.id = "psp-final-screen";
+    screen.innerHTML = html;
+
+    document.body.appendChild(screen);
+    document.documentElement.classList.add("psp-final-open");
+    document.body.classList.add("psp-final-open");
+  }
+
+  function openSheet(html) {
+    closeSheet();
+
+    const root = document.createElement("div");
+    root.id = "psp-sheet";
+    root.innerHTML = `<div class="psp-backdrop">${html}</div>`;
+    document.body.appendChild(root);
+    document.body.classList.add("psp-sheet-open");
+  }
+
+  function closeSheet() {
+    document.getElementById("psp-sheet")?.remove();
+    document.body.classList.remove("psp-sheet-open");
+  }
+
+  function sheet(kicker, title, sub, body) {
+    return `
+      <div class="psp-sheet-card">
+        <div class="psp-sheet-top">
+          <button type="button" class="psp-back" data-psp-action="sheet-close">←</button>
+          <div>
+            <div class="psp-kicker">${esc(kicker)}</div>
+            <div class="psp-sheet-title">${esc(title)}</div>
+            ${sub ? `<div class="psp-muted">${esc(sub)}</div>` : ""}
+          </div>
+        </div>
+        ${body}
+      </div>
+    `;
   }
 
   function getCompetitiveBlock() {
-    const list = getCompList();
+    const list = document.getElementById("home-competitive-list");
     return list ? (list.closest(".home-block") || list.parentElement) : null;
   }
 
-  function getHomeView() {
-    return document.getElementById("view-home");
-  }
-
   function isHomeActive() {
-    const home = getHomeView();
-    return !!home && home.classList.contains("is-active");
-  }
-
-  function getCardBySubject(key) {
-    const list = getCompList();
-    if (!list) return null;
-    return list.querySelector(`.home-competitive-card[data-subject="${CSS.escape(key)}"]`);
-  }
-
-  function subjectKeys() {
-    const list = getCompList();
-    if (!list) return ["economics", "mathematics"];
-
-    const keys = Array.from(list.querySelectorAll(".home-competitive-card"))
-      .map((card) => String(card.dataset.subject || "").trim())
-      .filter(Boolean);
-
-    const unique = Array.from(new Set(keys));
-    return unique.length ? unique.slice(0, 2) : ["economics", "mathematics"];
+    return !!document.getElementById("view-home")?.classList.contains("is-active");
   }
 
   function hasActiveRegularTour() {
     const block = getCompetitiveBlock();
-    if (!block) return false;
-
-    const text = String(block.textContent || "").toLowerCase();
+    const text = String(block?.textContent || "").toLowerCase();
 
     return (
       text.includes("тур активен") ||
@@ -486,120 +603,108 @@
   }
 
   function effectivePhase() {
-    const raw = getPhaseRaw();
-    if (raw !== "auto") return raw;
-
-    if (hasActiveRegularTour()) return "regular_active";
-    return "postseason";
-  }
-
-  function removePreviewHome() {
-    document.getElementById("psp-home")?.remove();
-    const block = getCompetitiveBlock();
-    if (block) block.style.display = "";
+    const phase = getPhase();
+    if (phase !== "auto") return phase;
+    return hasActiveRegularTour() ? "regular_active" : "postseason";
   }
 
   function heroHTML(key) {
-    const old = getCardBySubject(key);
-    const hero = old?.querySelector(".home-competitive-hero");
-    if (hero) return hero.outerHTML;
-
-    return `
-      <div class="home-competitive-hero">
-        <div class="home-competitive-hero-img" aria-hidden="true"></div>
-      </div>
-    `;
+    const old = document.querySelector(`.home-competitive-card[data-subject="${CSS.escape(key)}"] .home-competitive-hero`);
+    return old ? old.outerHTML : `<div class="home-competitive-hero"><div class="home-competitive-hero-img"></div></div>`;
   }
 
-  function grandConfig() {
-    const phase = effectivePhase();
-    const key = getGrandSubject();
-    const subject = DATA[key] || DATA.economics;
-    const result = calculateResult(key);
-
-    const commonStats = `
-      <div class="psp-grand-stats">
+  function grandStatsHTML() {
+    return `
+      <div class="psp-stat-row">
         <div><b>20</b><span>${tr("вопросов", "savol", "questions")}</span></div>
         <div><b>1</b><span>${tr("попытка", "urinish", "attempt")}</span></div>
         <div><b>${tr("балл", "ball", "score")}</b><span>+ ${tr("время", "vaqt", "time")}</span></div>
       </div>
     `;
+  }
 
-    const states = {
-      postseason: {
-        kicker: tr("ФИНАЛ СЕЗОНА", "MAVSUM FINALI", "SEASON FINAL"),
-        title: "Grand Olympiad",
-        sub: tr("Финальный этап после 7 туров.", "7 turdan keyingi final bosqich.", "Final stage after 7 tours."),
-        note: tr("Пока финал закрыт. Готовьтесь через итоги по предметам и практику.", "Final hozir yopiq. Fan yakunlari va amaliyot orqali tayyorlaning.", "Final is closed. Prepare through subject summaries and practice."),
-        stats: commonStats,
-        actions: `<button type="button" class="btn primary psp-full" data-psp-action="plan">${tr("Подробнее", "Batafsil", "Details")}</button>`
-      },
-      grand_open: {
-        kicker: tr("ФИНАЛ ОТКРЫТ", "FINAL OCHIQ", "FINAL OPEN"),
-        title: "Grand Olympiad",
-        sub: tr("Выберите предмет и начните финальную попытку.", "Fanni tanlang va final urinishini boshlang.", "Choose a subject and start the final attempt."),
-        note: tr("Результат, рейтинг и сертификат откроются после закрытия финала.", "Natija, reyting va sertifikat final yopilgandan keyin ochiladi.", "Result, ranking and certificate open after the final closes."),
-        stats: commonStats,
-        actions: `
+  function grandCardHTML() {
+    const phase = effectivePhase();
+    const key = getSubject();
+    const d = DATA[key] || DATA.economics;
+    const r = resultFor(key);
+    const stats = grandStatsHTML();
+
+    if (phase === "grand_open") {
+      return `
+        <section class="psp-grand-card">
+          <div class="psp-kicker">${tr("ФИНАЛ ОТКРЫТ", "FINAL OCHIQ", "FINAL OPEN")}</div>
+          <div class="psp-grand-title">Grand Olympiad</div>
+          <div class="psp-muted">${tr("Выберите предмет и начните финальную попытку.", "Fanni tanlang va final urinishini boshlang.", "Choose a subject and start the final attempt.")}</div>
+          ${stats}
+          <div class="psp-muted">${tr("Результат, рейтинг и сертификат откроются после закрытия финала.", "Natija, reyting va sertifikat final yopilgandan keyin ochiladi.", "Result, ranking and certificate open after the final closes.")}</div>
           <div class="psp-actions">
             <button type="button" class="btn primary" data-psp-action="grand-select">${tr("Начать финал", "Finalni boshlash", "Start final")}</button>
             <button type="button" class="btn" data-psp-action="plan">${tr("Правила", "Qoidalar", "Rules")}</button>
           </div>
-        `
-      },
-      grand_in_progress: {
-        kicker: tr("ФИНАЛ НАЧАТ", "FINAL BOSHLANDI", "FINAL STARTED"),
-        title: `${subject.title} · Grand Final`,
-        sub: tr("Финальная попытка в процессе.", "Final urinishi davom etmoqda.", "Final attempt is in progress."),
-        note: tr("Вернитесь к начатой попытке. После завершения ответы изменить нельзя.", "Boshlangan urinishga qayting. Yakunlangandan keyin javoblarni o‘zgartirib bo‘lmaydi.", "Return to the started attempt. Answers cannot be changed after submission."),
-        stats: commonStats,
-        actions: `<button type="button" class="btn primary psp-full" data-psp-action="grand-continue" data-subject="${esc(key)}">${tr("Вернуться к попытке", "Urinishga qaytish", "Return to attempt")}</button>`
-      },
-      grand_submitted: {
-        kicker: tr("ОТВЕТЫ ПРИНЯТЫ", "JAVOBLAR QABUL QILINDI", "ANSWERS RECEIVED"),
-        title: `${subject.title} · Grand Final`,
-        sub: tr("Ответы сохранены.", "Javoblar saqlandi.", "Answers saved."),
-        note: tr("Результат появится после закрытия финала и расчёта рейтинга.", "Natija final yopilgandan va reyting hisoblangandan keyin chiqadi.", "Result appears after final closes and ranking is calculated."),
-        stats: commonStats,
-        actions: `<button type="button" class="btn primary psp-full" data-psp-action="grand-status" data-subject="${esc(key)}">${tr("Статус финала", "Final holati", "Final status")}</button>`
-      },
-      grand_finalizing: {
-        kicker: tr("РАСЧЁТ ИТОГОВ", "YAKUNLAR HISOBLANMOQDA", "CALCULATING RESULTS"),
-        title: "Grand Olympiad",
-        sub: tr("Рейтинг и сертификаты рассчитываются.", "Reyting va sertifikatlar hisoblanmoqda.", "Ranking and certificates are being calculated."),
-        note: tr("Система закрывает попытки, считает места и готовит результаты.", "Tizim urinishlarni yopadi, o‘rinlarni hisoblaydi va natijalarni tayyorlaydi.", "System closes attempts, calculates ranks and prepares results."),
-        stats: commonStats,
-        actions: `<button type="button" class="btn primary psp-full" data-psp-action="grand-finalizing">${tr("Как идёт расчёт", "Hisoblash jarayoni", "Calculation status")}</button>`
-      },
-      grand_ready: {
-        kicker: tr("РЕЗУЛЬТАТ ГОТОВ", "NATIJA TAYYOR", "RESULT READY"),
-        title: `${subject.title} · ${result.score}/${result.total}`,
-        sub: `#${result.regionRank} ${tr("в регионе", "hududda", "region")} · #${result.overallRank} ${tr("общий рейтинг", "umumiy reyting", "overall")}`,
-        note: tr("Откройте итог финала. Рейтинг смотрите во вкладке “Рейтинг”.", "Final natijasini oching. Reytingni “Reyting” bo‘limida ko‘ring.", "Open final result. Ranking is in the Ranking tab."),
-        stats: commonStats,
-        actions: `
+        </section>
+      `;
+    }
+
+    if (phase === "grand_in_progress") {
+      return `
+        <section class="psp-grand-card">
+          <div class="psp-kicker">${tr("ФИНАЛ НАЧАТ", "FINAL BOSHLANDI", "FINAL STARTED")}</div>
+          <div class="psp-grand-title">${esc(d.title)} · Grand Final</div>
+          <div class="psp-muted">${tr("Финальная попытка в процессе.", "Final urinishi davom etmoqda.", "Final attempt is in progress.")}</div>
+          ${stats}
+          <button type="button" class="btn primary psp-full" data-psp-action="grand-continue" data-subject="${esc(key)}">${tr("Вернуться к попытке", "Urinishga qaytish", "Return to attempt")}</button>
+        </section>
+      `;
+    }
+
+    if (phase === "grand_submitted") {
+      return `
+        <section class="psp-grand-card">
+          <div class="psp-kicker">${tr("ОТВЕТЫ ПРИНЯТЫ", "JAVOBLAR QABUL QILINDI", "ANSWERS RECEIVED")}</div>
+          <div class="psp-grand-title">${esc(d.title)} · Grand Final</div>
+          <div class="psp-muted">${tr("Ответы сохранены. Результат откроется после расчёта рейтинга.", "Javoblar saqlandi. Natija reyting hisoblangandan keyin ochiladi.", "Answers saved. Result opens after ranking calculation.")}</div>
+          ${stats}
+          <button type="button" class="btn primary psp-full" data-psp-action="grand-status" data-subject="${esc(key)}">${tr("Статус финала", "Final holati", "Final status")}</button>
+        </section>
+      `;
+    }
+
+    if (phase === "grand_finalizing") {
+      return `
+        <section class="psp-grand-card">
+          <div class="psp-kicker">${tr("РАСЧЁТ ИТОГОВ", "YAKUNLAR HISOBLANMOQDA", "CALCULATING RESULTS")}</div>
+          <div class="psp-grand-title">Grand Olympiad</div>
+          <div class="psp-muted">${tr("Рейтинг и сертификаты рассчитываются.", "Reyting va sertifikatlar hisoblanmoqda.", "Ranking and certificates are being calculated.")}</div>
+          ${stats}
+          <button type="button" class="btn primary psp-full" data-psp-action="finalizing">${tr("Как идёт расчёт", "Hisoblash jarayoni", "Calculation status")}</button>
+        </section>
+      `;
+    }
+
+    if (phase === "grand_ready") {
+      return `
+        <section class="psp-grand-card">
+          <div class="psp-kicker">${tr("РЕЗУЛЬТАТ ГОТОВ", "NATIJA TAYYOR", "RESULT READY")}</div>
+          <div class="psp-grand-title">${esc(d.title)} · ${r.score}/${r.total}</div>
+          <div class="psp-muted">#${r.regionRank} ${tr("в регионе", "hududda", "region")} · #${r.overallRank} ${tr("общий рейтинг", "umumiy reyting", "overall")}</div>
+          ${stats}
           <div class="psp-actions">
             <button type="button" class="btn primary" data-psp-action="grand-result" data-subject="${esc(key)}">${tr("Открыть результат", "Natijani ochish", "Open result")}</button>
             <button type="button" class="btn" data-psp-action="grand-certificate" data-subject="${esc(key)}">${tr("Сертификат", "Sertifikat", "Certificate")}</button>
           </div>
-        `
-      }
-    };
-
-    return states[phase] || states.postseason;
-  }
-
-  function grandCardHTML() {
-    const cfg = grandConfig();
+        </section>
+      `;
+    }
 
     return `
       <section class="psp-grand-card">
-        <div class="psp-kicker">${esc(cfg.kicker)}</div>
-        <div class="psp-grand-title">${esc(cfg.title)}</div>
-        <div class="psp-grand-sub">${esc(cfg.sub)}</div>
-        ${cfg.stats}
-        <div class="psp-grand-note">${esc(cfg.note)}</div>
-        ${cfg.actions}
+        <div class="psp-kicker">${tr("ФИНАЛ СЕЗОНА", "MAVSUM FINALI", "SEASON FINAL")}</div>
+        <div class="psp-grand-title">Grand Olympiad</div>
+        <div class="psp-muted">${tr("Финальный этап после 7 туров.", "7 turdan keyingi final bosqich.", "Final stage after 7 tours.")}</div>
+        ${stats}
+        <div class="psp-muted">${tr("Пока финал закрыт. Готовьтесь через итоги по предметам и практику.", "Final hozir yopiq. Fan yakunlari va amaliyot orqali tayyorlaning.", "Final is closed. Prepare through subject summaries and practice.")}</div>
+        <button type="button" class="btn primary psp-full" data-psp-action="plan">${tr("Подробнее", "Batafsil", "Details")}</button>
       </section>
     `;
   }
@@ -614,7 +719,7 @@
           <div class="home-competitive-title">${esc(d.title)}</div>
           <div class="home-competitive-note">${tr("Итог сезона и практика доступны.", "Mavsum yakuni va amaliyot mavjud.", "Season summary and practice are available.")}</div>
 
-          <div class="psp-metrics">
+          <div class="psp-stat-row">
             <div><b>${esc(d.tours)}</b><span>${tr("туров", "tur", "tours")}</span></div>
             <div><b>${esc(d.avg)}</b><span>${tr("средний", "o‘rtacha", "average")}</span></div>
             <div><b>${esc(d.rank)}</b><span>${tr("регион", "hudud", "region")}</span></div>
@@ -631,20 +736,28 @@
     `;
   }
 
-  function renderPostSeasonHome() {
+  function renderHomeRouter() {
+    if (!isHomeActive()) return;
+
     const block = getCompetitiveBlock();
     if (!block || !block.parentNode) return;
 
+    const old = document.getElementById("psp-home");
+
+    if (effectivePhase() === "regular_active") {
+      old?.remove();
+      block.style.display = "";
+      return;
+    }
+
     block.style.display = "none";
 
-    let root = document.getElementById("psp-home");
+    let root = old;
     if (!root) {
       root = document.createElement("div");
       root.id = "psp-home";
       block.parentNode.insertBefore(root, block);
     }
-
-    const keys = subjectKeys();
 
     root.innerHTML = `
       ${grandCardHTML()}
@@ -652,99 +765,22 @@
         <h2>${tr("Итоги по предметам", "Fanlar bo‘yicha yakunlar", "Subject summaries")}</h2>
         <p>${tr("Откройте итог и начните изучение нужных тем.", "Yakunlarni oching va kerakli mavzularni o‘rganishni boshlang.", "Open the summary and start studying needed topics.")}</p>
         <div class="psp-subject-list">
-          ${keys.map(subjectCardHTML).join("")}
+          ${getSubjectKeys().map(subjectCardHTML).join("")}
         </div>
       </section>
     `;
   }
 
-  function renderHomeRouter() {
-    if (!isHomeActive()) return;
-
-    const phase = effectivePhase();
-
-    if (phase === "regular_active") {
-      removePreviewHome();
-      return;
-    }
-
-    renderPostSeasonHome();
-  }
-
-  function closeFinalScreen() {
-    stopTimerLoop();
-    document.getElementById("psp-final-screen")?.remove();
-    document.documentElement.classList.remove("psp-final-open");
-    document.body.classList.remove("psp-final-open");
-  }
-
-  function openFinalScreen(html) {
-    closeModal();
-    closeFinalScreen();
-
-    const screen = document.createElement("div");
-    screen.id = "psp-final-screen";
-    screen.innerHTML = html;
-
-    document.body.appendChild(screen);
-    document.documentElement.classList.add("psp-final-open");
-    document.body.classList.add("psp-final-open");
-  }
-
-  function openModal(html) {
-    document.getElementById("psp-modal")?.remove();
-
-    const isQuiz = String(html || "").includes("psp-quiz-screen");
-
-    const modal = document.createElement("div");
-    modal.id = "psp-modal";
-    if (isQuiz) modal.classList.add("psp-modal-fullscreen");
-
-    modal.innerHTML = isQuiz
-      ? `<div class="psp-fullscreen-host">${html}</div>`
-      : `<div class="psp-backdrop">${html}</div>`;
-
-    document.body.appendChild(modal);
-    document.documentElement.classList.add("psp-modal-open");
-    document.body.classList.add("psp-modal-open");
-  }
-
-  function closeModal() {
-    stopTimerLoop();
-    document.getElementById("psp-modal")?.remove();
-    document.documentElement.classList.remove("psp-modal-open");
-    document.body.classList.remove("psp-modal-open");
-  }
-
-  function modalShell(kicker, title, sub, body) {
-    return `
-      <div class="psp-modal-card">
-        <div class="psp-modal-top">
-          <button type="button" class="psp-back" data-psp-action="modal-close">←</button>
-          <div>
-            <div class="psp-kicker">${esc(kicker)}</div>
-            <div class="psp-modal-title">${esc(title)}</div>
-            ${sub ? `<div class="psp-muted">${esc(sub)}</div>` : ""}
-          </div>
-        </div>
-        ${body}
-      </div>
-    `;
-  }
-
   function showPlan() {
-    openModal(modalShell(
+    openSheet(sheet(
       tr("ФИНАЛ СЕЗОНА", "MAVSUM FINALI", "SEASON FINAL"),
       "Grand Olympiad",
       tr("Финальный этап после 7 туров.", "7 turdan keyingi final bosqich.", "Final stage after 7 tours."),
       `
         <div class="psp-panel">
           <div class="psp-panel-title">${tr("Формат финала", "Final formati", "Final format")}</div>
-          <div class="psp-grand-stats inside">
-            <div><b>20</b><span>${tr("вопросов", "savol", "questions")}</span></div>
-            <div><b>Mixed</b><span>${tr("темы", "mavzular", "topics")}</span></div>
-            <div><b>1</b><span>${tr("попытка", "urinish", "attempt")}</span></div>
-          </div>
+          ${grandStatsHTML()}
+          <div class="psp-muted">${tr("В preview для проверки используется 4 вопроса и таймер 25 секунд на каждый вопрос.", "Preview’da tekshiruv uchun 4 savol va har savolga 25 soniya ishlatiladi.", "Preview uses 4 questions and a 25-second timer per question.")}</div>
         </div>
 
         <div class="psp-panel">
@@ -755,104 +791,61 @@
             <div><b>3</b><span>${tr("Время влияет только при равных результатах.", "Vaqt faqat teng natijada ta’sir qiladi.", "Time matters only for tied scores.")}</span></div>
           </div>
         </div>
-
-        <div class="psp-panel soft">
-          <div class="psp-panel-title">${tr("Важно", "Muhim", "Important")}</div>
-          <div class="psp-muted">${tr("Финал будет отдельным пунктом в рейтинге и не входит в “Все 7 туров”.", "Final reytingda alohida bo‘ladi va “7 tur” ichiga kirmaydi.", "Final is a separate ranking option and is not included in all 7 tours.")}</div>
-        </div>
-
-        <div class="psp-actions single">
-          <button type="button" class="btn primary" data-psp-action="to-summaries">${tr("К итогам по предметам", "Fan yakunlariga", "To subject summaries")}</button>
-        </div>
       `
     ));
   }
 
   function showGrandSelect() {
-    const cards = subjectKeys().map((key) => {
+    const cards = getSubjectKeys().map((key) => {
       const d = DATA[key] || DATA.economics;
+
       return `
         <div class="psp-choice">
           <div>
             <div class="psp-choice-title">${esc(d.title)}</div>
             <div class="psp-muted">20 ${tr("вопросов", "savol", "questions")} · Mixed · 1 ${tr("попытка", "urinish", "attempt")}</div>
           </div>
-          <button type="button" class="btn primary" data-psp-action="grand-confirm" data-subject="${esc(key)}">${tr("Выбрать", "Tanlash", "Choose")}</button>
+          <button type="button" class="btn primary" data-psp-action="grand-start" data-subject="${esc(key)}">${tr("Начать", "Boshlash", "Start")}</button>
         </div>
       `;
     }).join("");
 
-    openModal(modalShell(
+    openSheet(sheet(
       "GRAND OLYMPIAD",
       tr("Выберите предмет финала", "Final fanini tanlang", "Choose final subject"),
-      tr("Финал проходит отдельно по каждому предмету.", "Final har bir fan bo‘yicha alohida o‘tadi.", "Final runs separately for each subject."),
+      tr("После выбора сразу откроется финальная попытка.", "Tanlagandan keyin final urinish darhol ochiladi.", "After choosing, the final attempt opens immediately."),
       `<div class="psp-choice-list">${cards}</div>`
     ));
   }
 
-  function showGrandConfirm(key) {
+  function renderFinalQuestion(key) {
     const d = DATA[key] || DATA.economics;
-    setGrandSubject(key);
-
-    openModal(modalShell(
-      tr("ПЕРЕД СТАРТОМ", "BOSHLASHDAN OLDIN", "BEFORE START"),
-      `${d.title} · Grand Final`,
-      tr("Проверьте правила перед началом.", "Boshlashdan oldin qoidalarni tekshiring.", "Check the rules before starting."),
-      `
-        <div class="psp-panel">
-          <div class="psp-panel-title">${tr("Тестовый режим preview", "Preview test rejimi", "Preview test mode")}</div>
-          <div class="psp-muted">${tr("Для проверки используются 4 вопроса и короткий таймер. В main будет полный финальный пул.", "Tekshiruv uchun 4 savol va qisqa taymer ishlatiladi. Main’da to‘liq final puli bo‘ladi.", "Preview uses 4 questions and a short timer. Main uses the full final pool.")}</div>
-        </div>
-
-        <div class="psp-panel">
-          <div class="psp-panel-title">${tr("Правила", "Qoidalar", "Rules")}</div>
-          <div class="psp-steps">
-            <div><b>1</b><span>${tr("Выход из попытки недоступен.", "Urinishdan chiqish mavjud emas.", "Exit is not available.")}</span></div>
-            <div><b>2</b><span>${tr("Можно завершить финал досрочно.", "Finalni muddatidan oldin yakunlash mumkin.", "You may finish the final early.")}</span></div>
-            <div><b>3</b><span>${tr("При истечении времени попытка завершится автоматически.", "Vaqt tugasa, urinish avtomatik yakunlanadi.", "When time expires, the attempt submits automatically.")}</span></div>
-          </div>
-        </div>
-
-        <div class="psp-actions single">
-          <button type="button" class="btn primary" data-psp-action="grand-start" data-subject="${esc(key)}">${tr("Начать попытку", "Urinishni boshlash", "Start attempt")}</button>
-        </div>
-      `
-    ));
-  }
-
-  function showGrandAttempt(key) {
-    const d = DATA[key] || DATA.economics;
-    setGrandSubject(key);
-    setPhase("grand_in_progress");
-    renderHomeRouter();
-
-    const state = getQuizState(key);
-    const question = currentQuestion(key, state);
-    const remaining = remainingSeconds(state);
-    const selected = state.selected;
+    const state = getQuiz(key);
+    const q = currentQuestion(key, state);
+    const left = questionLeft(state);
 
     openFinalScreen(`
       <div class="psp-final-shell">
         <div class="psp-final-top">
-          <div class="psp-quiz-progress">${state.q}/${state.total}</div>
-          <div id="psp-grand-timer" class="psp-quiz-timer ${remaining <= 10 ? "is-danger" : ""}">${timeText(remaining)}</div>
+          <div class="psp-progress">${state.q}/${FINAL_QUESTIONS_COUNT}</div>
+          <div id="psp-final-timer" class="psp-timer ${left <= 10 ? "is-danger" : ""}">${fmt(left)}</div>
         </div>
 
-        <div class="psp-quiz-subject">${esc(d.title)} · Grand Final</div>
+        <div class="psp-final-subject">${esc(d.title)} · Grand Final</div>
 
-        <div class="psp-quiz-card">
-          <div class="psp-quiz-meta">${tr("Финальный вопрос", "Final savoli", "Final question")}</div>
-          <div class="psp-question">${esc(question.q)}</div>
+        <div class="psp-question-card">
+          <div class="psp-panel-title">${tr("Финальный вопрос", "Final savoli", "Final question")}</div>
+          <div class="psp-question-text">${esc(q.q)}</div>
 
-          <div class="psp-options">
-            ${question.options.map(([letter, text]) => `
+          <div class="psp-option-list">
+            ${q.options.map(([letter, text]) => `
               <button type="button"
-                class="${selected === letter ? "is-picked" : ""}"
-                data-psp-action="grand-pick"
+                class="${state.selected === letter ? "is-picked" : ""}"
+                data-psp-action="pick"
                 data-subject="${esc(key)}"
                 data-option="${esc(letter)}">
-                <span class="psp-option-letter">${esc(letter)}</span>
-                <span>${esc(text)}</span>
+                <span>${esc(letter)}</span>
+                <b>${esc(text)}</b>
               </button>
             `).join("")}
           </div>
@@ -861,15 +854,15 @@
         <div class="psp-final-actions">
           <button type="button"
             class="btn primary"
-            data-psp-action="grand-answer"
+            data-psp-action="answer"
             data-subject="${esc(key)}"
-            ${selected ? "" : "disabled"}>
-            ${state.q >= state.total ? tr("Завершить финал", "Finalni yakunlash", "Finish final") : tr("Ответить", "Javob berish", "Answer")}
+            ${state.selected ? "" : "disabled"}>
+            ${state.q >= FINAL_QUESTIONS_COUNT ? tr("Завершить финал", "Finalni yakunlash", "Finish final") : tr("Ответить", "Javob berish", "Answer")}
           </button>
 
           <button type="button"
             class="btn"
-            data-psp-action="grand-finish-now"
+            data-psp-action="finish-early"
             data-subject="${esc(key)}">
             ${tr("Завершить досрочно", "Muddatidan oldin yakunlash", "Finish early")}
           </button>
@@ -877,48 +870,38 @@
       </div>
     `);
 
-    startTimerLoop(key);
+    startQuestionTimer(key);
   }
 
-  function showGrandSubmitted(key, reason = "submitted") {
+  function showSubmitted(key, reason) {
     const d = DATA[key] || DATA.economics;
-    setGrandSubject(key);
-    setPhase("grand_submitted");
-    renderHomeRouter();
 
-    const reasonText = reason === "time_expired"
-      ? tr("Время истекло. Попытка завершена автоматически.", "Vaqt tugadi. Urinish avtomatik yakunlandi.", "Time expired. Attempt submitted automatically.")
-      : tr("Финальная попытка завершена.", "Final urinishi yakunlandi.", "Final attempt submitted.");
+    const sub = reason === "time_expired"
+      ? tr("Время последнего вопроса истекло. Ответы сохранены.", "Oxirgi savol vaqti tugadi. Javoblar saqlandi.", "Last question time expired. Answers saved.")
+      : tr("Финальная попытка завершена. Ответы сохранены.", "Final urinishi yakunlandi. Javoblar saqlandi.", "Final attempt finished. Answers saved.");
 
-    openModal(modalShell(
+    openSheet(sheet(
       tr("ОТВЕТЫ ПРИНЯТЫ", "JAVOBLAR QABUL QILINDI", "ANSWERS RECEIVED"),
       `${d.title} · Grand Final`,
-      reasonText,
+      sub,
       `
         <div class="psp-panel">
-          <div class="psp-panel-title">${tr("Статус", "Holat", "Status")}</div>
-          <div class="psp-big-status">${tr("Ответы сохранены", "Javoblar saqlandi", "Answers saved")}</div>
-          <div class="psp-muted">${tr("Результат, рейтинг и сертификат откроются после закрытия финала.", "Natija, reyting va sertifikat final yopilgandan keyin ochiladi.", "Result, ranking and certificate open after the final closes.")}</div>
+          <div class="psp-panel-title">${tr("Что дальше", "Keyingi qadam", "Next")}</div>
+          <div class="psp-muted">${tr("Результат, рейтинг и сертификат откроются после расчёта финала.", "Natija, reyting va sertifikat final hisoblangandan keyin ochiladi.", "Result, ranking and certificate open after final calculation.")}</div>
         </div>
 
-        <div class="psp-actions single">
-          <button type="button" class="btn primary" data-psp-action="modal-close">${tr("На главную", "Bosh sahifaga", "Home")}</button>
-        </div>
+        <button type="button" class="btn primary psp-full" data-psp-action="sheet-close">${tr("На главную", "Bosh sahifaga", "Home")}</button>
       `
     ));
   }
 
-  function showGrandFinalizing() {
-    setPhase("grand_finalizing");
-    renderHomeRouter();
-
-    openModal(modalShell(
+  function showFinalizing() {
+    openSheet(sheet(
       tr("РАСЧЁТ ИТОГОВ", "YAKUNLAR HISOBLANMOQDA", "CALCULATING RESULTS"),
       tr("Результаты готовятся", "Natijalar tayyorlanmoqda", "Results are being prepared"),
       tr("Рейтинг и сертификаты скоро откроются.", "Reyting va sertifikatlar tez orada ochiladi.", "Ranking and certificates will open soon."),
       `
         <div class="psp-panel">
-          <div class="psp-panel-title">${tr("Что происходит", "Nima bo‘lmoqda", "What happens")}</div>
           <div class="psp-steps">
             <div><b>1</b><span>${tr("Завершаются открытые попытки.", "Ochiq urinishlar yakunlanadi.", "Open attempts are closed.")}</span></div>
             <div><b>2</b><span>${tr("Считается рейтинг: сначала балл, затем время.", "Reyting hisoblanadi: avval ball, keyin vaqt.", "Ranking: score first, then time.")}</span></div>
@@ -929,14 +912,11 @@
     ));
   }
 
-  function showGrandResult(key) {
+  function showResult(key) {
     const d = DATA[key] || DATA.economics;
-    const r = calculateResult(key);
-    setGrandSubject(key);
-    setPhase("grand_ready");
-    renderHomeRouter();
+    const r = resultFor(key);
 
-    openModal(modalShell(
+    openSheet(sheet(
       tr("ИТОГ ФИНАЛА", "FINAL YAKUNI", "FINAL RESULT"),
       `${d.title} · Grand Final`,
       tr("Финальный результат по предмету.", "Fan bo‘yicha final natijasi.", "Final subject result."),
@@ -956,54 +936,45 @@
         <div class="psp-panel study">
           <div class="psp-panel-title">${tr("Темы для изучения", "O‘rganish mavzulari", "Topics to study")}</div>
           <div class="psp-chip-row">${d.study.slice(0, 2).map((x) => `<span class="warn">${esc(x)}</span>`).join("")}</div>
-          <button type="button" class="btn primary psp-full" data-psp-action="practice" data-subject="${esc(key)}" data-mode="study">${tr("Начать изучение", "O‘rganishni boshlash", "Start studying")}</button>
         </div>
 
-        <div class="psp-actions single">
-          <button type="button" class="btn primary" data-psp-action="grand-certificate" data-subject="${esc(key)}">${tr("Сертификат", "Sertifikat", "Certificate")}</button>
-        </div>
+        <button type="button" class="btn primary psp-full" data-psp-action="grand-certificate" data-subject="${esc(key)}">${tr("Сертификат", "Sertifikat", "Certificate")}</button>
       `
     ));
   }
 
-  function showGrandCertificate(key) {
+  function showCertificate(key) {
     const d = DATA[key] || DATA.economics;
-    const r = calculateResult(key);
+    const r = resultFor(key);
 
-    openModal(modalShell(
+    openSheet(sheet(
       tr("СЕРТИФИКАТ", "SERTIFIKAT", "CERTIFICATE"),
       "Grand Final Certificate",
       `${d.title} · Grand Final`,
       `
-        <div class="psp-tour-cert">
-          <div class="psp-tour-cert-head">
-            <div class="psp-cert-logo">iClub</div>
-            <div class="psp-tour-cert-type">Grand Final Certificate</div>
-          </div>
+        <div class="psp-cert">
+          <div class="psp-cert-logo">iClub</div>
+          <div class="psp-cert-type">Grand Final Certificate</div>
+          <div class="psp-cert-name">Preview Student</div>
+          <div class="psp-cert-line">${esc(d.title)} · ${r.score}/${r.total} · ${r.percent}%</div>
 
-          <div class="psp-tour-cert-name">Preview Student</div>
-          <div class="psp-tour-cert-line">${esc(d.title)} · ${r.score}/${r.total} · ${r.percent}%</div>
-
-          <div class="psp-tour-cert-grid">
+          <div class="psp-report-grid">
             <div><b>#${r.regionRank}</b><span>${tr("Регион", "Hudud", "Region")}</span></div>
             <div><b>#${r.overallRank}</b><span>${tr("Общий", "Umumiy", "Overall")}</span></div>
             <div><b>${r.time}</b><span>${tr("Время", "Vaqt", "Time")}</span></div>
+            <div><b>GF</b><span>${tr("Финал", "Final", "Final")}</span></div>
           </div>
 
-          <div class="psp-tour-cert-code">ICL-202606-GF-${esc(String(key).toUpperCase())}-PREVIEW</div>
-        </div>
-
-        <div class="psp-actions single">
-          <button type="button" class="btn primary" data-psp-action="grand-result" data-subject="${esc(key)}">${tr("К результату", "Natijaga", "Back to result")}</button>
+          <div class="psp-cert-code">ICL-202606-GF-${esc(String(key).toUpperCase())}-PREVIEW</div>
         </div>
       `
     ));
   }
 
-  function showReport(key, scope = "season") {
+  function showReport(key) {
     const d = DATA[key] || DATA.economics;
 
-    openModal(modalShell(
+    openSheet(sheet(
       tr("ИТОГ СЕЗОНА", "MAVSUM YAKUNI", "SEASON SUMMARY"),
       d.title,
       tr("Общий итог сезона по предмету.", "Fan bo‘yicha mavsum yakuni.", "Subject season summary."),
@@ -1023,7 +994,6 @@
         <div class="psp-panel study">
           <div class="psp-panel-title">${tr("Темы для изучения", "O‘rganish mavzulari", "Topics to study")}</div>
           <div class="psp-chip-row">${d.study.map((x) => `<span class="warn">${esc(x)}</span>`).join("")}</div>
-          <button type="button" class="btn primary psp-full" data-psp-action="practice" data-subject="${esc(key)}" data-mode="study">${tr("Начать изучение", "O‘rganishni boshlash", "Start studying")}</button>
         </div>
       `
     ));
@@ -1032,86 +1002,34 @@
   function showPractice(key) {
     const d = DATA[key] || DATA.economics;
 
-    openModal(modalShell(
+    openSheet(sheet(
       tr("ПРАКТИКА", "AMALIYOT", "PRACTICE"),
       tr("Выберите формат", "Formatni tanlang", "Choose format"),
       d.title,
       `
-        <div class="psp-mode-list">
-          <button type="button" class="psp-mode is-on">
-            <b>${tr("Обычная практика", "Oddiy amaliyot", "Regular practice")}</b>
-            <span>${tr("Быстрый запуск привычной практики по предмету.", "Fan bo‘yicha odatiy amaliyotni tez boshlash.", "Quick start for usual practice.")}</span>
-          </button>
+        <div class="psp-choice-list">
+          <div class="psp-choice">
+            <div class="psp-choice-title">${tr("Обычная практика", "Oddiy amaliyot", "Regular practice")}</div>
+            <div class="psp-muted">${tr("Быстрый запуск привычной практики по предмету.", "Fan bo‘yicha odatiy amaliyotni tez boshlash.", "Quick start for usual practice.")}</div>
+          </div>
 
-          <button type="button" class="psp-mode">
-            <b>${tr("Изучить темы", "Mavzularni o‘rganish", "Study topics")}</b>
-            <span>${tr("Выберите тур и темы, которые нужно закрыть.", "Yopish kerak bo‘lgan tur va mavzularni tanlang.", "Choose tour and topics to study.")}</span>
-          </button>
-        </div>
+          <div class="psp-choice">
+            <div class="psp-choice-title">${tr("Изучить темы", "Mavzularni o‘rganish", "Study topics")}</div>
+            <div class="psp-muted">${tr("Выбор тура и тем для изучения.", "O‘rganish uchun tur va mavzularni tanlash.", "Choose tour and topics to study.")}</div>
+          </div>
 
-        <div class="psp-actions single">
-          <button type="button" class="btn primary" data-psp-action="modal-close">${tr("Закрыть", "Yopish", "Close")}</button>
+          <div class="psp-choice">
+            <div class="psp-choice-title">${tr("Собрать практику", "Amaliyot yig‘ish", "Build practice")}</div>
+            <div class="psp-muted">${tr("Тур, темы, сложность и количество вопросов.", "Tur, mavzu, qiyinlik va savollar soni.", "Tour, topics, difficulty and number of questions.")}</div>
+          </div>
         </div>
       `
     ));
   }
 
-  function syncPhaseSelect() {
-    const select = document.getElementById("psp-phase-select");
-    if (select && select.value !== getPhaseRaw()) select.value = getPhaseRaw();
-  }
-
-  function installPreviewPhaseSelect() {
-    const topbarRight =
-      document.querySelector("#topbar .topbar-right") ||
-      document.querySelector(".topbar-right");
-
-    if (!topbarRight) return;
-
-    let wrap = document.getElementById("psp-phase-select-wrap");
-
-    if (!wrap) {
-      wrap = document.createElement("div");
-      wrap.id = "psp-phase-select-wrap";
-      wrap.innerHTML = `
-        <select id="psp-phase-select" aria-label="Preview state">
-          <option value="auto">Auto</option>
-          <option value="postseason">После 7 туров</option>
-          <option value="grand_open">Финал открыт</option>
-          <option value="grand_in_progress">Финал начат</option>
-          <option value="grand_submitted">Ответы приняты</option>
-          <option value="grand_finalizing">Расчёт</option>
-          <option value="grand_ready">Итоги готовы</option>
-        </select>
-      `;
-
-      const bell =
-        document.getElementById("topbar-notifications") ||
-        topbarRight.querySelector("[data-action='open-notifications']") ||
-        topbarRight.firstElementChild;
-
-      topbarRight.insertBefore(wrap, bell || null);
-
-      const select = wrap.querySelector("#psp-phase-select");
-
-      select.addEventListener("change", () => {
-        setPhase(select.value || "auto");
-        closeModal();
-        renderHomeRouter();
-      });
-    }
-
-    syncPhaseSelect();
-    wrap.style.display = isHomeActive() ? "block" : "none";
-  }
-
   function decorateRatingTab() {
     const view = document.querySelector("#view-rating.is-active, [data-view='rating'].is-active, .rating-view.is-active");
-    if (!view) return;
-
-    if (document.getElementById("psp-rating-final-hint")) return;
-
-    const target = view.querySelector(".content") || view;
+    if (!view || document.getElementById("psp-rating-final-hint")) return;
 
     const box = document.createElement("div");
     box.id = "psp-rating-final-hint";
@@ -1126,63 +1044,115 @@
         <span>${tr("Тур 7", "7-tur", "Tour 7")}</span>
         <b>${tr("Финал", "Final", "Final")}</b>
       </div>
-      <div class="psp-muted">${tr("Финал не входит в “Все 7 туров”. В main это будет tour_no = 8.", "Final “7 tur” ichiga kirmaydi. Main’da bu tour_no = 8 bo‘ladi.", "Final is not included in all 7 tours. In main it maps to tour_no = 8.")}</div>
+      <div class="psp-muted">${tr("Финал не входит в “Все 7 туров”.", "Final “7 tur” ichiga kirmaydi.", "Final is not included in all 7 tours.")}</div>
     `;
 
-    target.prepend(box);
+    (view.querySelector(".content") || view).prepend(box);
   }
 
-  function bindGlobal() {
-    if (window.__pspV30Bound) return;
-    window.__pspV30Bound = true;
+  function installPhaseSelect() {
+    const right = document.querySelector("#topbar .topbar-right") || document.querySelector(".topbar-right");
+    if (!right) return;
 
+    let wrap = document.getElementById("psp-phase-select-wrap");
+
+    if (!wrap) {
+      wrap = document.createElement("div");
+      wrap.id = "psp-phase-select-wrap";
+      wrap.innerHTML = `
+        <select id="psp-phase-select" aria-label="Preview state">
+          ${PHASES.map(([value, label]) => `<option value="${esc(value)}">${esc(label)}</option>`).join("")}
+        </select>
+      `;
+
+      const bell = document.getElementById("topbar-notifications") || right.firstElementChild;
+      right.insertBefore(wrap, bell || null);
+
+      wrap.querySelector("select").addEventListener("change", (event) => {
+        setPhase(event.target.value || "auto");
+        closeSheet();
+        closeFinalScreen();
+        renderHomeRouter();
+      });
+    }
+
+    syncPhaseSelect();
+    wrap.style.display = isHomeActive() ? "block" : "none";
+  }
+
+  function syncPhaseSelect() {
+    const select = document.getElementById("psp-phase-select");
+    if (select && select.value !== getPhase()) select.value = getPhase();
+  }
+
+  function neutralizePreviewBadge(event) {
+    const target = event?.target || null;
+    const direct = target?.closest?.("a,button,div,span");
+    const text = String(direct?.textContent || "").toLowerCase();
+
+    if (text.includes("preview") && text.includes("db off")) {
+      event.preventDefault();
+      event.stopPropagation();
+      if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+      return true;
+    }
+
+    return false;
+  }
+
+  function neutralizeAllPreviewBadges() {
+    Array.from(document.querySelectorAll("a,button,div,span")).forEach((el) => {
+      const text = String(el.textContent || "").toLowerCase();
+      if (!text.includes("preview") || !text.includes("db off")) return;
+
+      if (el.tagName === "A") {
+        el.setAttribute("href", "javascript:void(0)");
+        el.removeAttribute("target");
+      }
+
+      el.onclick = null;
+      el.style.pointerEvents = "none";
+    });
+  }
+
+  function bind() {
+    if (window.__pspV33Bound) return;
+    window.__pspV33Bound = true;
+
+    document.addEventListener("pointerdown", neutralizePreviewBadge, true);
     document.addEventListener("click", (event) => {
-      const btn = event.target?.closest?.("[data-psp-action]");
-      if (!btn) return;
+      if (neutralizePreviewBadge(event)) return;
 
-      const action = String(btn.dataset.pspAction || "");
-      const key = btn.dataset.subject || getGrandSubject();
+      const btn = event.target.closest("[data-psp-action]");
+      if (!btn) return;
 
       event.preventDefault();
       event.stopPropagation();
 
-      if (action === "modal-close") return closeModal();
+      const action = btn.dataset.pspAction;
+      const key = btn.dataset.subject || getSubject();
 
-      if (action === "to-summaries") {
-        closeModal();
-        document.getElementById("psp-home")?.scrollIntoView({ block: "start", behavior: "smooth" });
-        return;
-      }
-
+      if (action === "sheet-close") return closeSheet();
       if (action === "plan") return showPlan();
       if (action === "grand-select") return showGrandSelect();
-      if (action === "grand-confirm") return showGrandConfirm(key);
 
       if (action === "grand-start") {
-        resetQuizState(key);
-        return showGrandAttempt(key);
+        setSubject(key);
+        setPhase("grand_in_progress");
+        resetQuiz(key);
+        renderHomeRouter();
+        return renderFinalQuestion(key);
       }
 
-      if (action === "grand-continue") return showGrandAttempt(key);
+      if (action === "grand-continue") return renderFinalQuestion(key);
+      if (action === "pick") return pickAnswer(key, btn.dataset.option || "");
+      if (action === "answer") return answerQuestion(key);
+      if (action === "finish-early") return finishEarly(key);
 
-      if (action === "grand-pick") {
-        pickAnswer(key, btn.dataset.option || "");
-        return showGrandAttempt(key);
-      }
-
-      if (action === "grand-answer") {
-        answerCurrentQuestion(key);
-        return;
-      }
-
-      if (action === "grand-finish-now") {
-        return finishFinalAttempt(key, "early_finish");
-      }
-
-      if (action === "grand-status") return showGrandSubmitted(key);
-      if (action === "grand-finalizing") return showGrandFinalizing();
-      if (action === "grand-result") return showGrandResult(key);
-      if (action === "grand-certificate") return showGrandCertificate(key);
+      if (action === "grand-status") return showSubmitted(key, "submitted");
+      if (action === "finalizing") return showFinalizing();
+      if (action === "grand-result") return showResult(key);
+      if (action === "grand-certificate") return showCertificate(key);
 
       if (action === "report") return showReport(key);
       if (action === "practice") return showPractice(key);
@@ -1190,15 +1160,11 @@
   }
 
   function injectStyles() {
-    if (document.getElementById("psp-v30-styles")) return;
+    if (document.getElementById("psp-v33-styles")) return;
 
     const style = document.createElement("style");
-    style.id = "psp-v30-styles";
+    style.id = "psp-v33-styles";
     style.textContent = `
-      .psp-modal-open {
-        overflow: hidden !important;
-      }
-
       #psp-home {
         display: grid;
         gap: 12px;
@@ -1207,6 +1173,8 @@
       .psp-grand-card,
       .psp-subject-card,
       .psp-panel,
+      .psp-choice,
+      .psp-sheet-card,
       .psp-rating-hint {
         background: #fff;
         border: 1px solid rgba(226,232,240,.92);
@@ -1229,7 +1197,7 @@
       }
 
       .psp-grand-title,
-      .psp-modal-title {
+      .psp-sheet-title {
         margin-top: 5px;
         color: #0f172a;
         font-size: 19px;
@@ -1237,8 +1205,6 @@
         font-weight: 950;
       }
 
-      .psp-grand-sub,
-      .psp-grand-note,
       .psp-muted {
         color: rgba(15,23,42,.62);
         font-size: 12px;
@@ -1246,27 +1212,19 @@
         font-weight: 650;
       }
 
-      .psp-grand-sub {
-        margin-top: 4px;
-      }
-
-      .psp-grand-note {
-        margin: 10px 0 0;
-      }
-
-      .psp-grand-stats,
+      .psp-stat-row,
       .psp-report-grid {
         display: grid;
-        grid-template-columns: repeat(3,minmax(0,1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 7px;
         margin: 12px 0;
       }
 
       .psp-report-grid {
-        grid-template-columns: repeat(2,minmax(0,1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
-      .psp-grand-stats div,
+      .psp-stat-row div,
       .psp-report-grid div {
         min-height: 42px;
         border: 1px solid rgba(226,232,240,.95);
@@ -1278,14 +1236,14 @@
         justify-content: center;
       }
 
-      .psp-grand-stats b,
+      .psp-stat-row b,
       .psp-report-grid b {
         color: #2563eb;
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 950;
       }
 
-      .psp-grand-stats span,
+      .psp-stat-row span,
       .psp-report-grid span {
         color: rgba(15,23,42,.55);
         font-size: 10px;
@@ -1298,10 +1256,6 @@
         grid-template-columns: 1fr 1fr;
         gap: 9px;
         margin-top: 12px;
-      }
-
-      .psp-actions.single {
-        grid-template-columns: 1fr;
       }
 
       .psp-full {
@@ -1332,37 +1286,6 @@
         overflow: hidden;
       }
 
-      .psp-metrics {
-        display: grid;
-        grid-template-columns: repeat(3,minmax(0,1fr));
-        gap: 7px;
-        margin: 12px 0 8px;
-      }
-
-      .psp-metrics div {
-        border: 1px solid rgba(226,232,240,.95);
-        border-radius: 12px;
-        background: rgba(248,250,252,.96);
-        min-height: 42px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .psp-metrics b {
-        color: #2563eb;
-        font-size: 15px;
-        font-weight: 950;
-      }
-
-      .psp-metrics span {
-        color: rgba(15,23,42,.55);
-        font-size: 10px;
-        font-weight: 850;
-        margin-top: 3px;
-      }
-
       .psp-study-pill {
         border-radius: 999px;
         background: rgba(245,158,11,.13);
@@ -1374,7 +1297,7 @@
         margin-bottom: 10px;
       }
 
-      #psp-modal {
+      #psp-sheet {
         position: fixed;
         inset: 0;
         z-index: 9999;
@@ -1389,17 +1312,16 @@
         justify-content: center;
       }
 
-      .psp-modal-card {
+      .psp-sheet-card {
         width: min(100%, 430px);
         max-height: 92vh;
         overflow: auto;
-        background: #fff;
         border-radius: 22px 22px 0 0;
         padding: 14px;
         box-shadow: 0 -18px 45px rgba(15,23,42,.22);
       }
 
-      .psp-modal-top {
+      .psp-sheet-top {
         display: grid;
         grid-template-columns: 38px 1fr;
         gap: 10px;
@@ -1421,10 +1343,6 @@
       .psp-panel {
         padding: 12px;
         margin-top: 10px;
-      }
-
-      .psp-panel.soft {
-        background: rgba(248,250,252,.74);
       }
 
       .psp-panel.study {
@@ -1473,40 +1391,22 @@
         font-weight: 650;
       }
 
-      .psp-choice-list,
-      .psp-mode-list {
+      .psp-choice-list {
         display: grid;
         gap: 10px;
       }
 
-      .psp-choice,
-      .psp-mode {
-        border: 1px solid rgba(226,232,240,.95);
-        border-radius: 16px;
-        background: #fff;
+      .psp-choice {
         padding: 12px;
         display: grid;
         gap: 10px;
       }
 
-      .psp-choice-title,
-      .psp-mode b,
-      .psp-big-status {
+      .psp-choice-title {
         color: #0f172a;
         font-size: 15px;
         line-height: 1.2;
         font-weight: 950;
-      }
-
-      .psp-mode {
-        text-align: left;
-      }
-
-      .psp-mode span {
-        color: rgba(15,23,42,.62);
-        font-size: 12px;
-        line-height: 1.35;
-        font-weight: 650;
       }
 
       .psp-chip-row {
@@ -1532,31 +1432,34 @@
         color: #b45309;
       }
 
-      #psp-modal.psp-modal-fullscreen,
-      #psp-modal.psp-modal-fullscreen .psp-fullscreen-host {
-        position: fixed;
-        inset: 0;
-        background: #f8fafc;
-        z-index: 9999;
+      html.psp-final-open,
+      body.psp-final-open {
+        overflow: hidden !important;
+        height: 100% !important;
       }
 
-      #psp-modal.psp-modal-fullscreen .psp-fullscreen-host {
-        display: flex;
-        justify-content: center;
-        align-items: stretch;
+      #psp-final-screen {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 2147483647 !important;
+        background: #f8fafc !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: stretch !important;
+        overflow-y: auto !important;
       }
 
-      .psp-quiz-screen {
+      .psp-final-shell {
         width: min(100%, 430px);
         min-height: 100dvh;
+        background: #f8fafc;
+        box-sizing: border-box;
+        padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
         display: flex;
         flex-direction: column;
-        background: #f8fafc;
-        padding: 10px 14px calc(14px + env(safe-area-inset-bottom));
-        box-sizing: border-box;
       }
 
-      .psp-quiz-top {
+      .psp-final-top {
         position: sticky;
         top: 0;
         z-index: 2;
@@ -1569,13 +1472,13 @@
         background: #f8fafc;
       }
 
-      .psp-quiz-progress {
+      .psp-progress {
         color: #0f172a;
         font-size: 16px;
         font-weight: 950;
       }
 
-      .psp-quiz-timer {
+      .psp-timer {
         min-width: 68px;
         height: 34px;
         display: grid;
@@ -1588,13 +1491,13 @@
         font-weight: 950;
       }
 
-      .psp-quiz-timer.is-danger {
+      .psp-timer.is-danger {
         color: #dc2626;
         border-color: rgba(220,38,38,.30);
         background: rgba(254,226,226,.75);
       }
 
-      .psp-quiz-subject {
+      .psp-final-subject {
         color: rgba(15,23,42,.62);
         font-size: 12px;
         line-height: 1.25;
@@ -1602,7 +1505,7 @@
         margin-bottom: 12px;
       }
 
-      .psp-quiz-card {
+      .psp-question-card {
         background: #fff;
         border: 1px solid rgba(226,232,240,.95);
         border-radius: 18px;
@@ -1610,67 +1513,56 @@
         box-shadow: 0 8px 22px rgba(15,23,42,.06);
       }
 
-      .psp-quiz-meta {
-        color: rgba(15,23,42,.55);
-        font-size: 11px;
-        line-height: 1.2;
-        font-weight: 950;
-        letter-spacing: .04em;
-        text-transform: uppercase;
-        margin-bottom: 8px;
-      }
-
-      .psp-question {
+      .psp-question-text {
         color: #0f172a;
         font-size: 15px;
         line-height: 1.38;
         font-weight: 850;
       }
 
-      .psp-options {
+      .psp-option-list {
         display: grid;
         gap: 8px;
         margin-top: 12px;
       }
 
-      .psp-options button {
+      .psp-option-list button {
         border: 1px solid rgba(226,232,240,.95);
         background: #fff;
         border-radius: 14px;
         padding: 11px;
         text-align: left;
-        color: #0f172a;
-        font-weight: 800;
         display: grid;
         grid-template-columns: 28px 1fr;
-        align-items: center;
         gap: 8px;
+        align-items: center;
+        color: #0f172a;
       }
 
-      .psp-options button.is-picked {
+      .psp-option-list button.is-picked {
         border-color: rgba(37,99,235,.34);
         background: rgba(37,99,235,.08);
         color: #2563eb;
       }
 
-      .psp-option-letter {
+      .psp-option-list span {
         width: 24px;
         height: 24px;
         display: grid;
         place-items: center;
         border-radius: 999px;
         background: rgba(15,23,42,.055);
-        color: rgba(15,23,42,.68);
         font-size: 11px;
         font-weight: 950;
       }
 
-      .psp-options button.is-picked .psp-option-letter {
-        background: rgba(37,99,235,.15);
-        color: #2563eb;
+      .psp-option-list b {
+        font-size: 13px;
+        line-height: 1.3;
+        color: inherit;
       }
 
-      .psp-quiz-actions {
+      .psp-final-actions {
         margin-top: auto;
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -1678,23 +1570,17 @@
         padding-top: 14px;
       }
 
-      .psp-quiz-actions .btn[disabled] {
+      .psp-final-actions .btn[disabled] {
         opacity: .45;
         pointer-events: none;
       }
 
-      .psp-tour-cert {
+      .psp-cert {
         border-radius: 22px;
         padding: 18px;
         background: linear-gradient(135deg, #fff, rgba(37,99,235,.07));
         border: 1px solid rgba(37,99,235,.18);
-        box-shadow: 0 12px 30px rgba(15,23,42,.08);
-      }
-
-      .psp-tour-cert-head {
         text-align: center;
-        padding-bottom: 12px;
-        border-bottom: 1px solid rgba(226,232,240,.82);
       }
 
       .psp-cert-logo {
@@ -1702,68 +1588,64 @@
         font-weight: 950;
       }
 
-      .psp-tour-cert-type {
+      .psp-cert-type {
         margin-top: 6px;
         color: #0f172a;
         font-size: 18px;
         font-weight: 950;
       }
 
-      .psp-tour-cert-name {
+      .psp-cert-name {
         margin-top: 16px;
-        text-align: center;
         color: #0f172a;
         font-size: 19px;
         font-weight: 950;
       }
 
-      .psp-tour-cert-line {
-        margin-top: 6px;
-        text-align: center;
-        color: rgba(15,23,42,.62);
-        font-size: 12px;
+      .psp-cert-line,
+      .psp-cert-code {
+        margin-top: 8px;
+        color: rgba(15,23,42,.58);
+        font-size: 11px;
+        line-height: 1.35;
         font-weight: 800;
+        word-break: break-word;
       }
 
-      .psp-tour-cert-grid {
-        display: grid;
-        grid-template-columns: repeat(3,minmax(0,1fr));
-        gap: 7px;
-        margin-top: 14px;
+      .psp-rating-hint {
+        padding: 12px;
+        margin-bottom: 12px;
       }
 
-      .psp-tour-cert-grid div {
-        border: 1px solid rgba(226,232,240,.95);
-        background: #fff;
-        border-radius: 13px;
-        min-height: 46px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .psp-tour-cert-grid b {
-        color: #2563eb;
-        font-size: 15px;
+      .psp-rating-title {
+        margin-top: 5px;
+        color: #0f172a;
+        font-size: 16px;
         font-weight: 950;
       }
 
-      .psp-tour-cert-grid span {
-        margin-top: 3px;
-        color: rgba(15,23,42,.55);
-        font-size: 10px;
-        font-weight: 850;
+      .psp-rating-tabs {
+        display: flex;
+        gap: 7px;
+        overflow-x: auto;
+        padding: 10px 0;
       }
 
-      .psp-tour-cert-code {
-        margin-top: 14px;
-        text-align: center;
-        color: rgba(15,23,42,.48);
-        font-size: 10px;
-        line-height: 1.35;
-        font-weight: 850;
-        word-break: break-all;
+      .psp-rating-tabs span,
+      .psp-rating-tabs b {
+        white-space: nowrap;
+        border-radius: 999px;
+        border: 1px solid rgba(226,232,240,.95);
+        background: #fff;
+        padding: 7px 10px;
+        font-size: 11px;
+        font-weight: 900;
+      }
+
+      .psp-rating-tabs b {
+        color: #2563eb;
+        border-color: rgba(37,99,235,.30);
+        background: rgba(37,99,235,.08);
       }
 
       #psp-phase-select-wrap {
@@ -1789,13 +1671,13 @@
   }
 
   function boot() {
-    applyPhaseFromUrl();
     injectStyles();
-    bindGlobal();
-    installPreviewPhaseSelect();
+    bind();
+    installPhaseSelect();
 
     const tick = () => {
-      try { installPreviewPhaseSelect(); } catch {}
+      try { neutralizeAllPreviewBadges(); } catch {}
+      try { installPhaseSelect(); } catch {}
       try { renderHomeRouter(); } catch {}
       try { decorateRatingTab(); } catch {}
     };
@@ -1803,7 +1685,7 @@
     setTimeout(tick, 100);
     setTimeout(tick, 400);
     setTimeout(tick, 1000);
-    setInterval(tick, 1200);
+    setInterval(tick, 1500);
   }
 
   boot();
