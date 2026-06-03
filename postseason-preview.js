@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v39-align-quiz-ui-main-20260531";
+  const BUILD = "grand-final-v40-practice-builder-scroll-20260531";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -2536,12 +2536,109 @@
     document.head.appendChild(style);
   }
 
+
+  function injectPracticeBuilderScrollStyles() {
+    if (document.getElementById("psp-v40-practice-builder-scroll")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-v40-practice-builder-scroll";
+    style.textContent = `
+      /* PSP_PRACTICE_BUILDER_SCROLL_V40 */
+      #psp-sheet .psp-filter-row,
+      #psp-sheet .psp-topic-list {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        gap: 8px !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        -webkit-overflow-scrolling: touch !important;
+        scroll-snap-type: x proximity !important;
+        padding: 2px 2px 8px !important;
+        margin: 0 -2px !important;
+      }
+
+      #psp-sheet .psp-filter-row::-webkit-scrollbar,
+      #psp-sheet .psp-topic-list::-webkit-scrollbar {
+        display: none !important;
+      }
+
+      #psp-sheet .psp-filter-row,
+      #psp-sheet .psp-topic-list {
+        scrollbar-width: none !important;
+      }
+
+      #psp-sheet .psp-filter-row button,
+      #psp-sheet .psp-topic-list button {
+        flex: 0 0 auto !important;
+        scroll-snap-align: start !important;
+        min-height: 34px !important;
+        padding: 9px 13px !important;
+        border-radius: 999px !important;
+        white-space: nowrap !important;
+        box-shadow: 0 4px 12px rgba(15,23,42,.035) !important;
+      }
+
+      #psp-sheet .psp-filter-row button.is-on,
+      #psp-sheet .psp-topic-list button.is-on {
+        border-color: rgba(37,99,235,.38) !important;
+        background: rgba(37,99,235,.10) !important;
+        color: #2563eb !important;
+      }
+
+      #psp-sheet .psp-panel {
+        position: relative !important;
+      }
+
+      #psp-sheet .psp-panel::after {
+        content: "" !important;
+        position: absolute !important;
+        top: 38px !important;
+        right: 0 !important;
+        width: 28px !important;
+        height: 46px !important;
+        pointer-events: none !important;
+        border-radius: 0 18px 18px 0 !important;
+        background: linear-gradient(90deg, rgba(255,255,255,0), #fff 78%) !important;
+      }
+
+      #psp-sheet .psp-panel.study::after {
+        background: linear-gradient(90deg, rgba(255,255,255,0), #fff 78%) !important;
+      }
+
+      #psp-sheet .psp-panel-title {
+        margin-bottom: 10px !important;
+      }
+
+      #psp-sheet .psp-mini-note {
+        margin-top: 8px !important;
+        line-height: 1.35 !important;
+      }
+
+      #psp-sheet .psp-actions {
+        position: sticky !important;
+        bottom: 0 !important;
+        z-index: 4 !important;
+        background: linear-gradient(180deg, rgba(248,250,252,0), #f8fafc 28%) !important;
+        padding-top: 16px !important;
+        padding-bottom: 2px !important;
+        margin-top: 12px !important;
+      }
+
+      #psp-sheet .psp-actions .btn {
+        min-height: 46px !important;
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
     injectPracticeFullscreenStyles();
     injectPracticeUXPolishStyles();
     injectMainLikeQuizStyles();
+    injectPracticeBuilderScrollStyles();
     bind();
     installPhaseSelect();
 
