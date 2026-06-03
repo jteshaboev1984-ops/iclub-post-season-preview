@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v40-practice-builder-scroll-20260531";
+  const BUILD = "grand-final-v41-practice-back-report-download-20260531";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -585,11 +585,11 @@
     document.body.classList.remove("psp-sheet-open");
   }
 
-  function sheet(kicker, title, sub, body) {
+  function sheet(kicker, title, sub, body, backAction = "sheet-close", backAttrs = "") {
     return `
       <div class="psp-sheet-card">
         <div class="psp-sheet-top">
-          <button type="button" class="psp-back" data-psp-action="sheet-close">←</button>
+          <button type="button" class="psp-back" data-psp-action="${esc(backAction)}" ${backAttrs}>←</button>
           <div>
             <div class="psp-kicker">${esc(kicker)}</div>
             <div class="psp-sheet-title">${esc(title)}</div>
@@ -1015,6 +1015,12 @@
           <div class="psp-panel-title">${tr("Темы для изучения", "O‘rganish mavzulari", "Topics to study")}</div>
           <div class="psp-chip-row">${d.study.map((x) => `<span class="warn">${esc(x)}</span>`).join("")}</div>
         </div>
+
+        <div class="psp-panel">
+          <div class="psp-panel-title">${tr("Подробный итог", "Batafsil yakun", "Detailed summary")}</div>
+          <div class="psp-muted">${tr("Скачайте расширенный итог по активности, динамике, темам и обезличенному сравнению.", "Faollik, dinamika, mavzular va anonim taqqoslash bo‘yicha kengaytirilgan yakunni yuklab oling.", "Download an extended summary of activity, progress, topics and anonymized comparison.")}</div>
+          <button type="button" class="btn primary psp-full" data-psp-action="download-report" data-subject="${esc(key)}">${tr("Скачать подробный итог", "Batafsil yakunni yuklab olish", "Download detailed summary")}</button>
+        </div>
       `
     ));
   }
@@ -1142,6 +1148,49 @@
       ...q,
       sourceTopic: (config.topics && config.topics[index % Math.max(1, config.topics.length)]) || d.study[index % Math.max(1, d.study.length)] || "Practice"
     }));
+  }
+
+
+  function downloadDetailedReport(key) {
+    const d = DATA[key] || DATA.economics;
+    const now = new Date();
+
+    const rows = [
+      "iClub — подробный итог сезона",
+      "",
+      `Предмет: ${d.title}`,
+      `Туры: ${d.tours}`,
+      `Средний результат: ${d.avg}`,
+      `Место в регионе: ${d.rank}`,
+      "",
+      "Освоенные темы:",
+      ...(d.strong || []).map((x) => `- ${x}`),
+      "",
+      "Темы для изучения:",
+      ...(d.study || []).map((x) => `- ${x}`),
+      "",
+      "Что входит в полный отчёт в production:",
+      "- активные дни и регулярность занятий",
+      "- динамика по турам и практике",
+      "- темы, где ошибки повторялись чаще всего",
+      "- обезличенное сравнение по классу, району и региону",
+      "",
+      `Сформировано: ${now.toLocaleString()}`
+    ];
+
+    const blob = new Blob([rows.join("\\n")], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `iclub-season-summary-${key}.txt`;
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      a.remove();
+    }, 0);
   }
 
   function showPractice(key) {
@@ -1284,7 +1333,9 @@
             ${mode === "study" ? tr("Начать изучение", "O‘rganishni boshlash", "Start studying") : tr("Начать практику", "Amaliyotni boshlash", "Start practice")}
           </button>
         </div>
-      `
+      `,
+      "practice",
+      `data-subject="${esc(key)}"`
     ));
   }
 
@@ -1630,6 +1681,7 @@
       if (action === "grand-certificate") return showCertificate(key);
 
       if (action === "report") return showReport(key);
+      if (action === "download-report") return downloadDetailedReport(key);
       if (action === "practice") return showPractice(key);
 
       if (action === "practice-regular") return startPreviewPractice(key, "regular");
@@ -2632,6 +2684,26 @@
     document.head.appendChild(style);
   }
 
+
+  function injectReportDownloadStyles() {
+    if (document.getElementById("psp-v41-report-download")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-v41-report-download";
+    style.textContent = `
+      /* PSP_REPORT_DOWNLOAD_V41 */
+      #psp-sheet .psp-panel .psp-full {
+        min-height: 46px;
+      }
+
+      #psp-sheet .psp-panel .psp-muted + .psp-full {
+        margin-top: 12px;
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
@@ -2639,6 +2711,7 @@
     injectPracticeUXPolishStyles();
     injectMainLikeQuizStyles();
     injectPracticeBuilderScrollStyles();
+    injectReportDownloadStyles();
     bind();
     installPhaseSelect();
 
