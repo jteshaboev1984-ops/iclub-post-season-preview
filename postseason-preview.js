@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v46-clean-practice-state-machine-20260603";
+  const BUILD = "grand-final-v47-practice-dynamic-count-20260603";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -1113,7 +1113,7 @@
           tour: parsed.tour || (mode === "study" ? "recommended" : "1-7"),
           topics: Array.isArray(parsed.topics) ? parsed.topics : [],
           difficulty: parsed.difficulty || "mixed",
-          count: Number(parsed.count || 10),
+          count: parsed.count === "all" ? "all" : Number(parsed.count || 10),
           repeatSolved: !!parsed.repeatSolved
         };
       }
@@ -1172,15 +1172,91 @@
     try { localStorage.removeItem(getPracticeStateKey(key)); } catch {}
   }
 
+  function getPracticeAvailability(key, config) {
+    const topics = config.topics && config.topics.length
+      ? config.topics
+      : getPracticeTopics(key, config.tour);
+
+    if (!topics.length) {
+      return {
+        availableCount: 0,
+        totalCount: 0,
+        solvedExcluded: 0
+      };
+    }
+
+    const scopeBase =
+      config.tour === "1-7" ? 140 :
+      config.tour === "recommended" ? Math.max(18, topics.length * 8) :
+      70;
+
+    const topicLimitedBase = Math.min(scopeBase, Math.max(1, topics.length) * 12);
+
+    const difficultyFactor =
+      config.difficulty === "easy" ? 0.45 :
+      config.difficulty === "medium" ? 0.60 :
+      config.difficulty === "hard" ? 0.35 :
+      1;
+
+    const totalCount = Math.max(1, Math.floor(topicLimitedBase * difficultyFactor));
+    const solvedExcluded = config.repeatSolved ? 0 : Math.floor(totalCount * 0.35);
+    const availableCount = Math.max(0, totalCount - solvedExcluded);
+
+    return {
+      availableCount,
+      totalCount,
+      solvedExcluded
+    };
+  }
+
+  function getPracticeCountOptions(availableCount) {
+    if (!availableCount || availableCount <= 0) return [];
+
+    const options = [{ value: "all", label: `${tr("Все", "Hammasi", "All")}: ${availableCount}` }];
+
+    [5, 10, 20, 30].forEach((count) => {
+      if (count <= availableCount) {
+        options.push({ value: count, label: String(count) });
+      }
+    });
+
+    return options;
+  }
+
+  function normalizePracticeCount(value, availableCount) {
+    if (!availableCount || availableCount <= 0) return "all";
+    if (value === "all") return "all";
+
+    const numeric = Number(value || 10);
+    if (!Number.isFinite(numeric) || numeric <= 0) return "all";
+    if (numeric > availableCount) return "all";
+
+    return numeric;
+  }
+
   function buildPracticeQuestions(key, config) {
     const d = DATA[key] || DATA.economics;
-    const questions = d.questions.slice(0, Math.min(3, d.questions.length));
-    const topics = config.topics && config.topics.length ? config.topics : getPracticeTopics(key, config.tour);
+    const availability = getPracticeAvailability(key, config);
+    const availableCount = availability.availableCount;
 
-    return questions.map((q, index) => ({
-      ...q,
-      sourceTopic: topics[index % Math.max(1, topics.length)] || "Practice"
-    }));
+    if (availableCount <= 0) return [];
+
+    const requested = config.count === "all"
+      ? availableCount
+      : Math.min(Number(config.count || 10), availableCount);
+
+    const finalCount = Math.max(1, requested);
+    const topics = config.topics && config.topics.length ? config.topics : getPracticeTopics(key, config.tour);
+    const baseQuestions = d.questions && d.questions.length ? d.questions : DATA.economics.questions;
+
+    return Array.from({ length: finalCount }).map((_, index) => {
+      const q = baseQuestions[index % baseQuestions.length];
+
+      return {
+        ...q,
+        sourceTopic: topics[index % Math.max(1, topics.length)] || "Practice"
+      };
+    });
   }
 
   function showPractice(key) {
@@ -1256,6 +1332,10 @@
     savePracticeConfig(key, config);
 
     const topics = getPracticeTopics(key, config.tour);
+    const availability = getPracticeAvailability(key, config);
+    const countOptions = getPracticeCountOptions(availability.availableCount);
+    config.count = normalizePracticeCount(config.count, availability.availableCount);
+    savePracticeConfig(key, config);
 
     const title = mode === "study"
       ? tr("Изучить темы", "Mavzularni o‘rganish", "Study topics")
@@ -1335,21 +1415,35 @@
             </div>
           </div>
 
-          <div class="psp-panel">
-            <div class="psp-panel-title">${tr("Количество", "Soni", "Count")}</div>
-            <div class="psp-filter-row">
-              ${[5,10,20,30].map((count) => `
-                <button type="button"
-                  class="${config.count === count ? "is-on" : ""}"
-                  data-psp-action="practice-set"
-                  data-subject="${esc(key)}"
-                  data-mode="${esc(mode)}"
-                  data-field="count"
-                  data-value="${count}">
-                  ${count}
-                </button>
-              `).join("")}
-            </div>
+          <div class="psp-panel ${availability.availableCount <= 0 ? "is-empty" : ""}">
+            <div class="psp-panel-title">${tr("Сколько вопросов?", "Nechta savol?", "How many questions?")}</div>
+
+            ${availability.availableCount > 0 ? `
+              <div class="psp-filter-row">
+                ${countOptions.map((option) => `
+                  <button type="button"
+                    class="${String(config.count) === String(option.value) ? "is-on" : ""}"
+                    data-psp-action="practice-set"
+                    data-subject="${esc(key)}"
+                    data-mode="${esc(mode)}"
+                    data-field="count"
+                    data-value="${esc(option.value)}">
+                    ${esc(option.label)}
+                  </button>
+                `).join("")}
+              </div>
+
+              <div class="psp-muted psp-mini-note">
+                ${config.repeatSolved
+                  ? tr("Показаны все вопросы по выбранным фильтрам, включая уже решённые.", "Tanlangan filtrlar bo‘yicha barcha savollar, yechilganlari ham ko‘rsatiladi.", "All questions matching the filters are available, including solved ones.")
+                  : tr(`Доступно: ${availability.availableCount}. Уже решённые правильные вопросы исключены.`, `Mavjud: ${availability.availableCount}. To‘g‘ri yechilgan savollar chiqarildi.`, `Available: ${availability.availableCount}. Correctly solved questions are excluded.`)}
+              </div>
+            ` : `
+              <div class="psp-empty-builder">
+                <b>${tr("Нет доступных вопросов", "Mavjud savollar yo‘q", "No available questions")}</b>
+                <span>${tr("Измените темы, сложность или включите повтор уже решённых вопросов.", "Mavzularni, qiyinlikni o‘zgartiring yoki yechilgan savollarni takrorlashni yoqing.", "Change topics, difficulty, or enable repeating solved questions.")}</span>
+              </div>
+            `}
           </div>
 
           <div class="psp-panel">
@@ -1366,7 +1460,12 @@
 
         <div class="psp-actions">
           <button type="button" class="btn" data-psp-action="practice" data-subject="${esc(key)}">${tr("Назад", "Orqaga", "Back")}</button>
-          <button type="button" class="btn primary" data-psp-action="practice-start" data-subject="${esc(key)}" data-mode="${esc(mode)}">
+          <button type="button"
+            class="btn primary"
+            data-psp-action="practice-start"
+            data-subject="${esc(key)}"
+            data-mode="${esc(mode)}"
+            ${mode === "build" && availability.availableCount <= 0 ? "disabled" : ""}>
             ${mode === "study" ? tr("Начать изучение", "O‘rganishni boshlash", "Start studying") : tr("Начать практику", "Amaliyotni boshlash", "Start practice")}
           </button>
         </div>
@@ -1389,6 +1488,13 @@
           repeatSolved: false
         }
       : getPracticeConfig(key, mode);
+
+    const availability = getPracticeAvailability(key, config);
+
+    if (config.mode === "build" && availability.availableCount <= 0) {
+      savePracticeConfig(key, config);
+      return showPracticeBuilder(key, "build");
+    }
 
     const questions = buildPracticeQuestions(key, config);
 
@@ -1773,7 +1879,7 @@
         const value = btn.dataset.value || "";
         const mode = btn.dataset.mode || "build";
         const patch = { mode };
-        patch[field] = field === "count" ? Number(value || 10) : value;
+        patch[field] = field === "count" ? (value === "all" ? "all" : Number(value || 10)) : value;
         updatePracticeConfig(key, patch);
         return showPracticeBuilder(key, mode);
       }
@@ -2826,6 +2932,50 @@
     document.head.appendChild(style);
   }
 
+
+  function injectPracticeDynamicCountStyles() {
+    if (document.getElementById("psp-v47-practice-dynamic-count")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-v47-practice-dynamic-count";
+    style.textContent = `
+      /* PSP_PRACTICE_DYNAMIC_COUNT_V47 */
+      #psp-sheet .psp-panel.is-empty {
+        border-color: rgba(245,158,11,.28);
+        background: linear-gradient(135deg, rgba(245,158,11,.06), #fff);
+      }
+
+      #psp-sheet .psp-empty-builder {
+        border-radius: 14px;
+        border: 1px dashed rgba(245,158,11,.42);
+        background: rgba(255,255,255,.72);
+        padding: 12px;
+        display: grid;
+        gap: 5px;
+      }
+
+      #psp-sheet .psp-empty-builder b {
+        color: #b45309;
+        font-size: 13px;
+        font-weight: 950;
+      }
+
+      #psp-sheet .psp-empty-builder span {
+        color: rgba(15,23,42,.62);
+        font-size: 12px;
+        line-height: 1.35;
+        font-weight: 650;
+      }
+
+      #psp-sheet .psp-actions .btn[disabled] {
+        opacity: .45;
+        pointer-events: none;
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
@@ -2835,6 +2985,7 @@
     injectPracticeBuilderScrollStyles();
     injectReportDownloadStyles();
     injectPracticeStateMachineStyles();
+    injectPracticeDynamicCountStyles();
     bind();
     installPhaseSelect();
 
