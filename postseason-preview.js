@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v50-cert-profile-scope-hide-review-20260603";
+  const BUILD = "grand-final-v51-profile-cert-repair-20260603";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -1319,17 +1319,23 @@
   }
 
   function getActiveProfileRoot() {
-    const root = document.querySelector(
-      "#view-profile.is-active, [data-view='profile'].is-active, .profile-view.is-active, #profile-view.is-active"
-    );
+    const root =
+      document.querySelector("#view-profile.view.is-active") ||
+      document.querySelector("#view-profile.is-active") ||
+      document.querySelector("[data-view='profile'].is-active") ||
+      document.querySelector(".profile-view.is-active") ||
+      document.querySelector("#profile-view.is-active");
 
     if (!root) return null;
 
+    const style = window.getComputedStyle ? window.getComputedStyle(root) : null;
     const hidden =
       root.hidden ||
       root.getAttribute("aria-hidden") === "true" ||
+      root.classList.contains("hidden") ||
       root.style.display === "none" ||
-      root.classList.contains("hidden");
+      style?.display === "none" ||
+      style?.visibility === "hidden";
 
     return hidden ? null : root;
   }
@@ -1353,91 +1359,20 @@
       .trim()
       .toLowerCase();
 
-    if (!text || text.length > 180) return false;
+    if (!text || text.length > 160) return false;
 
     return (
       text.includes("мои сертификаты") ||
       text.includes("my certificates") ||
       text.includes("mening sertifikat") ||
-      text.includes("sertifikatlarim") ||
-      (text.includes("сертификаты") && text.includes("тур")) ||
-      (text.includes("certificates") && text.includes("tour")) ||
-      (text.includes("sertifikat") && text.includes("tur"))
+      text.includes("sertifikatlarim")
     );
   }
 
-  function hideProfileAcademicReview(profileRoot = getActiveProfileRoot()) {
-    if (!profileRoot) return;
-
-    const normalize = (el) => String(el?.innerText || el?.textContent || "")
-      .replace(/\s+/g, " ")
-      .trim()
-      .toLowerCase();
-
-    const titles = Array.from(profileRoot.querySelectorAll(
-      "h1,h2,h3,h4,.section-title,.profile-section-title,.block-title,.card-title,div"
-    )).filter((el) => {
-      const text = normalize(el);
-      return (
-        text === "academic season review" ||
-        text.includes("academic season review") ||
-        text.includes("академический обзор сезона") ||
-        text.includes("академический сезон")
-      );
-    });
-
-    titles.forEach((title) => {
-      const container = title.closest(
-        ".academic-season-review,.profile-section,.profile-block,section,.panel-card,.card"
-      );
-
-      const containerText = normalize(container);
-      const containerIsSafe =
-        container &&
-        container !== profileRoot &&
-        containerText.length < 2600 &&
-        !containerText.includes("мои сертификаты") &&
-        !containerText.includes("my certificates") &&
-        !containerText.includes("поддержка") &&
-        !containerText.includes("support");
-
-      if (containerIsSafe) {
-        container.style.display = "none";
-        container.setAttribute("data-psp-hidden-academic-review", "true");
-        return;
-      }
-
-      title.style.display = "none";
-      title.setAttribute("data-psp-hidden-academic-review", "true");
-
-      let sibling = title.nextElementSibling;
-      let guard = 0;
-
-      while (sibling && guard < 5) {
-        guard += 1;
-
-        const text = normalize(sibling);
-        if (
-          text.includes("обзор результатов") ||
-          text.includes("result overview") ||
-          text.includes("слоты соревновательного режима") ||
-          text.includes("competitive") ||
-          text.includes("достижения") ||
-          text.includes("achievements") ||
-          text.includes("мои сертификаты") ||
-          text.includes("my certificates")
-        ) {
-          break;
-        }
-
-        if (text) {
-          sibling.style.display = "none";
-          sibling.setAttribute("data-psp-hidden-academic-review", "true");
-        }
-
-        sibling = sibling.nextElementSibling;
-      }
-    });
+  function hideProfileAcademicReview() {
+    // Intentionally disabled in v51.
+    // The previous implementation scanned generic divs and could hide the whole profile.
+    // We will remove Academic Season Review later only by a stable selector.
   }
 
   function decorateProfileCertificates() {
@@ -1448,21 +1383,21 @@
     if (!profileRoot) return;
 
     const candidates = Array.from(profileRoot.querySelectorAll(
-      "button,a,[role='button'],.profile-menu-item,.settings-row,.profile-action,.menu-item,.list-item,.panel-card,.card,.achievement-card,div"
+      "button,a,[role='button'],.profile-menu-item,.settings-row,.profile-action,.menu-item,.list-item,.profile-list-item,.panel-card,.card,.achievement-card"
     ));
 
     candidates.forEach((el) => {
       if (!looksLikeCertificatesMenuItem(el)) return;
 
       const target =
-        el.closest("button,a,[role='button'],.profile-menu-item,.settings-row,.profile-action,.menu-item,.list-item,.panel-card,.card,.achievement-card") ||
+        el.closest("button,a,[role='button'],.profile-menu-item,.settings-row,.profile-action,.menu-item,.list-item,.profile-list-item,.panel-card,.card,.achievement-card") ||
         el;
 
       const targetText = String(target.innerText || target.textContent || "")
         .replace(/\s+/g, " ")
         .trim();
 
-      if (!targetText || targetText.length > 260) return;
+      if (!targetText || targetText.length > 220) return;
 
       target.setAttribute("data-psp-action", "certificates");
       target.setAttribute("data-bucket", "current");
@@ -1475,8 +1410,6 @@
         target.removeAttribute("target");
       }
     });
-
-    hideProfileAcademicReview(profileRoot);
   }
 
   function showReport(key) {
@@ -3768,6 +3701,29 @@
     document.head.appendChild(style);
   }
 
+
+  function injectProfileCertRepairStyles() {
+    if (document.getElementById("psp-v51-profile-cert-repair")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-v51-profile-cert-repair";
+    style.textContent = `
+      /* PSP_PROFILE_CERT_REPAIR_V51 */
+      @media (max-width: 600px) {
+        #psp-sheet.psp-sheet-fullscreen .psp-backdrop {
+          justify-content: stretch !important;
+        }
+
+        #psp-sheet.psp-sheet-fullscreen .psp-sheet-card {
+          width: 100vw !important;
+          max-width: none !important;
+        }
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
@@ -3780,6 +3736,7 @@
     injectPracticeDynamicCountStyles();
     injectPracticeAvailabilityTextStyles();
     injectCertificateArchiveStyles();
+    injectProfileCertRepairStyles();
     injectProfileCleanupStyles();
     bind();
     installPhaseSelect();
