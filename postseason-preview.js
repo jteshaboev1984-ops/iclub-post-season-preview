@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v44-fix-practice-resume-helpers-20260603";
+  const BUILD = "grand-final-v45-rollback-bad-practice-resume-20260603";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -1161,203 +1161,123 @@
       name: "Preview Student",
       school: "Preview School",
       className: "10 класс",
-      country: "Uzbekistan",
-      region: "Tashkent",
+      region: "Ташкент",
       district: "Preview district"
     };
 
-    const usage = {
-      activeDays: 11,
-      longestStreak: 4,
-      totalSessions: 24,
-      practiceAttempts: 18,
-      practiceQuestions: 126,
-      closedQuestions: 44,
-      repeatedMistakes: 9,
-      avgPractice: "78%",
-      avgTour: d.avg,
-      totalLearningTime: "4ч 35м",
-      lastActive: "2 дня назад",
-      improvement: "+18 п.п."
-    };
-
-    const comparison = {
-      user: Number(String(d.avg).replace("%", "")) || 74,
-      republic: 62,
-      region: 67,
-      district: 69,
-      school: 71,
-      similarLevel: 70,
-      percentile: "top 18%"
-    };
-
-    const tourRows = [
-      ["Тур 1", "пройден", "82%", "быстрый старт, высокая точность"],
-      ["Тур 2", "пройден", "64%", "ошибки в темах применения"],
-      ["Тур 3", "лучший", "85%", "самый стабильный результат"],
-      ["Тур 4", "пройден", "71%", "нужна работа с временем"],
-      ["Тур 5", "пройден", "73%", "результат выше среднего"],
-      ["Тур 6", "пройден", "68%", "часть тем требует закрепления"],
-      ["Тур 7", "нет попытки", "—", "темы доступны через практику"]
-    ];
-
     const rows = [
       "iClub Academic Season Report",
-      "Индивидуальный подробный итог сезона",
+      "Подробный итог сезона",
       "",
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "1. Краткий вывод",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      `${previewProfile.name}, по предмету «${d.title}» сезонный результат составляет ${d.avg}.`,
-      `Участие в турах: ${d.tours}. Место в регионе: ${d.rank}.`,
-      `Главный вывод: база по предмету сформирована, но перед Grand Olympiad нужно закрыть ${d.weak} темы: ${(d.study || []).join(", ")}.`,
-      `Динамика: ${usage.improvement} от раннего этапа сезона к лучшему результату.`,
-      "",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "2. Профиль участника",
+      "1. Профиль",
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
       `Участник: ${previewProfile.name}`,
       `Школа: ${previewProfile.school}`,
       `Класс: ${previewProfile.className}`,
-      `Страна: ${previewProfile.country}`,
       `Регион: ${previewProfile.region}`,
       `Район: ${previewProfile.district}`,
       "",
-      "В рабочем приложении эти данные подтягиваются из users:",
+      "В main эти данные будут подтягиваться из таблицы users:",
       "first_name, last_name, school, class, country, region, district, language_code.",
       "",
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "3. Как пользователь пользовался iClub",
+      "2. Итог по предмету",
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      `Активные дни: ${usage.activeDays}`,
-      `Самая длинная серия активности: ${usage.longestStreak} дня подряд`,
-      `Всего учебных сессий: ${usage.totalSessions}`,
-      `Практик выполнено: ${usage.practiceAttempts}`,
-      `Вопросов в практике открыто: ${usage.practiceQuestions}`,
-      `Вопросов закрыто правильным ответом: ${usage.closedQuestions}`,
-      `Повторяющиеся ошибки: ${usage.repeatedMistakes}`,
-      `Примерное учебное время: ${usage.totalLearningTime}`,
-      `Последняя активность: ${usage.lastActive}`,
+      `Предмет: ${d.title}`,
+      `Участие в турах: ${d.tours}`,
+      `Средний результат: ${d.avg}`,
+      `Место в регионе: ${d.rank}`,
+      "Статус: сезонный итог сформирован",
       "",
-      "Интерпретация:",
-      "- пользователь чаще использовал практику, чем соревновательные туры;",
-      "- основная подготовка шла через вопросы и повторение тем;",
-      "- для финала важнее не просто увеличить количество вопросов, а закрыть повторяющиеся ошибки.",
-      "",
-      "В рабочем приложении этот блок считается по:",
-      "app_events, practice_attempts, practice_answers, tour_attempts, tour_answers.",
-      "",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "4. Итоги по турам",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      ...tourRows.map((row) => `${row[0]} — ${row[1]} · ${row[2]} · ${row[3]}`),
+      "В main этот блок будет считаться по таблицам:",
+      "tour_attempts, tour_answers, tours, subjects, ratings_cache.",
       "",
       "Логика расчёта:",
-      "- учитываются только завершённые попытки;",
-      "- результат тура считается по score/percent;",
+      "- учитываются завершённые туры выбранного предмета;",
+      "- результат считается по score/percent;",
       "- при равном результате выше участник с меньшим временем;",
-      "- Grand Final считается отдельно и не входит в «Все 7 туров».",
-      "",
-      "Из базы:",
-      "tours, tour_attempts, tour_answers, subjects, ratings_cache.",
+      "- Grand Final считается отдельно и не входит в “Все 7 туров”.",
       "",
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "5. Практика и качество подготовки",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      `Средняя точность практики: ${usage.avgPractice}`,
-      `Средняя точность туров: ${usage.avgTour}`,
-      `Закрытые вопросы: ${usage.closedQuestions}`,
-      `Незакрытые/нестабильные зоны: ${(d.study || []).join(", ")}`,
-      "",
-      "Что это означает:",
-      "- практика показывает потенциал выше, чем соревновательные результаты;",
-      "- часть ошибок возникает не из-за незнания темы, а из-за применения в новом контексте;",
-      "- перед финалом лучше собрать mixed practice по темам для изучения.",
-      "",
-      "Из базы:",
-      "practice_attempts, practice_answers, practice_pool_questions, questions.topic, questions.subtopic, questions.difficulty.",
-      "",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "6. Освоенные темы",
+      "3. Освоенные темы",
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
       ...(d.strong || []).map((x) => `✓ ${x}`),
       "",
-      "Критерий в рабочем приложении:",
-      "- высокая точность по теме;",
-      "- достаточное число ответов;",
-      "- тема встречалась не один раз;",
-      "- результат подтверждён практикой или туром.",
+      "Как определяется в main:",
+      "- тема попадает сюда, если точность высокая и есть достаточное число ответов;",
+      "- учитываются tour_answers и practice_answers;",
+      "- тема не считается освоенной по одному случайному правильному ответу.",
       "",
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "7. Темы для изучения",
+      "4. Темы для изучения",
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
       ...(d.study || []).map((x) => `• ${x}`),
       "",
-      "Почему эти темы попали в список:",
-      "- ошибки повторялись чаще, чем по другим темам;",
-      "- результат нестабилен между практикой и туром;",
-      "- тема важна для финального mixed-формата;",
-      "- часть вопросов может быть ещё не закрыта правильным ответом.",
+      "Как определяется в main:",
+      "- повторяющиеся ошибки в турах;",
+      "- низкая точность в практике;",
+      "- незакрытые вопросы из practice pool;",
+      "- темы текущего и прошлых туров, где результат нестабилен.",
       "",
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "8. Сравнение с другими участниками",
+      "5. Практика и активность",
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      `Ваш результат: ${comparison.user}%`,
-      `Средний по республике: ${comparison.republic}%`,
-      `Средний по региону: ${comparison.region}%`,
-      `Средний по району: ${comparison.district}%`,
-      `Средний по школе: ${comparison.school}%`,
-      `Средний среди участников похожего уровня: ${comparison.similarLevel}%`,
-      `Позиция: ${comparison.percentile}`,
+      "Preview-оценка: активность достаточная для продолжения подготовки.",
+      "Рекомендация: собрать mixed practice по темам для изучения.",
       "",
-      "Интерпретация:",
-      `- результат выше среднего по республике на ${comparison.user - comparison.republic} п.п.;`,
-      `- результат выше среднего по региону на ${comparison.user - comparison.region} п.п.;`,
-      `- результат выше среднего по району на ${comparison.user - comparison.district} п.п.;`,
-      "- сравнение обезличено: имена и данные других участников не раскрываются.",
+      "В main этот блок будет считаться по таблицам:",
+      "practice_attempts, practice_answers, practice_pool_questions, questions.",
       "",
-      "В рабочем приложении сравнение считается по:",
-      "users.country, users.region, users.district, users.school, users.class, tour_attempts, practice_attempts, ratings_cache.",
+      "Что будет учитываться:",
+      "- количество практик;",
+      "- активные дни;",
+      "- точность по темам;",
+      "- закрытые вопросы;",
+      "- повторные ошибки;",
+      "- время ответа, если оно доступно.",
       "",
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "9. Готовность к Grand Olympiad",
+      "6. Сравнение с группой",
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      `Текущая готовность: средняя/выше средней.`,
-      `Главный риск: ${d.weak} темы требуют изучения перед финалом.`,
-      "Формат финала: mixed-вопросы по выбранному предмету.",
-      "Что важно: применять темы в новых ситуациях, а не отвечать по ключевым словам.",
+      "Preview: сравнение показано только как структура отчёта.",
       "",
-      "План подготовки:",
-      "1) Открыть «Темы для изучения».",
-      "2) Выбрать туры и темы, где были ошибки.",
-      "3) Собрать mixed practice на 10–20 вопросов.",
-      "4) Повторять только незакрытые вопросы, если времени мало.",
-      "5) Перед финалом пройти одну короткую практику без подсказок.",
+      "В main сравнение будет обезличенным:",
+      "- по классу;",
+      "- по школе;",
+      "- по району;",
+      "- по региону;",
+      "- по участникам с похожим уровнем.",
+      "",
+      "Личные данные других участников в отчёт не попадут.",
       "",
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "10. Что является preview-default и что придёт из базы",
+      "7. Следующий шаг",
       "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "В preview сейчас задано вручную:",
-      "- имя Preview Student;",
-      "- школа, регион и район;",
-      "- метрики предмета в DATA;",
-      "- списки освоенных тем и тем для изучения;",
-      "- примерные показатели активности и сравнения.",
+      "1) Откройте темы для изучения.",
+      "2) Соберите практику по этим темам.",
+      "3) Повторите вопросы до стабильного результата.",
+      "4) После этого переходите к Grand Olympiad.",
       "",
-      "В main будет подтягиваться из базы:",
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "8. Техническая логика для main",
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "Дефолт в preview:",
+      "- имя: Preview Student;",
+      "- школа/регион: preview values;",
+      "- метрики предмета: DATA в postseason-preview.js;",
+      "- темы: DATA.strong и DATA.study;",
+      "- файл: txt, формируется локально.",
+      "",
+      "Из базы в main:",
       "- users: профиль, регион, школа, класс, язык;",
-      "- user_subjects: выбранные предметы и режим;",
-      "- tours: номер тура, даты, активность;",
-      "- tour_attempts: score, percent, total_time, status;",
-      "- tour_answers: ответы, correctness, time_spent;",
-      "- practice_attempts: практика, результат, время;",
-      "- practice_answers: закрытые вопросы и ошибки;",
+      "- subjects/tours: предмет и туры;",
+      "- tour_attempts/tour_answers: результат, время, ответы;",
+      "- practice_attempts/practice_answers: практика и закрытые вопросы;",
       "- questions: topic, subtopic, difficulty, book_ref;",
-      "- ratings_cache/rank SQL: место по стране, региону, району;",
-      "- certificates: сертификаты и номера;",
-      "- app_events: активность, входы, открытия экранов, действия в app.",
+      "- ratings_cache или rank SQL: места в рейтинге;",
+      "- certificates: сертификаты и номера.",
       "",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
       `Сформировано: ${now.toLocaleString()}`
     ];
 
@@ -1376,105 +1296,14 @@
     }, 0);
   }
 
-
-  function getActivePracticeState(key) {
-    try {
-      const raw = localStorage.getItem(getPracticeStateKey(key));
-      const parsed = raw ? JSON.parse(raw) : null;
-
-      if (
-        parsed &&
-        typeof parsed === "object" &&
-        Array.isArray(parsed.questions) &&
-        parsed.questions.length &&
-        !parsed.finished
-      ) {
-        return parsed;
-      }
-    } catch {}
-
-    return null;
-  }
-
-  function clearPracticeState(key) {
-    try { localStorage.removeItem(getPracticeStateKey(key)); } catch {}
-  }
-
-  function showPracticePaused(key) {
-    const d = DATA[key] || DATA.economics;
-    const state = getActivePracticeState(key);
-
-    if (!state) return showPractice(key);
-
-    const total = state.questions.length || 1;
-    const current = Math.max(1, Math.min(total, Number(state.q || 1)));
-    const answered = Object.keys(state.answers || {}).length;
-
-    const modeLabel = state.mode === "study"
-      ? tr("Изучение тем", "Mavzularni o‘rganish", "Study topics")
-      : state.mode === "build"
-        ? tr("Собранная практика", "Yig‘ilgan amaliyot", "Custom practice")
-        : tr("Обычная практика", "Oddiy amaliyot", "Regular practice");
-
-    openSheet(sheet(
-      tr("ПРАКТИКА", "AMALIYOT", "PRACTICE"),
-      tr("Практика остановлена", "Amaliyot to‘xtatildi", "Practice paused"),
-      `${d.title} · ${modeLabel}`,
-      `
-        <div class="psp-panel psp-active-practice-panel">
-          <div class="psp-panel-title">${tr("Сохранённый прогресс", "Saqlangan progress", "Saved progress")}</div>
-
-          <div class="psp-report-grid">
-            <div><b>${current}/${total}</b><span>${tr("Вопрос", "Savol", "Question")}</span></div>
-            <div><b>${answered}</b><span>${tr("Ответы", "Javoblar", "Answers")}</span></div>
-            <div><b>${modeLabel}</b><span>${tr("Формат", "Format", "Mode")}</span></div>
-            <div><b>${fmt(Math.max(0, Math.floor((Date.now() - Number(state.startedAt || Date.now())) / 1000)))}</b><span>${tr("Время", "Vaqt", "Time")}</span></div>
-          </div>
-
-          <div class="psp-muted">${tr("Можно продолжить с этого места или начать заново с тем же форматом.", "Shu joydan davom etish yoki shu formatda qaytadan boshlash mumkin.", "You can continue from here or restart with the same format.")}</div>
-        </div>
-
-        <div class="psp-actions psp-actions-three">
-          <button type="button" class="btn" data-psp-action="practice" data-subject="${esc(key)}">${tr("Назад", "Orqaga", "Back")}</button>
-          <button type="button" class="btn" data-psp-action="practice-restart" data-subject="${esc(key)}" data-mode="${esc(state.mode || "regular")}">${tr("Начать заново", "Qaytadan boshlash", "Restart")}</button>
-          <button type="button" class="btn primary" data-psp-action="practice-continue" data-subject="${esc(key)}">${tr("Продолжить", "Davom etish", "Continue")}</button>
-        </div>
-      `,
-      "practice",
-      `data-subject="${esc(key)}"`
-    ));
-  }
-
   function showPractice(key) {
     const d = DATA[key] || DATA.economics;
-    const active = getActivePracticeState(key);
-
-    const activeBlock = active ? `
-      <div class="psp-panel psp-active-practice-panel">
-        <div class="psp-panel-title">${tr("Начатая практика", "Boshlangan amaliyot", "Started practice")}</div>
-        <div class="psp-muted">${tr("У вас есть незавершённая практика. Можно продолжить с того же вопроса или начать заново.", "Sizda yakunlanmagan amaliyot bor. Shu savoldan davom etish yoki qaytadan boshlash mumkin.", "You have an unfinished practice. Continue from the same question or restart.")}</div>
-
-        <div class="psp-report-grid">
-          <div><b>${Math.max(1, Number(active.q || 1))}/${active.questions.length}</b><span>${tr("Вопрос", "Savol", "Question")}</span></div>
-          <div><b>${Object.keys(active.answers || {}).length}</b><span>${tr("Ответы", "Javoblar", "Answers")}</span></div>
-          <div><b>${active.mode === "study" ? "Study" : active.mode === "build" ? "Custom" : "Regular"}</b><span>${tr("Формат", "Format", "Mode")}</span></div>
-          <div><b>${fmt(Math.max(0, Math.floor((Date.now() - Number(active.startedAt || Date.now())) / 1000)))}</b><span>${tr("Время", "Vaqt", "Time")}</span></div>
-        </div>
-
-        <div class="psp-actions">
-          <button type="button" class="btn" data-psp-action="practice-restart" data-subject="${esc(key)}" data-mode="${esc(active.mode || "regular")}">${tr("Начать заново", "Qaytadan boshlash", "Restart")}</button>
-          <button type="button" class="btn primary" data-psp-action="practice-continue" data-subject="${esc(key)}">${tr("Продолжить", "Davom etish", "Continue")}</button>
-        </div>
-      </div>
-    ` : "";
 
     openSheet(sheet(
       tr("ПРАКТИКА", "AMALIYOT", "PRACTICE"),
       tr("Выберите формат", "Formatni tanlang", "Choose format"),
       d.title,
       `
-        ${activeBlock}
-
         <div class="psp-choice-list">
           <button type="button" class="psp-choice psp-choice-button" data-psp-action="practice-regular" data-subject="${esc(key)}">
             <div class="psp-choice-title">${tr("Обычная практика", "Oddiy amaliyot", "Regular practice")}</div>
@@ -1719,7 +1548,7 @@
         <div class="psp-main-quiz-top">
           <div class="psp-main-quiz-progress">${state.q}/${total}</div>
           <div id="psp-practice-timer" class="psp-practice-timer">00:00</div>
-          <button type="button" class="psp-main-quiz-stop" data-psp-action="practice-pause" data-subject="${esc(key)}">
+          <button type="button" class="psp-main-quiz-stop" data-psp-action="practice-finish" data-subject="${esc(key)}">
             ${tr("Остановить", "To‘xtatish", "Stop")}
           </button>
         </div>
@@ -1819,12 +1648,10 @@
         </div>
 
         <div class="psp-result-actions">
-          <button type="button" class="btn" data-psp-action="practice" data-subject="${esc(key)}">${tr("Назад", "Orqaga", "Back")}</button>
+          <button type="button" class="btn" data-psp-action="practice" data-subject="${esc(key)}">${tr("Изменить формат", "Formatni o‘zgartirish", "Change format")}</button>
           <button type="button" class="btn primary" data-psp-action="practice-start" data-subject="${esc(key)}" data-mode="${esc(state.mode || "regular")}">${tr("Пройти снова", "Yana o‘tish", "Try again")}</button>
         </div>
-      `,
-      "practice",
-      `data-subject="${esc(key)}"`
+      `
     ));
   }
 
@@ -1959,18 +1786,6 @@
       if (action === "report") return showReport(key);
       if (action === "download-report") return downloadDetailedReport(key);
       if (action === "practice") return showPractice(key);
-
-      if (action === "practice-pause") return showPracticePaused(key);
-
-      if (action === "practice-continue") {
-        closeSheet();
-        return renderPracticeQuestion(key);
-      }
-
-      if (action === "practice-restart") {
-        clearPracticeState(key);
-        return startPreviewPractice(key, btn.dataset.mode || "regular");
-      }
 
       if (action === "practice-regular") return startPreviewPractice(key, "regular");
       if (action === "practice-study") return showPracticeBuilder(key, "study");
@@ -2993,38 +2808,6 @@
   }
 
 
-  function injectPracticeResumeStyles() {
-    if (document.getElementById("psp-v43-practice-resume")) return;
-
-    const style = document.createElement("style");
-    style.id = "psp-v43-practice-resume";
-    style.textContent = `
-      /* PSP_PRACTICE_RESUME_V43 */
-      #psp-sheet .psp-active-practice-panel {
-        border-color: rgba(37,99,235,.22);
-        background: linear-gradient(135deg, rgba(37,99,235,.055), #fff);
-      }
-
-      #psp-sheet .psp-actions-three {
-        grid-template-columns: 1fr 1fr 1fr !important;
-      }
-
-      #psp-sheet .psp-actions-three .btn {
-        min-height: 44px;
-        padding-left: 8px;
-        padding-right: 8px;
-        font-size: 12px;
-      }
-
-      @media (max-width: 370px) {
-        #psp-sheet .psp-actions-three {
-          grid-template-columns: 1fr !important;
-        }
-      }
-    `;
-
-    document.head.appendChild(style);
-  }
 
   function boot() {
     injectStyles();
@@ -3034,7 +2817,6 @@
     injectMainLikeQuizStyles();
     injectPracticeBuilderScrollStyles();
     injectReportDownloadStyles();
-    injectPracticeResumeStyles();
     bind();
     installPhaseSelect();
 
