@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v48-practice-availability-text-20260603";
+  const BUILD = "grand-final-v49-certificates-archive-20260603";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -963,34 +963,381 @@
     ));
   }
 
-  function showCertificate(key) {
-    const d = DATA[key] || DATA.economics;
-    const r = resultFor(key);
+  function getPreviewCertificates() {
+    return [
+      {
+        id: "s1-economics-t3",
+        bucket: "current",
+        season: "season_1",
+        seasonLabel: "Season 1 · 2026",
+        subjectKey: "economics",
+        subjectTitle: DATA.economics.title,
+        type: "tour",
+        filter: "tour3",
+        tourNo: 3,
+        title: `${DATA.economics.title} · ${tr("Тур 3", "3-tur", "Tour 3")}`,
+        certificateType: "Tour Certificate",
+        score: "17/20",
+        percent: "85%",
+        rank: "#12",
+        rankLabel: tr("регион", "hudud", "region"),
+        date: "26.05.2026",
+        number: "ICL-2026-S1-ECO-T3-0008",
+        status: "issued"
+      },
+      {
+        id: "s1-math-t5",
+        bucket: "current",
+        season: "season_1",
+        seasonLabel: "Season 1 · 2026",
+        subjectKey: "mathematics",
+        subjectTitle: DATA.mathematics.title,
+        type: "tour",
+        filter: "tour5",
+        tourNo: 5,
+        title: `${DATA.mathematics.title} · ${tr("Тур 5", "5-tur", "Tour 5")}`,
+        certificateType: "Tour Certificate",
+        score: "14/20",
+        percent: "70%",
+        rank: "#18",
+        rankLabel: tr("регион", "hudud", "region"),
+        date: "27.05.2026",
+        number: "ICL-2026-S1-MATH-T5-0014",
+        status: "issued"
+      },
+      {
+        id: "s1-economics-grand",
+        bucket: "current",
+        season: "season_1",
+        seasonLabel: "Season 1 · 2026",
+        subjectKey: "economics",
+        subjectTitle: DATA.economics.title,
+        type: "grand",
+        filter: "grand",
+        tourNo: 8,
+        title: `${DATA.economics.title} · Grand Final`,
+        certificateType: "Grand Final Certificate",
+        score: "17/20",
+        percent: "85%",
+        rank: "#8",
+        rankLabel: tr("регион", "hudud", "region"),
+        date: "03.06.2026",
+        number: "ICL-2026-S1-ECO-GF-0008",
+        status: "issued"
+      },
+      {
+        id: "s0-biology-t2",
+        bucket: "past",
+        season: "season_0",
+        seasonLabel: "Season 0 · Archive",
+        subjectKey: "biology",
+        subjectTitle: DATA.biology.title,
+        type: "tour",
+        filter: "tour2",
+        tourNo: 2,
+        title: `${DATA.biology.title} · ${tr("Тур 2", "2-tur", "Tour 2")}`,
+        certificateType: "Tour Certificate",
+        score: "16/20",
+        percent: "80%",
+        rank: "#9",
+        rankLabel: tr("регион", "hudud", "region"),
+        date: "12.04.2026",
+        number: "ICL-2026-S0-BIO-T2-0009",
+        status: "issued"
+      }
+    ];
+  }
+
+  function getCertificateById(id) {
+    return getPreviewCertificates().find((cert) => cert.id === id) || getPreviewCertificates()[0];
+  }
+
+  function getGrandCertificateForSubject(key) {
+    const subjectKey = key || getSubject();
+    const existing = getPreviewCertificates().find((cert) => cert.type === "grand" && cert.subjectKey === subjectKey);
+    if (existing) return existing;
+
+    const d = DATA[subjectKey] || DATA.economics;
+    const r = resultFor(subjectKey);
+
+    return {
+      id: `preview-${subjectKey}-grand`,
+      bucket: "current",
+      season: "season_1",
+      seasonLabel: "Season 1 · 2026",
+      subjectKey,
+      subjectTitle: d.title,
+      type: "grand",
+      filter: "grand",
+      tourNo: 8,
+      title: `${d.title} · Grand Final`,
+      certificateType: "Grand Final Certificate",
+      score: `${r.score}/${r.total}`,
+      percent: `${r.percent}%`,
+      rank: `#${r.regionRank}`,
+      rankLabel: tr("регион", "hudud", "region"),
+      date: "03.06.2026",
+      number: `ICL-2026-S1-${String(subjectKey).toUpperCase()}-GF-PREVIEW`,
+      status: "issued"
+    };
+  }
+
+  function filterCertificates(bucket = "current", season = "season_1", filter = "all") {
+    return getPreviewCertificates().filter((cert) => {
+      if (cert.bucket !== bucket) return false;
+      if (bucket === "past" && season && cert.season !== season) return false;
+      if (filter === "all") return true;
+      return cert.filter === filter;
+    });
+  }
+
+  function renderCertificateFilterButton(label, filter, currentFilter) {
+    return `
+      <button type="button"
+        class="${currentFilter === filter ? "is-on" : ""}"
+        data-psp-action="cert-filter"
+        data-filter="${esc(filter)}">
+        ${esc(label)}
+      </button>
+    `;
+  }
+
+  function showCertificatesArchive(bucket = "current", season = "season_1", filter = "all") {
+    const all = getPreviewCertificates();
+    const seasons = Array.from(new Map(
+      all.filter((cert) => cert.bucket === "past").map((cert) => [cert.season, cert.seasonLabel])
+    ).entries());
+
+    if (bucket === "past" && seasons.length && !seasons.some(([value]) => value === season)) {
+      season = seasons[0][0];
+    }
+
+    const items = filterCertificates(bucket, season, filter);
+
+    openSheet(sheet(
+      tr("СЕРТИФИКАТЫ", "SERTIFIKATLAR", "CERTIFICATES"),
+      tr("Мои сертификаты", "Mening sertifikatlarim", "My certificates"),
+      tr("Туры и Grand Final по сезонам.", "Mavsumlar bo‘yicha turlar va Grand Final.", "Tours and Grand Final by season."),
+      `
+        <div class="psp-cert-tabs">
+          <button type="button" class="${bucket === "current" ? "is-on" : ""}" data-psp-action="cert-bucket" data-bucket="current">
+            ${tr("Текущий сезон", "Joriy mavsum", "Current season")}
+          </button>
+          <button type="button" class="${bucket === "past" ? "is-on" : ""}" data-psp-action="cert-bucket" data-bucket="past">
+            ${tr("Прошлые сезоны", "Oldingi mavsumlar", "Past seasons")}
+          </button>
+        </div>
+
+        ${bucket === "past" ? `
+          <div class="psp-panel">
+            <div class="psp-panel-title">${tr("Сезон", "Mavsum", "Season")}</div>
+            <div class="psp-filter-row">
+              ${seasons.map(([value, label]) => `
+                <button type="button"
+                  class="${season === value ? "is-on" : ""}"
+                  data-psp-action="cert-season"
+                  data-season="${esc(value)}">
+                  ${esc(label)}
+                </button>
+              `).join("")}
+            </div>
+          </div>
+        ` : `
+          <div class="psp-season-note">
+            <b>Season 1 · 2026</b>
+            <span>${tr("Здесь собраны выданные сертификаты текущего сезона.", "Bu yerda joriy mavsum sertifikatlari jamlangan.", "Issued certificates for the current season are collected here.")}</span>
+          </div>
+        `}
+
+        <div class="psp-panel">
+          <div class="psp-panel-title">${tr("Фильтр", "Filtr", "Filter")}</div>
+          <div class="psp-filter-row">
+            ${renderCertificateFilterButton(tr("Все", "Hammasi", "All"), "all", filter)}
+            ${[1,2,3,4,5,6,7].map((no) => renderCertificateFilterButton(`${tr("Тур", "Tur", "Tour")} ${no}`, `tour${no}`, filter)).join("")}
+            ${renderCertificateFilterButton("Grand", "grand", filter)}
+          </div>
+        </div>
+
+        <div class="psp-cert-list">
+          ${items.length ? items.map((cert) => `
+            <article class="psp-cert-card">
+              <div>
+                <div class="psp-cert-card-kicker">${esc(cert.seasonLabel)} · ${cert.type === "grand" ? "Grand Final" : `${tr("Тур", "Tur", "Tour")} ${cert.tourNo}`}</div>
+                <div class="psp-cert-card-title">${esc(cert.title)}</div>
+                <div class="psp-muted">${esc(cert.score)} · ${esc(cert.percent)} · ${esc(cert.rank)} ${esc(cert.rankLabel)}</div>
+              </div>
+              <button type="button"
+                class="btn"
+                data-psp-action="certificate-open"
+                data-cert-id="${esc(cert.id)}"
+                data-bucket="${esc(bucket)}"
+                data-season="${esc(season)}"
+                data-filter="${esc(filter)}">
+                ${tr("Открыть", "Ochish", "Open")}
+              </button>
+            </article>
+          `).join("") : `
+            <div class="psp-empty-builder">
+              <b>${tr("Сертификатов нет", "Sertifikatlar yo‘q", "No certificates")}</b>
+              <span>${tr("По выбранному фильтру сертификаты пока не выданы.", "Tanlangan filtr bo‘yicha sertifikatlar hali berilmagan.", "No certificates have been issued for this filter yet.")}</span>
+            </div>
+          `}
+        </div>
+      `
+    ));
+
+    const root = document.getElementById("psp-sheet");
+    if (root) {
+      root.dataset.certBucket = bucket;
+      root.dataset.certSeason = season;
+      root.dataset.certFilter = filter;
+    }
+  }
+
+  function certificateVisualHTML(cert) {
+    return `
+      <div class="psp-official-cert">
+        <div class="psp-official-cert-head">
+          <div class="psp-official-logo">iClub</div>
+          <div>
+            <div class="psp-official-type">${esc(cert.certificateType)}</div>
+            <div class="psp-muted">${esc(cert.seasonLabel)}</div>
+          </div>
+        </div>
+
+        <div class="psp-official-body">
+          <div class="psp-official-label">${tr("Выдан участнику", "Ishtirokchiga berildi", "Awarded to")}</div>
+          <div class="psp-official-name">Preview Student</div>
+
+          <div class="psp-official-subject">${esc(cert.title)}</div>
+
+          <div class="psp-report-grid">
+            <div><b>${esc(cert.score)}</b><span>${tr("Ответы", "Javoblar", "Answers")}</span></div>
+            <div><b>${esc(cert.percent)}</b><span>${tr("Результат", "Natija", "Result")}</span></div>
+            <div><b>${esc(cert.rank)}</b><span>${esc(cert.rankLabel)}</span></div>
+            <div><b>${esc(cert.date)}</b><span>${tr("Дата", "Sana", "Date")}</span></div>
+          </div>
+
+          <div class="psp-official-note">
+            ${cert.type === "grand"
+              ? tr("Сертификат подтверждает результат финального этапа сезона.", "Sertifikat mavsum final bosqichi natijasini tasdiqlaydi.", "This certificate confirms the season final result.")
+              : tr("Сертификат подтверждает результат соревновательного тура.", "Sertifikat musobaqa turi natijasini tasdiqlaydi.", "This certificate confirms the competitive tour result.")}
+          </div>
+        </div>
+
+        <div class="psp-official-footer">
+          <span>${tr("Номер сертификата", "Sertifikat raqami", "Certificate number")}</span>
+          <b>${esc(cert.number)}</b>
+        </div>
+      </div>
+    `;
+  }
+
+  function showCertificateById(id, bucket = "current", season = "season_1", filter = "all") {
+    const cert = getCertificateById(id);
 
     openSheet(sheet(
       tr("СЕРТИФИКАТ", "SERTIFIKAT", "CERTIFICATE"),
-      "Grand Final Certificate",
-      `${d.title} · Grand Final`,
+      cert.certificateType,
+      cert.title,
       `
-        <div class="psp-cert">
-          <div class="psp-cert-logo">iClub</div>
-          <div class="psp-cert-type">Grand Final Certificate</div>
-          <div class="psp-cert-name">Preview Student</div>
-          <div class="psp-cert-line">${esc(d.title)} · ${r.score}/${r.total} · ${r.percent}%</div>
+        ${certificateVisualHTML(cert)}
 
-          <div class="psp-report-grid">
-            <div><b>#${r.regionRank}</b><span>${tr("Регион", "Hudud", "Region")}</span></div>
-            <div><b>#${r.overallRank}</b><span>${tr("Общий", "Umumiy", "Overall")}</span></div>
-            <div><b>${r.time}</b><span>${tr("Время", "Vaqt", "Time")}</span></div>
-            <div><b>GF</b><span>${tr("Финал", "Final", "Final")}</span></div>
-          </div>
+        <div class="psp-actions">
+          <button type="button"
+            class="btn"
+            data-psp-action="certificates"
+            data-bucket="${esc(bucket)}"
+            data-season="${esc(season)}"
+            data-filter="${esc(filter)}">
+            ${tr("Назад", "Orqaga", "Back")}
+          </button>
 
-          <div class="psp-cert-code">ICL-202606-GF-${esc(String(key).toUpperCase())}-PREVIEW</div>
+          <button type="button"
+            class="btn primary"
+            data-psp-action="certificate-download"
+            data-cert-id="${esc(cert.id)}">
+            ${tr("Скачать", "Yuklab olish", "Download")}
+          </button>
+        </div>
+      `,
+      "certificates",
+      `data-bucket="${esc(bucket)}" data-season="${esc(season)}" data-filter="${esc(filter)}"`
+    ));
+  }
+
+  function showCertificate(key) {
+    const cert = getGrandCertificateForSubject(key);
+
+    openSheet(sheet(
+      tr("СЕРТИФИКАТ", "SERTIFIKAT", "CERTIFICATE"),
+      cert.certificateType,
+      cert.title,
+      `
+        ${certificateVisualHTML(cert)}
+
+        <div class="psp-actions">
+          <button type="button" class="btn" data-psp-action="grand-result" data-subject="${esc(key)}">${tr("Назад", "Orqaga", "Back")}</button>
+          <button type="button" class="btn primary" data-psp-action="certificate-download" data-cert-id="${esc(cert.id)}" data-subject="${esc(key)}">${tr("Скачать", "Yuklab olish", "Download")}</button>
         </div>
       `,
       "grand-result",
       `data-subject="${esc(key)}"`
     ));
+  }
+
+  function downloadCertificate(cert) {
+    const rows = [
+      "iClub Certificate",
+      "",
+      cert.certificateType,
+      cert.seasonLabel,
+      "",
+      `Participant: Preview Student`,
+      `Subject/Event: ${cert.title}`,
+      `Result: ${cert.score} · ${cert.percent}`,
+      `Rank: ${cert.rank} ${cert.rankLabel}`,
+      `Date: ${cert.date}`,
+      `Certificate number: ${cert.number}`,
+      "",
+      "Preview file. In production this will be generated from the certificates table and verified by certificate_number."
+    ];
+
+    const blob = new Blob([rows.join("\n")], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+
+    a.href = url;
+    a.download = `${cert.number}.txt`;
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      a.remove();
+    }, 0);
+  }
+
+  function decorateProfileCertificates() {
+    const profileActive =
+      document.getElementById("view-profile")?.classList.contains("is-active") ||
+      document.querySelector("[data-view='profile'].is-active");
+
+    if (!profileActive) return;
+
+    Array.from(document.querySelectorAll("button,a,div")).forEach((el) => {
+      const text = String(el.textContent || "").toLowerCase();
+
+      if (
+        text.includes("мои сертификаты") ||
+        text.includes("my certificates") ||
+        text.includes("sertifikat")
+      ) {
+        const target = el.closest("button,a,.profile-menu-item,.settings-row,.panel-card,.card,.achievement-card") || el;
+        target.setAttribute("data-psp-action", "certificates");
+        target.style.cursor = "pointer";
+      }
+    });
   }
 
   function showReport(key) {
@@ -1877,6 +2224,49 @@
       if (action === "finalizing") return showFinalizing();
       if (action === "grand-result") return showResult(key);
       if (action === "grand-certificate") return showCertificate(key);
+
+      if (action === "certificates") {
+        const root = document.getElementById("psp-sheet");
+        const bucket = btn.dataset.bucket || root?.dataset?.certBucket || "current";
+        const season = btn.dataset.season || root?.dataset?.certSeason || "season_1";
+        const filter = btn.dataset.filter || root?.dataset?.certFilter || "all";
+        return showCertificatesArchive(bucket, season, filter);
+      }
+
+      if (action === "cert-bucket") {
+        const bucket = btn.dataset.bucket || "current";
+        return showCertificatesArchive(bucket, bucket === "past" ? "season_0" : "season_1", "all");
+      }
+
+      if (action === "cert-season") {
+        const root = document.getElementById("psp-sheet");
+        return showCertificatesArchive("past", btn.dataset.season || "season_0", root?.dataset?.certFilter || "all");
+      }
+
+      if (action === "cert-filter") {
+        const root = document.getElementById("psp-sheet");
+        return showCertificatesArchive(
+          root?.dataset?.certBucket || "current",
+          root?.dataset?.certSeason || "season_1",
+          btn.dataset.filter || "all"
+        );
+      }
+
+      if (action === "certificate-open") {
+        return showCertificateById(
+          btn.dataset.certId || "",
+          btn.dataset.bucket || "current",
+          btn.dataset.season || "season_1",
+          btn.dataset.filter || "all"
+        );
+      }
+
+      if (action === "certificate-download") {
+        const cert = btn.dataset.certId
+          ? getCertificateById(btn.dataset.certId)
+          : getGrandCertificateForSubject(btn.dataset.subject || getSubject());
+        return downloadCertificate(cert);
+      }
 
       if (action === "report") return showReport(key);
       if (action === "download-report") return downloadDetailedReport(key);
@@ -3020,6 +3410,203 @@
     document.head.appendChild(style);
   }
 
+
+  function injectCertificateArchiveStyles() {
+    if (document.getElementById("psp-v49-certificate-archive")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-v49-certificate-archive";
+    style.textContent = `
+      /* PSP_CERTIFICATE_ARCHIVE_V49 */
+      #psp-sheet .psp-cert-tabs {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin: 10px 0;
+      }
+
+      #psp-sheet .psp-cert-tabs button {
+        border: 1px solid rgba(226,232,240,.95);
+        background: #fff;
+        border-radius: 14px;
+        min-height: 42px;
+        color: rgba(15,23,42,.68);
+        font-size: 12px;
+        font-weight: 950;
+      }
+
+      #psp-sheet .psp-cert-tabs button.is-on {
+        color: #2563eb;
+        border-color: rgba(37,99,235,.30);
+        background: rgba(37,99,235,.08);
+      }
+
+      #psp-sheet .psp-season-note {
+        background: #fff;
+        border: 1px solid rgba(226,232,240,.95);
+        border-radius: 16px;
+        padding: 12px;
+        display: grid;
+        gap: 4px;
+        box-shadow: 0 8px 22px rgba(15,23,42,.05);
+      }
+
+      #psp-sheet .psp-season-note b {
+        color: #0f172a;
+        font-size: 13px;
+        font-weight: 950;
+      }
+
+      #psp-sheet .psp-season-note span {
+        color: rgba(15,23,42,.62);
+        font-size: 12px;
+        line-height: 1.35;
+        font-weight: 650;
+      }
+
+      #psp-sheet .psp-cert-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 10px;
+      }
+
+      #psp-sheet .psp-cert-card {
+        background: #fff;
+        border: 1px solid rgba(226,232,240,.95);
+        border-radius: 17px;
+        padding: 12px;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: center;
+        box-shadow: 0 8px 22px rgba(15,23,42,.05);
+      }
+
+      #psp-sheet .psp-cert-card-kicker {
+        color: #2563eb;
+        font-size: 10px;
+        line-height: 1.1;
+        font-weight: 950;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+      }
+
+      #psp-sheet .psp-cert-card-title {
+        margin-top: 4px;
+        color: #0f172a;
+        font-size: 15px;
+        line-height: 1.2;
+        font-weight: 950;
+      }
+
+      #psp-sheet .psp-cert-card .btn {
+        min-width: 88px;
+        min-height: 38px;
+      }
+
+      #psp-sheet .psp-official-cert {
+        background:
+          linear-gradient(#fff, #fff) padding-box,
+          linear-gradient(135deg, rgba(37,99,235,.55), rgba(245,158,11,.50)) border-box;
+        border: 2px solid transparent;
+        border-radius: 24px;
+        padding: 16px;
+        color: #0f172a;
+        box-shadow: 0 16px 38px rgba(15,23,42,.10);
+      }
+
+      #psp-sheet .psp-official-cert-head {
+        display: grid;
+        grid-template-columns: 58px 1fr;
+        gap: 12px;
+        align-items: center;
+        padding-bottom: 14px;
+        border-bottom: 1px solid rgba(226,232,240,.95);
+      }
+
+      #psp-sheet .psp-official-logo {
+        width: 54px;
+        height: 54px;
+        border-radius: 18px;
+        background: linear-gradient(135deg, #2563eb, #60a5fa);
+        color: #fff;
+        display: grid;
+        place-items: center;
+        font-size: 16px;
+        font-weight: 950;
+      }
+
+      #psp-sheet .psp-official-type {
+        color: #0f172a;
+        font-size: 17px;
+        line-height: 1.15;
+        font-weight: 950;
+      }
+
+      #psp-sheet .psp-official-body {
+        padding: 18px 0 12px;
+        text-align: center;
+      }
+
+      #psp-sheet .psp-official-label {
+        color: rgba(15,23,42,.55);
+        font-size: 11px;
+        font-weight: 850;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+      }
+
+      #psp-sheet .psp-official-name {
+        margin-top: 6px;
+        color: #0f172a;
+        font-size: 22px;
+        line-height: 1.15;
+        font-weight: 950;
+      }
+
+      #psp-sheet .psp-official-subject {
+        margin-top: 10px;
+        color: rgba(15,23,42,.78);
+        font-size: 14px;
+        line-height: 1.35;
+        font-weight: 850;
+      }
+
+      #psp-sheet .psp-official-note {
+        color: rgba(15,23,42,.60);
+        font-size: 12px;
+        line-height: 1.38;
+        font-weight: 650;
+        margin-top: 12px;
+      }
+
+      #psp-sheet .psp-official-footer {
+        border-top: 1px solid rgba(226,232,240,.95);
+        padding-top: 12px;
+        display: grid;
+        gap: 3px;
+        text-align: center;
+      }
+
+      #psp-sheet .psp-official-footer span {
+        color: rgba(15,23,42,.50);
+        font-size: 10px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: .05em;
+      }
+
+      #psp-sheet .psp-official-footer b {
+        color: #0f172a;
+        font-size: 12px;
+        font-weight: 950;
+        word-break: break-word;
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
@@ -3031,6 +3618,7 @@
     injectPracticeStateMachineStyles();
     injectPracticeDynamicCountStyles();
     injectPracticeAvailabilityTextStyles();
+    injectCertificateArchiveStyles();
     bind();
     installPhaseSelect();
 
@@ -3039,6 +3627,7 @@
       try { installPhaseSelect(); } catch {}
       try { renderHomeRouter(); } catch {}
       try { decorateRatingTab(); } catch {}
+      try { decorateProfileCertificates(); } catch {}
     };
 
     setTimeout(tick, 100);
