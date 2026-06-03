@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v49-certificates-archive-20260603";
+  const BUILD = "grand-final-v50-cert-profile-scope-hide-review-20260603";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -1318,26 +1318,165 @@
     }, 0);
   }
 
-  function decorateProfileCertificates() {
-    const profileActive =
-      document.getElementById("view-profile")?.classList.contains("is-active") ||
-      document.querySelector("[data-view='profile'].is-active");
+  function getActiveProfileRoot() {
+    const root = document.querySelector(
+      "#view-profile.is-active, [data-view='profile'].is-active, .profile-view.is-active, #profile-view.is-active"
+    );
 
-    if (!profileActive) return;
+    if (!root) return null;
 
-    Array.from(document.querySelectorAll("button,a,div")).forEach((el) => {
-      const text = String(el.textContent || "").toLowerCase();
+    const hidden =
+      root.hidden ||
+      root.getAttribute("aria-hidden") === "true" ||
+      root.style.display === "none" ||
+      root.classList.contains("hidden");
 
-      if (
-        text.includes("мои сертификаты") ||
-        text.includes("my certificates") ||
-        text.includes("sertifikat")
-      ) {
-        const target = el.closest("button,a,.profile-menu-item,.settings-row,.panel-card,.card,.achievement-card") || el;
-        target.setAttribute("data-psp-action", "certificates");
-        target.style.cursor = "pointer";
+    return hidden ? null : root;
+  }
+
+  function cleanupCertificateActionsOutsideProfile(profileRoot) {
+    document.querySelectorAll('[data-psp-action="certificates"]').forEach((el) => {
+      if (el.closest("#psp-sheet")) return;
+      if (profileRoot && profileRoot.contains(el)) return;
+
+      el.removeAttribute("data-psp-action");
+      el.removeAttribute("data-bucket");
+      el.removeAttribute("data-season");
+      el.removeAttribute("data-filter");
+      el.style.cursor = "";
+    });
+  }
+
+  function looksLikeCertificatesMenuItem(el) {
+    const text = String(el?.innerText || el?.textContent || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+
+    if (!text || text.length > 180) return false;
+
+    return (
+      text.includes("мои сертификаты") ||
+      text.includes("my certificates") ||
+      text.includes("mening sertifikat") ||
+      text.includes("sertifikatlarim") ||
+      (text.includes("сертификаты") && text.includes("тур")) ||
+      (text.includes("certificates") && text.includes("tour")) ||
+      (text.includes("sertifikat") && text.includes("tur"))
+    );
+  }
+
+  function hideProfileAcademicReview(profileRoot = getActiveProfileRoot()) {
+    if (!profileRoot) return;
+
+    const normalize = (el) => String(el?.innerText || el?.textContent || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+
+    const titles = Array.from(profileRoot.querySelectorAll(
+      "h1,h2,h3,h4,.section-title,.profile-section-title,.block-title,.card-title,div"
+    )).filter((el) => {
+      const text = normalize(el);
+      return (
+        text === "academic season review" ||
+        text.includes("academic season review") ||
+        text.includes("академический обзор сезона") ||
+        text.includes("академический сезон")
+      );
+    });
+
+    titles.forEach((title) => {
+      const container = title.closest(
+        ".academic-season-review,.profile-section,.profile-block,section,.panel-card,.card"
+      );
+
+      const containerText = normalize(container);
+      const containerIsSafe =
+        container &&
+        container !== profileRoot &&
+        containerText.length < 2600 &&
+        !containerText.includes("мои сертификаты") &&
+        !containerText.includes("my certificates") &&
+        !containerText.includes("поддержка") &&
+        !containerText.includes("support");
+
+      if (containerIsSafe) {
+        container.style.display = "none";
+        container.setAttribute("data-psp-hidden-academic-review", "true");
+        return;
+      }
+
+      title.style.display = "none";
+      title.setAttribute("data-psp-hidden-academic-review", "true");
+
+      let sibling = title.nextElementSibling;
+      let guard = 0;
+
+      while (sibling && guard < 5) {
+        guard += 1;
+
+        const text = normalize(sibling);
+        if (
+          text.includes("обзор результатов") ||
+          text.includes("result overview") ||
+          text.includes("слоты соревновательного режима") ||
+          text.includes("competitive") ||
+          text.includes("достижения") ||
+          text.includes("achievements") ||
+          text.includes("мои сертификаты") ||
+          text.includes("my certificates")
+        ) {
+          break;
+        }
+
+        if (text) {
+          sibling.style.display = "none";
+          sibling.setAttribute("data-psp-hidden-academic-review", "true");
+        }
+
+        sibling = sibling.nextElementSibling;
       }
     });
+  }
+
+  function decorateProfileCertificates() {
+    const profileRoot = getActiveProfileRoot();
+
+    cleanupCertificateActionsOutsideProfile(profileRoot);
+
+    if (!profileRoot) return;
+
+    const candidates = Array.from(profileRoot.querySelectorAll(
+      "button,a,[role='button'],.profile-menu-item,.settings-row,.profile-action,.menu-item,.list-item,.panel-card,.card,.achievement-card,div"
+    ));
+
+    candidates.forEach((el) => {
+      if (!looksLikeCertificatesMenuItem(el)) return;
+
+      const target =
+        el.closest("button,a,[role='button'],.profile-menu-item,.settings-row,.profile-action,.menu-item,.list-item,.panel-card,.card,.achievement-card") ||
+        el;
+
+      const targetText = String(target.innerText || target.textContent || "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if (!targetText || targetText.length > 260) return;
+
+      target.setAttribute("data-psp-action", "certificates");
+      target.setAttribute("data-bucket", "current");
+      target.setAttribute("data-season", "season_1");
+      target.setAttribute("data-filter", "all");
+      target.style.cursor = "pointer";
+
+      if (target.tagName === "A") {
+        target.setAttribute("href", "javascript:void(0)");
+        target.removeAttribute("target");
+      }
+    });
+
+    hideProfileAcademicReview(profileRoot);
   }
 
   function showReport(key) {
@@ -2226,6 +2365,13 @@
       if (action === "grand-certificate") return showCertificate(key);
 
       if (action === "certificates") {
+        const profileRoot = getActiveProfileRoot();
+
+        if (!btn.closest("#psp-sheet") && !(profileRoot && profileRoot.contains(btn))) {
+          cleanupCertificateActionsOutsideProfile(profileRoot);
+          return;
+        }
+
         const root = document.getElementById("psp-sheet");
         const bucket = btn.dataset.bucket || root?.dataset?.certBucket || "current";
         const season = btn.dataset.season || root?.dataset?.certSeason || "season_1";
@@ -3607,6 +3753,21 @@
     document.head.appendChild(style);
   }
 
+  function injectProfileCleanupStyles() {
+    if (document.getElementById("psp-v50-profile-cleanup")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-v50-profile-cleanup";
+    style.textContent = `
+      /* PSP_PROFILE_CLEANUP_V50 */
+      [data-psp-hidden-academic-review="true"] {
+        display: none !important;
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
@@ -3619,6 +3780,7 @@
     injectPracticeDynamicCountStyles();
     injectPracticeAvailabilityTextStyles();
     injectCertificateArchiveStyles();
+    injectProfileCleanupStyles();
     bind();
     installPhaseSelect();
 
