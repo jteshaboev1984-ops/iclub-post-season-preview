@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v47-practice-dynamic-count-20260603";
+  const BUILD = "grand-final-v48-practice-availability-text-20260603";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -1199,13 +1199,15 @@
       1;
 
     const totalCount = Math.max(1, Math.floor(topicLimitedBase * difficultyFactor));
-    const solvedExcluded = config.repeatSolved ? 0 : Math.floor(totalCount * 0.35);
+    const solvedCorrectCount = Math.floor(totalCount * 0.35);
+    const solvedExcluded = config.repeatSolved ? 0 : solvedCorrectCount;
     const availableCount = Math.max(0, totalCount - solvedExcluded);
 
     return {
       availableCount,
       totalCount,
-      solvedExcluded
+      solvedExcluded,
+      solvedCorrectCount
     };
   }
 
@@ -1433,10 +1435,20 @@
                 `).join("")}
               </div>
 
-              <div class="psp-muted psp-mini-note">
-                ${config.repeatSolved
-                  ? tr("Показаны все вопросы по выбранным фильтрам, включая уже решённые.", "Tanlangan filtrlar bo‘yicha barcha savollar, yechilganlari ham ko‘rsatiladi.", "All questions matching the filters are available, including solved ones.")
-                  : tr(`Доступно: ${availability.availableCount}. Уже решённые правильные вопросы исключены.`, `Mavjud: ${availability.availableCount}. To‘g‘ri yechilgan savollar chiqarildi.`, `Available: ${availability.availableCount}. Correctly solved questions are excluded.`)}
+              <div class="psp-availability-note">
+                <b>
+                  ${config.repeatSolved
+                    ? tr(`Доступно ${availability.totalCount} из ${availability.totalCount} вопросов`, `${availability.totalCount} / ${availability.totalCount} savol mavjud`, `${availability.totalCount} of ${availability.totalCount} questions available`)
+                    : tr(`Доступно ${availability.availableCount} из ${availability.totalCount} вопросов`, `${availability.availableCount} / ${availability.totalCount} savol mavjud`, `${availability.availableCount} of ${availability.totalCount} questions available`)}
+                </b>
+
+                <span>
+                  ${availability.solvedCorrectCount > 0
+                    ? config.repeatSolved
+                      ? tr(`${availability.solvedCorrectCount} уже закрыты правильным ответом и включены в повтор.`, `${availability.solvedCorrectCount} ta savol to‘g‘ri javob bilan yopilgan va takrorlashga kiritilgan.`, `${availability.solvedCorrectCount} already solved correctly and included for repeat.`)
+                      : tr(`${availability.solvedCorrectCount} уже закрыты правильным ответом.`, `${availability.solvedCorrectCount} ta savol to‘g‘ri javob bilan yopilgan.`, `${availability.solvedCorrectCount} already solved correctly.`)
+                    : tr("Закрытых правильным ответом вопросов по этим фильтрам пока нет.", "Bu filtrlar bo‘yicha to‘g‘ri yopilgan savollar hali yo‘q.", "No correctly solved questions for these filters yet.")}
+                </span>
               </div>
             ` : `
               <div class="psp-empty-builder">
@@ -2976,6 +2988,38 @@
     document.head.appendChild(style);
   }
 
+
+  function injectPracticeAvailabilityTextStyles() {
+    if (document.getElementById("psp-v48-practice-availability-text")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-v48-practice-availability-text";
+    style.textContent = `
+      /* PSP_PRACTICE_AVAILABILITY_TEXT_V48 */
+      #psp-sheet .psp-availability-note {
+        margin-top: 8px;
+        display: grid;
+        gap: 4px;
+      }
+
+      #psp-sheet .psp-availability-note b {
+        color: #0f172a;
+        font-size: 12px;
+        line-height: 1.3;
+        font-weight: 900;
+      }
+
+      #psp-sheet .psp-availability-note span {
+        color: rgba(15,23,42,.62);
+        font-size: 12px;
+        line-height: 1.35;
+        font-weight: 650;
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
@@ -2986,6 +3030,7 @@
     injectReportDownloadStyles();
     injectPracticeStateMachineStyles();
     injectPracticeDynamicCountStyles();
+    injectPracticeAvailabilityTextStyles();
     bind();
     installPhaseSelect();
 
