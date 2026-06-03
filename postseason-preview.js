@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v43-practice-resume-deeper-report-20260603";
+  const BUILD = "grand-final-v44-fix-practice-resume-helpers-20260603";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -1374,6 +1374,75 @@
       URL.revokeObjectURL(url);
       a.remove();
     }, 0);
+  }
+
+
+  function getActivePracticeState(key) {
+    try {
+      const raw = localStorage.getItem(getPracticeStateKey(key));
+      const parsed = raw ? JSON.parse(raw) : null;
+
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        Array.isArray(parsed.questions) &&
+        parsed.questions.length &&
+        !parsed.finished
+      ) {
+        return parsed;
+      }
+    } catch {}
+
+    return null;
+  }
+
+  function clearPracticeState(key) {
+    try { localStorage.removeItem(getPracticeStateKey(key)); } catch {}
+  }
+
+  function showPracticePaused(key) {
+    const d = DATA[key] || DATA.economics;
+    const state = getActivePracticeState(key);
+
+    if (!state) return showPractice(key);
+
+    const total = state.questions.length || 1;
+    const current = Math.max(1, Math.min(total, Number(state.q || 1)));
+    const answered = Object.keys(state.answers || {}).length;
+
+    const modeLabel = state.mode === "study"
+      ? tr("Изучение тем", "Mavzularni o‘rganish", "Study topics")
+      : state.mode === "build"
+        ? tr("Собранная практика", "Yig‘ilgan amaliyot", "Custom practice")
+        : tr("Обычная практика", "Oddiy amaliyot", "Regular practice");
+
+    openSheet(sheet(
+      tr("ПРАКТИКА", "AMALIYOT", "PRACTICE"),
+      tr("Практика остановлена", "Amaliyot to‘xtatildi", "Practice paused"),
+      `${d.title} · ${modeLabel}`,
+      `
+        <div class="psp-panel psp-active-practice-panel">
+          <div class="psp-panel-title">${tr("Сохранённый прогресс", "Saqlangan progress", "Saved progress")}</div>
+
+          <div class="psp-report-grid">
+            <div><b>${current}/${total}</b><span>${tr("Вопрос", "Savol", "Question")}</span></div>
+            <div><b>${answered}</b><span>${tr("Ответы", "Javoblar", "Answers")}</span></div>
+            <div><b>${modeLabel}</b><span>${tr("Формат", "Format", "Mode")}</span></div>
+            <div><b>${fmt(Math.max(0, Math.floor((Date.now() - Number(state.startedAt || Date.now())) / 1000)))}</b><span>${tr("Время", "Vaqt", "Time")}</span></div>
+          </div>
+
+          <div class="psp-muted">${tr("Можно продолжить с этого места или начать заново с тем же форматом.", "Shu joydan davom etish yoki shu formatda qaytadan boshlash mumkin.", "You can continue from here or restart with the same format.")}</div>
+        </div>
+
+        <div class="psp-actions psp-actions-three">
+          <button type="button" class="btn" data-psp-action="practice" data-subject="${esc(key)}">${tr("Назад", "Orqaga", "Back")}</button>
+          <button type="button" class="btn" data-psp-action="practice-restart" data-subject="${esc(key)}" data-mode="${esc(state.mode || "regular")}">${tr("Начать заново", "Qaytadan boshlash", "Restart")}</button>
+          <button type="button" class="btn primary" data-psp-action="practice-continue" data-subject="${esc(key)}">${tr("Продолжить", "Davom etish", "Continue")}</button>
+        </div>
+      `,
+      "practice",
+      `data-subject="${esc(key)}"`
+    ));
   }
 
   function showPractice(key) {
