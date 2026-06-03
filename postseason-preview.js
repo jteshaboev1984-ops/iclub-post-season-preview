@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v45-rollback-bad-practice-resume-20260603";
+  const BUILD = "grand-final-v46-clean-practice-state-machine-20260603";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -1028,18 +1028,21 @@
   }
 
 
+
   function getPracticeConfigKey(key) {
-    return "iclub_preview_practice_config_v37_" + (key || getSubject());
+    return "iclub_preview_practice_config_v46_" + (key || getSubject());
   }
 
   function getPracticeStateKey(key) {
-    return "iclub_preview_practice_state_v37_" + (key || getSubject());
+    return "iclub_preview_practice_state_v46_" + (key || getSubject());
   }
 
   function getPracticeTopics(key, tour) {
     const d = DATA[key] || DATA.economics;
+
     const base = {
       economics: {
+        recommended: d.study || [],
         "1-7": ["Demand & Supply", "Elasticity", "Market intervention", "Evaluation paragraphs", "Exchange rates", "Balance of payments"],
         "1": ["Demand & Supply", "Elasticity", "Market intervention"],
         "2": ["Income elasticity", "Cross elasticity", "Market failure"],
@@ -1050,6 +1053,7 @@
         "7": ["Balance of payments", "Development economics", "Globalisation"]
       },
       mathematics: {
+        recommended: d.study || [],
         "1-7": ["Quadratics", "Graphs", "Coordinate geometry", "Trigonometric identities", "Binomial coefficients", "Inequalities"],
         "1": ["Quadratics", "Graphs", "Coordinate geometry"],
         "2": ["Functions", "Transformations", "Sequences"],
@@ -1060,6 +1064,7 @@
         "7": ["Inequalities", "Binomial coefficients", "Series"]
       },
       biology: {
+        recommended: d.study || [],
         "1-7": ["Homeostasis", "Inheritance", "Photosynthesis", "Genetic technology", "Respiration", "Selection"],
         "1": ["Cell structure", "Biological molecules", "Enzymes"],
         "2": ["Transport", "Gas exchange", "Immunity"],
@@ -1070,6 +1075,7 @@
         "7": ["Genetic technology", "Selection", "Conservation"]
       },
       chemistry: {
+        recommended: d.study || [],
         "1-7": ["Equilibria", "Kinetics", "Organic reactions", "Electrochemistry", "Born-Haber cycles", "Entropy"],
         "1": ["Atomic structure", "Bonding", "Stoichiometry"],
         "2": ["Energetics", "Redox", "Equilibria"],
@@ -1080,6 +1086,7 @@
         "7": ["Synthetic routes", "Mechanisms", "Organic analysis"]
       },
       informatics: {
+        recommended: d.study || [],
         "1-7": ["Algorithms", "Networks", "Data representation", "Cybersecurity", "Databases", "Boolean logic"],
         "1": ["Algorithms", "Pseudocode", "Flowcharts"],
         "2": ["Data representation", "Binary", "Hexadecimal"],
@@ -1092,7 +1099,7 @@
     };
 
     const subjectTopics = base[key] || {};
-    return subjectTopics[String(tour)] || subjectTopics["1-7"] || d.study || [];
+    return subjectTopics[String(tour)] || subjectTopics.recommended || d.study || [];
   }
 
   function getPracticeConfig(key, mode) {
@@ -1103,7 +1110,7 @@
       if (parsed && typeof parsed === "object") {
         return {
           mode: parsed.mode || mode || "regular",
-          tour: parsed.tour || "1-7",
+          tour: parsed.tour || (mode === "study" ? "recommended" : "1-7"),
           topics: Array.isArray(parsed.topics) ? parsed.topics : [],
           difficulty: parsed.difficulty || "mixed",
           count: Number(parsed.count || 10),
@@ -1112,7 +1119,7 @@
       }
     } catch {}
 
-    const tour = mode === "regular" ? "1-7" : "1-7";
+    const tour = mode === "study" ? "recommended" : "1-7";
     const topics = getPracticeTopics(key, tour).slice(0, 3);
 
     return {
@@ -1142,168 +1149,70 @@
     return next;
   }
 
+  function getActivePracticeState(key) {
+    try {
+      const raw = localStorage.getItem(getPracticeStateKey(key));
+      const parsed = raw ? JSON.parse(raw) : null;
+
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        Array.isArray(parsed.questions) &&
+        parsed.questions.length &&
+        !parsed.finished
+      ) {
+        return parsed;
+      }
+    } catch {}
+
+    return null;
+  }
+
+  function clearPracticeState(key) {
+    try { localStorage.removeItem(getPracticeStateKey(key)); } catch {}
+  }
+
   function buildPracticeQuestions(key, config) {
     const d = DATA[key] || DATA.economics;
     const questions = d.questions.slice(0, Math.min(3, d.questions.length));
+    const topics = config.topics && config.topics.length ? config.topics : getPracticeTopics(key, config.tour);
 
     return questions.map((q, index) => ({
       ...q,
-      sourceTopic: (config.topics && config.topics[index % Math.max(1, config.topics.length)]) || d.study[index % Math.max(1, d.study.length)] || "Practice"
+      sourceTopic: topics[index % Math.max(1, topics.length)] || "Practice"
     }));
-  }
-
-
-  function downloadDetailedReport(key) {
-    const d = DATA[key] || DATA.economics;
-    const now = new Date();
-
-    const previewProfile = {
-      name: "Preview Student",
-      school: "Preview School",
-      className: "10 класс",
-      region: "Ташкент",
-      district: "Preview district"
-    };
-
-    const rows = [
-      "iClub Academic Season Report",
-      "Подробный итог сезона",
-      "",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "1. Профиль",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      `Участник: ${previewProfile.name}`,
-      `Школа: ${previewProfile.school}`,
-      `Класс: ${previewProfile.className}`,
-      `Регион: ${previewProfile.region}`,
-      `Район: ${previewProfile.district}`,
-      "",
-      "В main эти данные будут подтягиваться из таблицы users:",
-      "first_name, last_name, school, class, country, region, district, language_code.",
-      "",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "2. Итог по предмету",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      `Предмет: ${d.title}`,
-      `Участие в турах: ${d.tours}`,
-      `Средний результат: ${d.avg}`,
-      `Место в регионе: ${d.rank}`,
-      "Статус: сезонный итог сформирован",
-      "",
-      "В main этот блок будет считаться по таблицам:",
-      "tour_attempts, tour_answers, tours, subjects, ratings_cache.",
-      "",
-      "Логика расчёта:",
-      "- учитываются завершённые туры выбранного предмета;",
-      "- результат считается по score/percent;",
-      "- при равном результате выше участник с меньшим временем;",
-      "- Grand Final считается отдельно и не входит в “Все 7 туров”.",
-      "",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "3. Освоенные темы",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      ...(d.strong || []).map((x) => `✓ ${x}`),
-      "",
-      "Как определяется в main:",
-      "- тема попадает сюда, если точность высокая и есть достаточное число ответов;",
-      "- учитываются tour_answers и practice_answers;",
-      "- тема не считается освоенной по одному случайному правильному ответу.",
-      "",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "4. Темы для изучения",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      ...(d.study || []).map((x) => `• ${x}`),
-      "",
-      "Как определяется в main:",
-      "- повторяющиеся ошибки в турах;",
-      "- низкая точность в практике;",
-      "- незакрытые вопросы из practice pool;",
-      "- темы текущего и прошлых туров, где результат нестабилен.",
-      "",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "5. Практика и активность",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "Preview-оценка: активность достаточная для продолжения подготовки.",
-      "Рекомендация: собрать mixed practice по темам для изучения.",
-      "",
-      "В main этот блок будет считаться по таблицам:",
-      "practice_attempts, practice_answers, practice_pool_questions, questions.",
-      "",
-      "Что будет учитываться:",
-      "- количество практик;",
-      "- активные дни;",
-      "- точность по темам;",
-      "- закрытые вопросы;",
-      "- повторные ошибки;",
-      "- время ответа, если оно доступно.",
-      "",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "6. Сравнение с группой",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "Preview: сравнение показано только как структура отчёта.",
-      "",
-      "В main сравнение будет обезличенным:",
-      "- по классу;",
-      "- по школе;",
-      "- по району;",
-      "- по региону;",
-      "- по участникам с похожим уровнем.",
-      "",
-      "Личные данные других участников в отчёт не попадут.",
-      "",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "7. Следующий шаг",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "1) Откройте темы для изучения.",
-      "2) Соберите практику по этим темам.",
-      "3) Повторите вопросы до стабильного результата.",
-      "4) После этого переходите к Grand Olympiad.",
-      "",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "8. Техническая логика для main",
-      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
-      "Дефолт в preview:",
-      "- имя: Preview Student;",
-      "- школа/регион: preview values;",
-      "- метрики предмета: DATA в postseason-preview.js;",
-      "- темы: DATA.strong и DATA.study;",
-      "- файл: txt, формируется локально.",
-      "",
-      "Из базы в main:",
-      "- users: профиль, регион, школа, класс, язык;",
-      "- subjects/tours: предмет и туры;",
-      "- tour_attempts/tour_answers: результат, время, ответы;",
-      "- practice_attempts/practice_answers: практика и закрытые вопросы;",
-      "- questions: topic, subtopic, difficulty, book_ref;",
-      "- ratings_cache или rank SQL: места в рейтинге;",
-      "- certificates: сертификаты и номера.",
-      "",
-      `Сформировано: ${now.toLocaleString()}`
-    ];
-
-    const blob = new Blob([rows.join("\n")], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `iclub-academic-season-report-${key}.txt`;
-    document.body.appendChild(a);
-    a.click();
-
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-      a.remove();
-    }, 0);
   }
 
   function showPractice(key) {
     const d = DATA[key] || DATA.economics;
+    const active = getActivePracticeState(key);
+
+    const activeBlock = active ? `
+      <div class="psp-panel psp-active-practice-panel">
+        <div class="psp-panel-title">${tr("Начатая практика", "Boshlangan amaliyot", "Started practice")}</div>
+        <div class="psp-muted">${tr("Можно продолжить с текущего вопроса или начать заново.", "Joriy savoldan davom etish yoki qaytadan boshlash mumkin.", "Continue from the current question or restart.")}</div>
+
+        <div class="psp-report-grid">
+          <div><b>${Math.max(1, Number(active.q || 1))}/${active.questions.length}</b><span>${tr("Вопрос", "Savol", "Question")}</span></div>
+          <div><b>${Object.keys(active.answers || {}).length}</b><span>${tr("Ответы", "Javoblar", "Answers")}</span></div>
+          <div><b>${active.mode === "study" ? "Study" : active.mode === "build" ? "Custom" : "Regular"}</b><span>${tr("Формат", "Format", "Mode")}</span></div>
+          <div><b>${fmt(getPracticeAttemptElapsed(active))}</b><span>${tr("Время", "Vaqt", "Time")}</span></div>
+        </div>
+
+        <div class="psp-actions">
+          <button type="button" class="btn" data-psp-action="practice-restart" data-subject="${esc(key)}" data-mode="${esc(active.mode || "regular")}">${tr("Начать заново", "Qaytadan boshlash", "Restart")}</button>
+          <button type="button" class="btn primary" data-psp-action="practice-continue" data-subject="${esc(key)}">${tr("Продолжить", "Davom etish", "Continue")}</button>
+        </div>
+      </div>
+    ` : "";
 
     openSheet(sheet(
       tr("ПРАКТИКА", "AMALIYOT", "PRACTICE"),
       tr("Выберите формат", "Formatni tanlang", "Choose format"),
       d.title,
       `
+        ${activeBlock}
+
         <div class="psp-choice-list">
           <button type="button" class="psp-choice psp-choice-button" data-psp-action="practice-regular" data-subject="${esc(key)}">
             <div class="psp-choice-title">${tr("Обычная практика", "Oddiy amaliyot", "Regular practice")}</div>
@@ -1312,7 +1221,7 @@
 
           <button type="button" class="psp-choice psp-choice-button" data-psp-action="practice-study" data-subject="${esc(key)}">
             <div class="psp-choice-title">${tr("Изучить темы", "Mavzularni o‘rganish", "Study topics")}</div>
-            <div class="psp-muted">${tr("Выберите тур и темы, которые нужно изучить или закрепить.", "O‘rganish yoki mustahkamlash kerak bo‘lgan tur va mavzularni tanlang.", "Choose tour and topics to study or reinforce.")}</div>
+            <div class="psp-muted">${tr("Практика по темам из рекомендаций сезона.", "Mavsum tavsiyalaridagi mavzular bo‘yicha amaliyot.", "Practice topics from season recommendations.")}</div>
           </button>
 
           <button type="button" class="psp-choice psp-choice-button" data-psp-action="practice-build" data-subject="${esc(key)}">
@@ -1326,18 +1235,39 @@
 
   function showPracticeBuilder(key, mode) {
     const d = DATA[key] || DATA.economics;
-    const config = getPracticeConfig(key, mode);
-    config.mode = mode;
+    const current = getPracticeConfig(key, mode);
+
+    const config = {
+      ...current,
+      mode,
+      tour: mode === "study" && !current.tour ? "recommended" : current.tour
+    };
+
+    if (mode === "study" && config.tour !== "recommended" && !config.topics.length) {
+      config.topics = getPracticeTopics(key, "recommended").slice(0, 3);
+    }
+
+    if (mode === "study" && config.tour === "1-7") {
+      config.tour = "recommended";
+      config.topics = getPracticeTopics(key, "recommended").slice(0, 3);
+    }
+
+    if (!config.topics.length) config.topics = getPracticeTopics(key, config.tour).slice(0, 3);
     savePracticeConfig(key, config);
 
     const topics = getPracticeTopics(key, config.tour);
+
     const title = mode === "study"
       ? tr("Изучить темы", "Mavzularni o‘rganish", "Study topics")
       : tr("Собрать практику", "Amaliyot yig‘ish", "Build practice");
 
     const subtitle = mode === "study"
-      ? tr("Фокус на темах, которые требуют изучения или закрепления.", "O‘rganish yoki mustahkamlash kerak bo‘lgan mavzular.", "Focus on topics that need study or reinforcement.")
+      ? tr("По умолчанию выбраны темы из ваших рекомендаций.", "Avval tavsiyalardagi mavzular tanlangan.", "Recommended topics are selected by default.")
       : tr("Настройте практику под свою цель.", "Amaliyotni maqsadingizga moslang.", "Customize practice for your goal.");
+
+    const tourButtons = mode === "study"
+      ? ["recommended", "1", "2", "3", "4", "5", "6", "7"]
+      : ["1-7", "1", "2", "3", "4", "5", "6", "7"];
 
     openSheet(sheet(
       tr("ПРАКТИКА", "AMALIYOT", "PRACTICE"),
@@ -1345,9 +1275,9 @@
       `${d.title} · ${subtitle}`,
       `
         <div class="psp-panel">
-          <div class="psp-panel-title">${tr("Тур", "Tur", "Tour")}</div>
+          <div class="psp-panel-title">${mode === "study" ? tr("Источник тем", "Mavzular manbasi", "Topic source") : tr("Тур", "Tur", "Tour")}</div>
           <div class="psp-filter-row">
-            ${["1-7","1","2","3","4","5","6","7"].map((tour) => `
+            ${tourButtons.map((tour) => `
               <button type="button"
                 class="${config.tour === tour ? "is-on" : ""}"
                 data-psp-action="practice-set"
@@ -1355,14 +1285,14 @@
                 data-mode="${esc(mode)}"
                 data-field="tour"
                 data-value="${esc(tour)}">
-                ${tour === "1-7" ? tr("Все 7", "7 tur", "All 7") : `${tr("Тур", "Tur", "Tour")} ${tour}`}
+                ${tour === "recommended" ? tr("Рекомендации", "Tavsiyalar", "Recommended") : tour === "1-7" ? tr("Все 7", "7 tur", "All 7") : `${tr("Тур", "Tur", "Tour")} ${tour}`}
               </button>
             `).join("")}
           </div>
         </div>
 
-        <div class="psp-panel">
-          <div class="psp-panel-title">${tr("Темы", "Mavzular", "Topics")}</div>
+        <div class="psp-panel ${mode === "study" ? "study" : ""}">
+          <div class="psp-panel-title">${mode === "study" ? tr("Темы для изучения", "O‘rganish mavzulari", "Topics to study") : tr("Темы", "Mavzular", "Topics")}</div>
           <div class="psp-topic-list">
             ${topics.map((topic) => `
               <button type="button"
@@ -1375,7 +1305,11 @@
               </button>
             `).join("")}
           </div>
-          <div class="psp-muted psp-mini-note">${tr("Выбранные темы попадут в практику. В main список будет приходить из базы вопросов.", "Tanlangan mavzular amaliyotga kiradi. Main’da ro‘yxat savollar bazasidan olinadi.", "Selected topics go into practice. In main, the list comes from the question bank.")}</div>
+          <div class="psp-muted psp-mini-note">
+            ${mode === "study"
+              ? tr("Эти темы взяты из итога сезона. В main они будут считаться по ошибкам, точности и незакрытым вопросам.", "Bu mavzular mavsum yakunidan olingan. Main’da ular xatolar, aniqlik va yopilmagan savollar bo‘yicha hisoblanadi.", "These topics come from the season summary. In main they are calculated from mistakes, accuracy and unclosed questions.")
+              : tr("Выбранные темы попадут в практику. В main список будет приходить из базы вопросов.", "Tanlangan mavzular amaliyotga kiradi. Main’da ro‘yxat savollar bazasidan olinadi.", "Selected topics go into practice. In main, the list comes from the question bank.")}
+          </div>
         </div>
 
         ${mode === "build" ? `
@@ -1442,7 +1376,9 @@
     ));
   }
 
-  function startPreviewPractice(key, mode) {
+  function startPreviewPractice(key, mode, restart = true) {
+    if (restart) clearPracticeState(key);
+
     const config = mode === "regular"
       ? {
           mode: "regular",
@@ -1459,12 +1395,15 @@
     const state = {
       subject: key,
       mode: config.mode,
+      config,
       q: 1,
       selected: "",
       answers: {},
       questions,
       startedAt: Date.now(),
+      attemptElapsed: 0,
       questionStartedAt: Date.now(),
+      questionElapsed: 0,
       timeSpent: {},
       finished: false
     };
@@ -1475,21 +1414,28 @@
   }
 
   function getPracticeState(key) {
-    try {
-      const raw = localStorage.getItem(getPracticeStateKey(key));
-      const parsed = raw ? JSON.parse(raw) : null;
-      if (parsed && typeof parsed === "object" && Array.isArray(parsed.questions) && parsed.questions.length) {
-        return parsed;
-      }
-    } catch {}
+    const active = getActivePracticeState(key);
+    if (active) return active;
 
-    startPreviewPractice(key, "regular");
+    startPreviewPractice(key, "regular", true);
     return JSON.parse(localStorage.getItem(getPracticeStateKey(key)));
   }
 
   function savePracticeState(key, state) {
     localStorage.setItem(getPracticeStateKey(key), JSON.stringify(state));
     return state;
+  }
+
+  function getPracticeAttemptElapsed(state) {
+    const base = Number(state.attemptElapsed || 0);
+    if (!state.startedAt) return base;
+    return base + Math.max(0, Math.floor((Date.now() - Number(state.startedAt || Date.now())) / 1000));
+  }
+
+  function getPracticeQuestionElapsed(state) {
+    const base = Number(state.questionElapsed || 0);
+    if (!state.questionStartedAt) return base;
+    return base + Math.max(0, Math.floor((Date.now() - Number(state.questionStartedAt || Date.now())) / 1000));
   }
 
   let practiceTimer = null;
@@ -1499,22 +1445,42 @@
     practiceTimer = null;
   }
 
-  function currentPracticeElapsed(state) {
-    const started = Number(state.questionStartedAt || Date.now());
-    return Math.max(0, Math.floor((Date.now() - started) / 1000));
-  }
-
   function startPracticeTimer(key) {
     stopPracticeTimer();
 
     const tick = () => {
       const state = getPracticeState(key);
       const el = document.getElementById("psp-practice-timer");
-      if (el) el.textContent = fmt(currentPracticeElapsed(state));
+      if (el) el.textContent = fmt(getPracticeQuestionElapsed(state));
     };
 
     tick();
     practiceTimer = setInterval(tick, 1000);
+  }
+
+  function pausePractice(key) {
+    const state = getPracticeState(key);
+
+    state.attemptElapsed = getPracticeAttemptElapsed(state);
+    state.questionElapsed = getPracticeQuestionElapsed(state);
+    state.startedAt = null;
+    state.questionStartedAt = null;
+
+    savePracticeState(key, state);
+    closePracticeScreen();
+    showPractice(key);
+  }
+
+  function resumePractice(key) {
+    const state = getActivePracticeState(key);
+    if (!state) return showPractice(key);
+
+    state.startedAt = Date.now();
+    state.questionStartedAt = Date.now();
+
+    savePracticeState(key, state);
+    closeSheet();
+    renderPracticeQuestion(key);
   }
 
   function openPracticeScreen(html) {
@@ -1543,12 +1509,16 @@
     const total = state.questions.length;
     const question = state.questions[Math.max(0, Math.min(total - 1, state.q - 1))];
 
+    if (!state.startedAt) state.startedAt = Date.now();
+    if (!state.questionStartedAt) state.questionStartedAt = Date.now();
+    savePracticeState(key, state);
+
     openPracticeScreen(`
       <div class="psp-practice-shell psp-main-quiz-shell">
         <div class="psp-main-quiz-top">
           <div class="psp-main-quiz-progress">${state.q}/${total}</div>
-          <div id="psp-practice-timer" class="psp-practice-timer">00:00</div>
-          <button type="button" class="psp-main-quiz-stop" data-psp-action="practice-finish" data-subject="${esc(key)}">
+          <div id="psp-practice-timer" class="psp-practice-timer">${fmt(getPracticeQuestionElapsed(state))}</div>
+          <button type="button" class="psp-main-quiz-stop" data-psp-action="practice-stop" data-subject="${esc(key)}">
             ${tr("Остановить", "To‘xtatish", "Stop")}
           </button>
         </div>
@@ -1600,10 +1570,16 @@
     if (!state.selected) return;
 
     state.answers[String(state.q)] = state.selected;
+    state.timeSpent = state.timeSpent && typeof state.timeSpent === "object" ? state.timeSpent : {};
+    state.timeSpent[String(state.q)] = getPracticeQuestionElapsed(state);
     state.selected = "";
+    state.questionElapsed = 0;
 
     if (state.q >= state.questions.length) {
       state.finished = true;
+      state.attemptElapsed = getPracticeAttemptElapsed(state);
+      state.startedAt = null;
+      state.questionStartedAt = null;
       savePracticeState(key, state);
       return finishPractice(key);
     }
@@ -1618,17 +1594,17 @@
     closePracticeScreen();
 
     const d = DATA[key] || DATA.economics;
-    const state = getPracticeState(key);
-    const total = state.questions.length;
+    const state = JSON.parse(localStorage.getItem(getPracticeStateKey(key)) || "{}");
+    const total = Array.isArray(state.questions) ? state.questions.length : 0;
 
     let correct = 0;
-    state.questions.forEach((question, index) => {
-      if ((state.answers[String(index + 1)] || "") === question.correct) correct += 1;
+    (state.questions || []).forEach((question, index) => {
+      if ((state.answers || {})[String(index + 1)] === question.correct) correct += 1;
     });
 
     const mistakes = Math.max(0, total - correct);
     const percent = Math.round((correct / Math.max(1, total)) * 100);
-    const totalTime = Object.values(state.timeSpent || {}).reduce((sum, value) => sum + Number(value || 0), 0);
+    const totalTime = Number(state.attemptElapsed || 0);
 
     openSheet(sheet(
       tr("РЕЗУЛЬТАТ ПРАКТИКИ", "AMALIYOT NATIJASI", "PRACTICE RESULT"),
@@ -1648,13 +1624,14 @@
         </div>
 
         <div class="psp-result-actions">
-          <button type="button" class="btn" data-psp-action="practice" data-subject="${esc(key)}">${tr("Изменить формат", "Formatni o‘zgartirish", "Change format")}</button>
-          <button type="button" class="btn primary" data-psp-action="practice-start" data-subject="${esc(key)}" data-mode="${esc(state.mode || "regular")}">${tr("Пройти снова", "Yana o‘tish", "Try again")}</button>
+          <button type="button" class="btn" data-psp-action="practice" data-subject="${esc(key)}">${tr("Назад", "Orqaga", "Back")}</button>
+          <button type="button" class="btn primary" data-psp-action="practice-restart" data-subject="${esc(key)}" data-mode="${esc(state.mode || "regular")}">${tr("Пройти снова", "Yana o‘tish", "Try again")}</button>
         </div>
-      `
+      `,
+      "practice",
+      `data-subject="${esc(key)}"`
     ));
   }
-
 
   function decorateRatingTab() {
     const view = document.querySelector("#view-rating.is-active, [data-view='rating'].is-active, .rating-view.is-active");
@@ -1787,7 +1764,7 @@
       if (action === "download-report") return downloadDetailedReport(key);
       if (action === "practice") return showPractice(key);
 
-      if (action === "practice-regular") return startPreviewPractice(key, "regular");
+      if (action === "practice-regular") return startPreviewPractice(key, "regular", true);
       if (action === "practice-study") return showPracticeBuilder(key, "study");
       if (action === "practice-build") return showPracticeBuilder(key, "build");
 
@@ -1820,10 +1797,13 @@
         return showPracticeBuilder(key, mode);
       }
 
-      if (action === "practice-start") return startPreviewPractice(key, btn.dataset.mode || "regular");
+      if (action === "practice-start") return startPreviewPractice(key, btn.dataset.mode || "regular", true);
+      if (action === "practice-restart") return startPreviewPractice(key, btn.dataset.mode || "regular", true);
+      if (action === "practice-continue") return resumePractice(key);
+      if (action === "practice-stop") return pausePractice(key);
+
       if (action === "practice-pick") return pickPracticeAnswer(key, btn.dataset.option || "");
       if (action === "practice-answer") return answerPracticeQuestion(key);
-      if (action === "practice-finish") return finishPractice(key);
     }, true);
   }
 
@@ -2809,6 +2789,43 @@
 
 
 
+
+  function injectPracticeStateMachineStyles() {
+    if (document.getElementById("psp-v46-practice-state-machine")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-v46-practice-state-machine";
+    style.textContent = `
+      /* PSP_PRACTICE_STATE_MACHINE_V46 */
+      #psp-sheet .psp-active-practice-panel {
+        border-color: rgba(37,99,235,.22);
+        background: linear-gradient(135deg, rgba(37,99,235,.055), #fff);
+      }
+
+      #psp-sheet .psp-choice-button {
+        width: 100%;
+        text-align: left;
+        appearance: none;
+        -webkit-appearance: none;
+      }
+
+      #psp-sheet .psp-topic-list button,
+      #psp-sheet .psp-filter-row button {
+        cursor: pointer;
+      }
+
+      #psp-practice-screen .psp-main-quiz-stop {
+        cursor: pointer;
+      }
+
+      #psp-practice-screen .psp-main-quiz-actions {
+        margin-top: 14px !important;
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
@@ -2817,6 +2834,7 @@
     injectMainLikeQuizStyles();
     injectPracticeBuilderScrollStyles();
     injectReportDownloadStyles();
+    injectPracticeStateMachineStyles();
     bind();
     installPhaseSelect();
 
