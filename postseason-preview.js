@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v41-practice-back-report-download-20260531";
+  const BUILD = "grand-final-v42-back-stack-premium-report-20260531";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -987,7 +987,9 @@
 
           <div class="psp-cert-code">ICL-202606-GF-${esc(String(key).toUpperCase())}-PREVIEW</div>
         </div>
-      `
+      `,
+      "grand-result",
+      `data-subject="${esc(key)}"`
     ));
   }
 
@@ -1155,35 +1157,136 @@
     const d = DATA[key] || DATA.economics;
     const now = new Date();
 
+    const previewProfile = {
+      name: "Preview Student",
+      school: "Preview School",
+      className: "10 класс",
+      region: "Ташкент",
+      district: "Preview district"
+    };
+
     const rows = [
-      "iClub — подробный итог сезона",
+      "iClub Academic Season Report",
+      "Подробный итог сезона",
       "",
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "1. Профиль",
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      `Участник: ${previewProfile.name}`,
+      `Школа: ${previewProfile.school}`,
+      `Класс: ${previewProfile.className}`,
+      `Регион: ${previewProfile.region}`,
+      `Район: ${previewProfile.district}`,
+      "",
+      "В main эти данные будут подтягиваться из таблицы users:",
+      "first_name, last_name, school, class, country, region, district, language_code.",
+      "",
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "2. Итог по предмету",
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
       `Предмет: ${d.title}`,
-      `Туры: ${d.tours}`,
+      `Участие в турах: ${d.tours}`,
       `Средний результат: ${d.avg}`,
       `Место в регионе: ${d.rank}`,
+      "Статус: сезонный итог сформирован",
       "",
-      "Освоенные темы:",
-      ...(d.strong || []).map((x) => `- ${x}`),
+      "В main этот блок будет считаться по таблицам:",
+      "tour_attempts, tour_answers, tours, subjects, ratings_cache.",
       "",
-      "Темы для изучения:",
-      ...(d.study || []).map((x) => `- ${x}`),
+      "Логика расчёта:",
+      "- учитываются завершённые туры выбранного предмета;",
+      "- результат считается по score/percent;",
+      "- при равном результате выше участник с меньшим временем;",
+      "- Grand Final считается отдельно и не входит в “Все 7 туров”.",
       "",
-      "Что входит в полный отчёт в production:",
-      "- активные дни и регулярность занятий",
-      "- динамика по турам и практике",
-      "- темы, где ошибки повторялись чаще всего",
-      "- обезличенное сравнение по классу, району и региону",
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "3. Освоенные темы",
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      ...(d.strong || []).map((x) => `✓ ${x}`),
+      "",
+      "Как определяется в main:",
+      "- тема попадает сюда, если точность высокая и есть достаточное число ответов;",
+      "- учитываются tour_answers и practice_answers;",
+      "- тема не считается освоенной по одному случайному правильному ответу.",
+      "",
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "4. Темы для изучения",
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      ...(d.study || []).map((x) => `• ${x}`),
+      "",
+      "Как определяется в main:",
+      "- повторяющиеся ошибки в турах;",
+      "- низкая точность в практике;",
+      "- незакрытые вопросы из practice pool;",
+      "- темы текущего и прошлых туров, где результат нестабилен.",
+      "",
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "5. Практика и активность",
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "Preview-оценка: активность достаточная для продолжения подготовки.",
+      "Рекомендация: собрать mixed practice по темам для изучения.",
+      "",
+      "В main этот блок будет считаться по таблицам:",
+      "practice_attempts, practice_answers, practice_pool_questions, questions.",
+      "",
+      "Что будет учитываться:",
+      "- количество практик;",
+      "- активные дни;",
+      "- точность по темам;",
+      "- закрытые вопросы;",
+      "- повторные ошибки;",
+      "- время ответа, если оно доступно.",
+      "",
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "6. Сравнение с группой",
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "Preview: сравнение показано только как структура отчёта.",
+      "",
+      "В main сравнение будет обезличенным:",
+      "- по классу;",
+      "- по школе;",
+      "- по району;",
+      "- по региону;",
+      "- по участникам с похожим уровнем.",
+      "",
+      "Личные данные других участников в отчёт не попадут.",
+      "",
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "7. Следующий шаг",
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "1) Откройте темы для изучения.",
+      "2) Соберите практику по этим темам.",
+      "3) Повторите вопросы до стабильного результата.",
+      "4) После этого переходите к Grand Olympiad.",
+      "",
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "8. Техническая логика для main",
+      "━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+      "Дефолт в preview:",
+      "- имя: Preview Student;",
+      "- школа/регион: preview values;",
+      "- метрики предмета: DATA в postseason-preview.js;",
+      "- темы: DATA.strong и DATA.study;",
+      "- файл: txt, формируется локально.",
+      "",
+      "Из базы в main:",
+      "- users: профиль, регион, школа, класс, язык;",
+      "- subjects/tours: предмет и туры;",
+      "- tour_attempts/tour_answers: результат, время, ответы;",
+      "- practice_attempts/practice_answers: практика и закрытые вопросы;",
+      "- questions: topic, subtopic, difficulty, book_ref;",
+      "- ratings_cache или rank SQL: места в рейтинге;",
+      "- certificates: сертификаты и номера.",
       "",
       `Сформировано: ${now.toLocaleString()}`
     ];
 
-    const blob = new Blob([rows.join("\\n")], { type: "text/plain;charset=utf-8" });
+    const blob = new Blob([rows.join("\n")], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
 
     const a = document.createElement("a");
     a.href = url;
-    a.download = `iclub-season-summary-${key}.txt`;
+    a.download = `iclub-academic-season-report-${key}.txt`;
     document.body.appendChild(a);
     a.click();
 
