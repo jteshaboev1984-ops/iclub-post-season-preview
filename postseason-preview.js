@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v58-keep-tabbar-for-safe-sheets-20260604";
+  const BUILD = "grand-final-v59-safe-sheets-main-width-20260604";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -4334,6 +4334,96 @@
   }
 
 
+
+  function injectSafeSheetMainWidthStyles() {
+    if (document.getElementById("psp-v59-safe-sheet-main-width")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-v59-safe-sheet-main-width";
+    style.textContent = `
+      /* PSP_SAFE_SHEET_MAIN_WIDTH_V59 */
+      #psp-sheet.psp-keep-bottom-tabbar {
+        left: 0 !important;
+        right: auto !important;
+        top: 0 !important;
+        bottom: var(--psp-bottom-tabbar-space) !important;
+        width: 100% !important;
+        max-width: 430px !important;
+        margin: 0 !important;
+        transform: none !important;
+        overflow: hidden !important;
+        background: #f8fafc !important;
+      }
+
+      #psp-sheet.psp-keep-bottom-tabbar .psp-backdrop {
+        left: 0 !important;
+        right: 0 !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        transform: none !important;
+        display: block !important;
+        background: #f8fafc !important;
+      }
+
+      #psp-sheet.psp-keep-bottom-tabbar .psp-sheet-card {
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        height: 100% !important;
+        min-height: 100% !important;
+        max-height: 100% !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        border-left: 0 !important;
+        border-right: 0 !important;
+        box-shadow: none !important;
+        box-sizing: border-box !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      #psp-sheet.psp-keep-bottom-tabbar .psp-sheet-card,
+      #psp-sheet.psp-keep-bottom-tabbar .psp-sheet-card * {
+        box-sizing: border-box !important;
+      }
+
+      #psp-sheet.psp-keep-bottom-tabbar .psp-report-grid,
+      #psp-sheet.psp-keep-bottom-tabbar .psp-panel,
+      #psp-sheet.psp-keep-bottom-tabbar .psp-cert-tabs,
+      #psp-sheet.psp-keep-bottom-tabbar .psp-cert-list,
+      #psp-sheet.psp-keep-bottom-tabbar .psp-season-scope-row {
+        max-width: none !important;
+      }
+
+      @media (max-width: 600px) {
+        #psp-sheet.psp-keep-bottom-tabbar {
+          width: 100vw !important;
+          max-width: none !important;
+        }
+
+        #psp-sheet.psp-keep-bottom-tabbar .psp-sheet-card {
+          width: 100vw !important;
+          max-width: none !important;
+        }
+      }
+
+      @media (min-width: 431px) {
+        #psp-sheet.psp-keep-bottom-tabbar {
+          width: 430px !important;
+          max-width: 430px !important;
+        }
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
@@ -4352,6 +4442,7 @@ injectProfileCleanupStyles();
     injectPreviewBottomTabbarSheetStyles();
     bindPreviewBottomNavPassthrough();
     observePreviewSheetTabbarMode();
+    injectSafeSheetMainWidthStyles();
     bind();
     installPhaseSelect();
 
