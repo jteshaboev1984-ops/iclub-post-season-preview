@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v56-season-review-topic-scope-20260604";
+  const BUILD = "grand-final-v57-season-review-actions-fix-20260604";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -1646,7 +1646,8 @@
           <button type="button"
             class="btn primary psp-report-download"
             data-psp-action="download-report"
-            data-subject="${esc(key)}">
+            data-subject="${esc(key)}"
+            data-scope="${esc(scope)}">
             ${scope === "all"
               ? tr("Скачать подробный итог", "Batafsil yakunni yuklab olish", "Download detailed review")
               : tr(`Скачать итог ${review.title}`, `${review.title} yakunini yuklab olish`, `Download ${review.title} review`)}
@@ -2567,7 +2568,36 @@
       }
 
       if (action === "report") return showReport(key);
-      if (action === "download-report") return downloadDetailedReport(key);
+      if (action === "season-review") {
+        return closeSeasonReviewSheet();
+      }
+
+      if (action === "season-review-scope") {
+        return showEnhancedSeasonReview(key, btn.dataset.scope || "all");
+      }
+
+      if (action === "season-review-study") {
+        const scope = btn.dataset.scope || "all";
+        const review = getSeasonScopeReviewData(key, scope);
+        const topics = (review.study || []).map((item) => item.topic).filter(Boolean).slice(0, 3);
+        const config = getPracticeConfig(key, "study");
+
+        config.mode = "study";
+        config.tour = review.studyModeTour || (scope === "all" ? "recommended" : scope);
+        config.topics = topics.length ? topics : getPracticeTopics(key, config.tour).slice(0, 3);
+        config.difficulty = "mixed";
+        config.count = "all";
+        config.repeatSolved = false;
+
+        savePracticeConfig(key, config);
+        return showPracticeBuilder(key, "study");
+      }
+
+      if (action === "download-report") {
+        const root = document.getElementById("psp-sheet");
+        const scope = btn.dataset.scope || root?.dataset?.scope || "all";
+        return downloadDetailedReport(key, scope);
+      }
       if (action === "practice") return showPractice(key);
 
       if (action === "practice-regular") return startPreviewPractice(key, "regular", true);
@@ -4062,6 +4092,70 @@
     `;
 
     document.head.appendChild(style);
+  }
+
+
+
+  function closeSeasonReviewSheet() {
+    try {
+      if (typeof closeSheet === "function") {
+        closeSheet();
+        return;
+      }
+    } catch {}
+
+    const root = document.getElementById("psp-sheet");
+    if (root) root.remove();
+
+    document.body.classList.remove("psp-sheet-open", "psp-lock-scroll", "modal-open");
+  }
+
+  function downloadDetailedReport(key, scope = "all") {
+    const d = DATA[key] || DATA.economics;
+    const review = typeof getSeasonScopeReviewData === "function"
+      ? getSeasonScopeReviewData(key, scope)
+      : null;
+
+    const mastered = (review?.mastered || []).map((item) => `- ${item.topic}: ${item.meta}`);
+    const study = (review?.study || []).map((item) => `- ${item.topic}: ${item.meta}`);
+
+    const lines = [
+      "iClub detailed review",
+      "",
+      `${d.title} · ${review?.title || "Season review"}`,
+      "",
+      "Summary",
+      `Tours: ${d.tours || "—"}`,
+      `Average: ${d.avg || "—"}`,
+      `Region rank: ${d.rank || "—"}`,
+      "",
+      "Mastered topics",
+      ...(mastered.length ? mastered : ["- No topics with enough evidence yet."]),
+      "",
+      "Topics to study",
+      ...(study.length ? study : ["- No study topics identified yet."]),
+      "",
+      "What this report will include in production",
+      "- activity by day",
+      "- practice vs tour dynamics",
+      "- repeated mistakes by topic",
+      "- anonymized comparison by class, district and region",
+      "- recommended study plan"
+    ];
+
+    const blob = new Blob([lines.join("\\n")], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+
+    a.href = url;
+    a.download = `iclub-${String(key || "subject")}-${String(scope || "all")}-review.txt`;
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+      a.remove();
+    }, 0);
   }
 
 
