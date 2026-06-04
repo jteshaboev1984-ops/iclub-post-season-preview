@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v59-safe-sheets-main-width-20260604";
+  const BUILD = "grand-final-v60-safe-sheet-no-side-gap-20260604";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -4424,6 +4424,151 @@
   }
 
 
+
+  function enforceSafeSheetFullWidth() {
+    const root = document.getElementById("psp-sheet");
+    if (!root || !root.classList.contains("psp-keep-bottom-tabbar")) return;
+    if (root.classList.contains("psp-blocking-assessment")) return;
+
+    const backdrop = root.querySelector(".psp-backdrop");
+    const card = root.querySelector(".psp-sheet-card");
+
+    Object.assign(root.style, {
+      position: "fixed",
+      left: "0",
+      right: "auto",
+      top: "0",
+      bottom: "var(--psp-bottom-tabbar-space)",
+      width: "100vw",
+      minWidth: "100vw",
+      maxWidth: "none",
+      margin: "0",
+      transform: "none",
+      overflow: "hidden",
+      background: "#f8fafc",
+      pointerEvents: "none"
+    });
+
+    if (backdrop) {
+      Object.assign(backdrop.style, {
+        position: "absolute",
+        left: "0",
+        right: "0",
+        top: "0",
+        bottom: "0",
+        width: "100%",
+        minWidth: "100%",
+        maxWidth: "none",
+        margin: "0",
+        padding: "0",
+        transform: "none",
+        display: "block",
+        background: "#f8fafc",
+        pointerEvents: "none"
+      });
+    }
+
+    if (card) {
+      Object.assign(card.style, {
+        width: "100%",
+        minWidth: "100%",
+        maxWidth: "none",
+        height: "100%",
+        minHeight: "100%",
+        maxHeight: "100%",
+        margin: "0",
+        borderRadius: "0",
+        boxShadow: "none",
+        overflowY: "auto",
+        overflowX: "hidden",
+        pointerEvents: "auto",
+        boxSizing: "border-box"
+      });
+    }
+  }
+
+  function observeSafeSheetFullWidth() {
+    if (window.__pspSafeSheetFullWidthObserverBound) {
+      enforceSafeSheetFullWidth();
+      return;
+    }
+
+    window.__pspSafeSheetFullWidthObserverBound = true;
+
+    const run = () => {
+      enforceSafeSheetFullWidth();
+      requestAnimationFrame(enforceSafeSheetFullWidth);
+      setTimeout(enforceSafeSheetFullWidth, 60);
+    };
+
+    new MutationObserver(run).observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class", "style"]
+    });
+
+    run();
+  }
+
+  function injectSafeSheetNoSideGapStyles() {
+    if (document.getElementById("psp-v60-safe-sheet-no-side-gap")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-v60-safe-sheet-no-side-gap";
+    style.textContent = `
+      /* PSP_SAFE_SHEET_NO_SIDE_GAP_V60 */
+      #psp-sheet.psp-keep-bottom-tabbar:not(.psp-blocking-assessment) {
+        position: fixed !important;
+        left: 0 !important;
+        right: auto !important;
+        top: 0 !important;
+        bottom: var(--psp-bottom-tabbar-space) !important;
+        width: 100vw !important;
+        min-width: 100vw !important;
+        max-width: none !important;
+        margin: 0 !important;
+        transform: none !important;
+        overflow: hidden !important;
+        background: #f8fafc !important;
+        pointer-events: none !important;
+      }
+
+      #psp-sheet.psp-keep-bottom-tabbar:not(.psp-blocking-assessment) .psp-backdrop {
+        position: absolute !important;
+        inset: 0 !important;
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        transform: none !important;
+        display: block !important;
+        background: #f8fafc !important;
+        pointer-events: none !important;
+      }
+
+      #psp-sheet.psp-keep-bottom-tabbar:not(.psp-blocking-assessment) .psp-sheet-card {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: none !important;
+        height: 100% !important;
+        min-height: 100% !important;
+        max-height: 100% !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        pointer-events: auto !important;
+        box-sizing: border-box !important;
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
@@ -4443,6 +4588,8 @@ injectProfileCleanupStyles();
     bindPreviewBottomNavPassthrough();
     observePreviewSheetTabbarMode();
     injectSafeSheetMainWidthStyles();
+    injectSafeSheetNoSideGapStyles();
+    observeSafeSheetFullWidth();
     bind();
     installPhaseSelect();
 
