@@ -12217,10 +12217,7 @@ keys.forEach(k => {
 }
       // Credentials (Profile: list + progress)
 try { renderProfileCredentialsUI(); } catch {}
-try { renderPostSeasonProfilePreview(); } catch {}
-
-
-   // ✅ подтягиваем из БД и перерисовываем (чтобы работало у всех и всегда)
+// ✅ подтягиваем из БД и перерисовываем (чтобы работало у всех и всегда)
    if (window.sb) {
      ensureCredentialsDbSynced()
        .then(() => { try { renderProfileCredentialsUI(); } catch {} })
@@ -13140,68 +13137,6 @@ function renderPostSeasonSubjectHubPreview(subjectKey) {
   bindPostSeasonPreviewActions(block);
 }
 
-
-function renderPostSeasonProfilePreview() {
-  if (!isPostSeasonPreviewEnabled()) return;
-
-  const main = document.getElementById("profile-main");
-  if (!main) return;
-
-  const hero = main.querySelector(".profile-hero");
-  const s = getPostSeasonPreviewSummary();
-
-  let block = document.getElementById("profile-post-season-preview");
-  if (!block) {
-    block = document.createElement("div");
-    block.id = "profile-post-season-preview";
-    block.className = "profile-section ps-profile-preview";
-
-    if (hero && hero.parentNode) {
-      hero.parentNode.insertBefore(block, hero.nextSibling);
-    } else {
-      main.insertBefore(block, main.firstChild);
-    }
-  }
-
-  block.innerHTML = `
-    <div class="profile-section-title">${escapeHTML(tr3(
-      "Academic Season Review",
-      "Academic Season Review",
-      "Academic Season Review"
-    ))}</div>
-
-    <div class="ps-card ps-profile-card">
-      <div class="ps-card-head">
-        <div>
-          <div class="ps-title">${escapeHTML(s.subjectTitle)}</div>
-          <div class="ps-sub">${escapeHTML(tr3(
-            `${s.toursCompleted}/${s.totalTours} туров · средний результат ${s.avgPercent}%`,
-            `${s.toursCompleted}/${s.totalTours} tur · o‘rtacha natija ${s.avgPercent}%`,
-            `${s.toursCompleted}/${s.totalTours} tours · average result ${s.avgPercent}%`
-          ))}</div>
-        </div>
-        <div class="ps-badge ps-badge-ready">Review</div>
-      </div>
-
-      <div class="ps-chip-row">
-        <span class="ps-chip ps-chip-green">Practice Mastery</span>
-        <span class="ps-chip ps-chip-green">Error-Driven Learner</span>
-        <span class="ps-chip ps-chip-blue">Fair Play</span>
-      </div>
-
-      <div class="ps-actions">
-        <button type="button" class="btn primary" data-ps-action="season-review" data-subject-key="${escapeHTML(s.subjectKey)}">
-          ${escapeHTML(tr3("Открыть отчёт", "Hisobotni ochish", "Open Review"))}
-        </button>
-        <button type="button" class="btn" data-ps-action="practice-builder" data-subject-key="${escapeHTML(s.subjectKey)}">
-          ${escapeHTML(tr3("Практика", "Amaliyot", "Practice"))}
-        </button>
-      </div>
-    </div>
-  `;
-
-  bindPostSeasonPreviewActions(block);
-}
 
 
 
