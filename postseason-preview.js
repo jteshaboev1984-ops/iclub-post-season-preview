@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v52-hide-profile-academic-review-safe-20260603";
+  const BUILD = "grand-final-v55-remove-legacy-profile-season-review-20260603";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
