@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v51-profile-cert-repair-20260603";
+  const BUILD = "grand-final-v52-hide-profile-academic-review-safe-20260603";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -1369,11 +1369,48 @@
     );
   }
 
-  function hideProfileAcademicReview() {
-    // Intentionally disabled in v51.
-    // The previous implementation scanned generic divs and could hide the whole profile.
-    // We will remove Academic Season Review later only by a stable selector.
+  function hideProfileAcademicReview(profileRoot = getActiveProfileRoot()) {
+    if (!profileRoot) return;
+
+    const normalizeText = (el) => String(el?.innerText || el?.textContent || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+
+    const isAcademicReviewTitle = (el) => {
+      const text = normalizeText(el);
+
+      return (
+        text === "academic season review" ||
+        text === "academic review" ||
+        text === "академический обзор сезона" ||
+        text === "академический сезон" ||
+        text === "mavsum akademik sharhi"
+      );
+    };
+
+    const titles = Array.from(profileRoot.querySelectorAll(
+      ".profile-section-title,.section-title,.block-title,h2,h3"
+    )).filter(isAcademicReviewTitle);
+
+    titles.forEach((title) => {
+      const section = title.closest(".profile-section");
+
+      if (!section || !profileRoot.contains(section)) return;
+
+      const sectionText = normalizeText(section);
+
+      // Safety guards: never hide large profile containers or important profile rows.
+      if (sectionText.length > 1800) return;
+      if (section.querySelector('[data-action="profile-certificates"],[data-psp-action="certificates"]')) return;
+      if (section.querySelector('[data-action="profile-open-my-recs"],[data-action="open-support"]')) return;
+      if (section.querySelector("#profile-credentials-grid,#profile-competitive-slots-list")) return;
+
+      section.style.display = "none";
+      section.setAttribute("data-psp-hidden-academic-review", "true");
+    });
   }
+
 
   function decorateProfileCertificates() {
     const profileRoot = getActiveProfileRoot();
@@ -1381,6 +1418,8 @@
     cleanupCertificateActionsOutsideProfile(profileRoot);
 
     if (!profileRoot) return;
+
+    hideProfileAcademicReview(profileRoot);
 
     const candidates = Array.from(profileRoot.querySelectorAll(
       "button,a,[role='button'],.profile-menu-item,.settings-row,.profile-action,.menu-item,.list-item,.profile-list-item,.panel-card,.card,.achievement-card"
@@ -3724,6 +3763,22 @@
     document.head.appendChild(style);
   }
 
+
+  function injectProfileAcademicReviewHideStyles() {
+    if (document.getElementById("psp-v52-hide-academic-review")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-v52-hide-academic-review";
+    style.textContent = `
+      /* PSP_HIDE_ACADEMIC_REVIEW_V52 */
+      #view-profile [data-psp-hidden-academic-review="true"] {
+        display: none !important;
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
@@ -3737,6 +3792,7 @@
     injectPracticeAvailabilityTextStyles();
     injectCertificateArchiveStyles();
     injectProfileCertRepairStyles();
+    injectProfileAcademicReviewHideStyles();
     injectProfileCleanupStyles();
     bind();
     installPhaseSelect();
