@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v57-season-review-actions-fix-20260604";
+  const BUILD = "grand-final-v58-keep-tabbar-for-safe-sheets-20260604";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -4159,6 +4159,181 @@
   }
 
 
+
+  function isBlockingPreviewAssessmentSheet(root) {
+    if (!root) return false;
+
+    const text = String(root.innerText || root.textContent || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+
+    const hasAnswerAction = !!root.querySelector(
+      '[data-psp-action="practice-answer"],' +
+      '[data-psp-action="final-answer"],' +
+      '[data-psp-action="quiz-answer"],' +
+      '[data-psp-action="answer"],' +
+      '[data-psp-action="submit-answer"]'
+    );
+
+    if (hasAnswerAction) return true;
+
+    return (
+      text.includes("финальный вопрос") ||
+      text.includes("вопрос практики") ||
+      text.includes("final question") ||
+      text.includes("practice question") ||
+      text.includes("yakuniy savol") ||
+      text.includes("amaliyot savoli")
+    );
+  }
+
+  function applyPreviewSheetTabbarMode() {
+    const root = document.getElementById("psp-sheet");
+    if (!root) return;
+
+    const blocking = isBlockingPreviewAssessmentSheet(root);
+
+    root.classList.toggle("psp-keep-bottom-tabbar", !blocking);
+    root.classList.toggle("psp-blocking-assessment", blocking);
+  }
+
+  function closePreviewSheetForBottomNav() {
+    const root = document.getElementById("psp-sheet");
+    if (!root || !root.classList.contains("psp-keep-bottom-tabbar")) return;
+
+    try {
+      if (typeof closeSheet === "function") {
+        closeSheet();
+      } else {
+        root.remove();
+      }
+    } catch {
+      root.remove();
+    }
+
+    document.body.classList.remove(
+      "psp-sheet-open",
+      "psp-lock-scroll",
+      "modal-open",
+      "sheet-open",
+      "no-scroll"
+    );
+  }
+
+  function bindPreviewBottomNavPassthrough() {
+    if (window.__pspBottomNavPassthroughBound) return;
+    window.__pspBottomNavPassthroughBound = true;
+
+    document.addEventListener("click", (event) => {
+      const navTarget = event.target?.closest?.(
+        "#bottom-nav," +
+        ".bottom-nav," +
+        ".app-bottom-nav," +
+        ".tabbar," +
+        ".bottom-tabbar," +
+        ".nav-item," +
+        ".tab-button," +
+        "[data-tab]," +
+        "[data-nav]"
+      );
+
+      if (!navTarget) return;
+
+      closePreviewSheetForBottomNav();
+    }, true);
+  }
+
+  function observePreviewSheetTabbarMode() {
+    if (window.__pspSheetTabbarObserverBound) {
+      applyPreviewSheetTabbarMode();
+      return;
+    }
+
+    window.__pspSheetTabbarObserverBound = true;
+
+    const observer = new MutationObserver(() => {
+      applyPreviewSheetTabbarMode();
+    });
+
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class", "data-context", "data-view"]
+    });
+
+    applyPreviewSheetTabbarMode();
+  }
+
+  function injectPreviewBottomTabbarSheetStyles() {
+    if (document.getElementById("psp-v58-keep-bottom-tabbar")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-v58-keep-bottom-tabbar";
+    style.textContent = `
+      /* PSP_KEEP_BOTTOM_TABBAR_V58 */
+      :root {
+        --psp-bottom-tabbar-space: calc(64px + env(safe-area-inset-bottom, 0px));
+      }
+
+      #psp-sheet.psp-keep-bottom-tabbar {
+        position: fixed !important;
+        inset: 0 0 var(--psp-bottom-tabbar-space) 0 !important;
+        height: auto !important;
+        pointer-events: none !important;
+        z-index: 999 !important;
+      }
+
+      #psp-sheet.psp-keep-bottom-tabbar .psp-backdrop {
+        position: absolute !important;
+        inset: 0 !important;
+        height: auto !important;
+        min-height: 0 !important;
+        padding: 0 !important;
+        pointer-events: none !important;
+        background: #f8fafc !important;
+      }
+
+      #psp-sheet.psp-keep-bottom-tabbar .psp-sheet-card {
+        pointer-events: auto !important;
+        width: 100% !important;
+        max-width: 430px !important;
+        min-height: 100% !important;
+        max-height: 100% !important;
+        overflow: auto !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        margin: 0 auto !important;
+        padding-bottom: 18px !important;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      #psp-sheet.psp-keep-bottom-tabbar.psp-sheet-fullscreen .psp-sheet-card {
+        width: 100% !important;
+        max-width: 430px !important;
+        max-height: 100% !important;
+      }
+
+      #psp-sheet.psp-blocking-assessment {
+        z-index: 1100 !important;
+      }
+
+      #psp-sheet.psp-blocking-assessment .psp-backdrop {
+        pointer-events: auto !important;
+      }
+
+      @media (max-width: 600px) {
+        #psp-sheet.psp-keep-bottom-tabbar .psp-sheet-card {
+          max-width: none !important;
+        }
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
@@ -4174,6 +4349,9 @@
     injectProfileCertRepairStyles();
 injectProfileCleanupStyles();
     injectSeasonReviewTopicScopeStyles();
+    injectPreviewBottomTabbarSheetStyles();
+    bindPreviewBottomNavPassthrough();
+    observePreviewSheetTabbarMode();
     bind();
     installPhaseSelect();
 
