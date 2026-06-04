@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v55-remove-legacy-profile-season-review-20260603";
+  const BUILD = "grand-final-v56-season-review-topic-scope-20260604";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -1410,39 +1410,260 @@
     });
   }
 
-  function showReport(key) {
+
+  function getSeasonCompletedToursCount(key) {
     const d = DATA[key] || DATA.economics;
+    const first = String(d.tours || "0/7").split("/")[0];
+    const n = Number(first);
+    return Number.isFinite(n) ? Math.max(0, Math.min(7, n)) : 0;
+  }
+
+  function getSeasonScopeTabs(key, selectedScope = "all") {
+    const completed = getSeasonCompletedToursCount(key);
+
+    const tabs = [
+      {
+        scope: "all",
+        label: tr("Все 7", "7 tur", "All 7"),
+        status: "all"
+      },
+      ...[1,2,3,4,5,6,7].map((no) => ({
+        scope: String(no),
+        label: `${tr("Тур", "Tur", "Tour")} ${no}`,
+        status: no <= completed ? "done" : "missed"
+      }))
+    ];
+
+    return `
+      <div class="psp-season-scope-row" aria-label="Season review scope">
+        ${tabs.map((tab) => `
+          <button type="button"
+            class="${selectedScope === tab.scope ? "is-on" : ""} is-${tab.status}"
+            data-psp-action="season-review-scope"
+            data-subject="${esc(key)}"
+            data-scope="${esc(tab.scope)}">
+            ${esc(tab.label)}
+          </button>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function getTopicEvidence(topic, index, tone = "mastered") {
+    if (tone === "study") {
+      const errors = [7, 5, 4, 3, 2][index % 5];
+      const questions = [18, 14, 12, 10, 8][index % 5];
+
+      return {
+        topic,
+        meta: tr(`${errors} ошибок`, `${errors} ta xato`, `${errors} mistakes`),
+        detail: `${errors}/${questions}`,
+        value: errors
+      };
+    }
+
+    const percent = [86, 82, 79, 88, 84][index % 5];
+    const questions = [24, 19, 21, 16, 14][index % 5];
+
+    return {
+      topic,
+      meta: `${percent}% / ${questions}q`,
+      detail: `${percent}%`,
+      value: percent
+    };
+  }
+
+  function getSeasonScopeReviewData(key, scope = "all") {
+    const d = DATA[key] || DATA.economics;
+    const completed = getSeasonCompletedToursCount(key);
+    const isAll = scope === "all";
+    const tourNo = Number(scope || 0);
+    const participated = isAll || (tourNo > 0 && tourNo <= completed);
+
+    if (isAll) {
+      return {
+        scope,
+        participated: true,
+        title: tr("Итог сезона", "Mavsum yakuni", "Season review"),
+        subtitle: tr("Общий итог сезона по предмету.", "Fan bo‘yicha mavsum yakuni.", "Overall subject season review."),
+        stats: [
+          [d.tours, tr("Туры", "Turlar", "Tours")],
+          [d.avg, tr("Средний", "O‘rtacha", "Average")],
+          [d.rank, tr("Регион", "Hudud", "Region")],
+          ["18", tr("Практики", "Amaliyotlar", "Practices")]
+        ],
+        mastered: (d.strong || []).slice(0, 3).map((topic, index) => getTopicEvidence(topic, index, "mastered")),
+        study: (d.study || []).slice(0, 3).map((topic, index) => getTopicEvidence(topic, index, "study")),
+        reportText: tr(
+          "Скачайте расширенный итог по активности, динамике, темам и обезличенному сравнению.",
+          "Faollik, dinamika, mavzular va anonim taqqoslash bo‘yicha kengaytirilgan yakunni yuklab oling.",
+          "Download a detailed review of activity, progress, topics and anonymized comparison."
+        ),
+        studyCta: tr("Начать изучение", "O‘rganishni boshlash", "Start studying"),
+        studyModeTour: "recommended"
+      };
+    }
+
+    const topics = getPracticeTopics(key, String(tourNo));
+    const tourMastered = topics.slice(0, participated ? 2 : 0);
+    const tourStudy = topics.slice(participated ? 2 : 0, participated ? 5 : 3);
+
+    if (!participated) {
+      return {
+        scope,
+        participated: false,
+        title: `${tr("Тур", "Tur", "Tour")} ${tourNo}`,
+        subtitle: tr(
+          "Тур не пройден. Темы доступны для изучения через практику.",
+          "Tur topshirilmagan. Mavzularni amaliyot orqali o‘rganish mumkin.",
+          "Tour not completed. Topics are available for study through practice."
+        ),
+        stats: [],
+        mastered: [],
+        study: tourStudy.map((topic, index) => getTopicEvidence(topic, index, "study")),
+        reportText: tr(
+          `Отчёт по Тур ${tourNo}: статус участия, темы тура и план изучения без личного результата.`,
+          `${tourNo}-tur hisoboti: qatnashish holati, tur mavzulari va shaxsiy natijasiz o‘rganish rejasi.`,
+          `Tour ${tourNo} report: participation status, tour topics and study plan without personal result.`
+        ),
+        studyCta: tr("Начать изучение", "O‘rganishni boshlash", "Start studying"),
+        studyModeTour: String(tourNo)
+      };
+    }
+
+    const result = [84, 76, 85, 72, 78, 69, 81][(tourNo - 1) % 7];
+    const errors = Math.max(1, Math.round((100 - result) / 7));
+    const time = ["12:45", "14:10", "11:58", "15:20", "13:35", "16:05", "12:30"][(tourNo - 1) % 7];
+
+    return {
+      scope,
+      participated: true,
+      title: `${tr("Тур", "Tur", "Tour")} ${tourNo}`,
+      subtitle: tr(
+        `Итог выбранного тура: результат, темы и следующий шаг.`,
+        `Tanlangan tur yakuni: natija, mavzular va keyingi qadam.`,
+        `Selected tour review: result, topics and next step.`
+      ),
+      stats: [
+        [`${result}%`, tr("Результат", "Natija", "Result")],
+        [`#${12 + tourNo}`, tr("Регион", "Hudud", "Region")],
+        [String(errors), tr("Ошибки", "Xatolar", "Mistakes")],
+        [time, tr("Время", "Vaqt", "Time")]
+      ],
+      mastered: tourMastered.map((topic, index) => getTopicEvidence(topic, index, "mastered")),
+      study: tourStudy.map((topic, index) => getTopicEvidence(topic, index, "study")),
+      reportText: tr(
+        `Скачайте подробный итог по Тур ${tourNo}: результат, время, темы и сравнение.`,
+        `${tourNo}-tur bo‘yicha batafsil yakunni yuklab oling: natija, vaqt, mavzular va taqqoslash.`,
+        `Download a detailed Tour ${tourNo} review: result, time, topics and comparison.`
+      ),
+      studyCta: tr(`Начать изучение Тур ${tourNo}`, `${tourNo}-turni o‘rganish`, `Study Tour ${tourNo}`),
+      studyModeTour: String(tourNo)
+    };
+  }
+
+  function renderSeasonTopicPanel(title, subtitle, items, tone, emptyText, key, scope) {
+    const isStudy = tone === "study";
+
+    return `
+      <div class="psp-panel ${isStudy ? "psp-study-panel" : "psp-mastered-panel"}">
+        <div class="psp-panel-title">${esc(title)}</div>
+        <div class="psp-muted psp-topic-panel-note">${esc(subtitle)}</div>
+
+        ${items.length ? `
+          <div class="psp-topic-evidence-list">
+            ${items.map((item) => `
+              <span class="psp-topic-evidence is-${tone}">
+                <b>${esc(item.topic)}</b>
+                <small>${esc(item.meta)}</small>
+              </span>
+            `).join("")}
+          </div>
+        ` : `
+          <div class="psp-empty-topic-note">${esc(emptyText)}</div>
+        `}
+
+        ${isStudy && items.length ? `
+          <button type="button"
+            class="btn primary psp-study-cta"
+            data-psp-action="season-review-study"
+            data-subject="${esc(key)}"
+            data-scope="${esc(scope)}">
+            ${tr("Начать изучение", "O‘rganishni boshlash", "Start studying")}
+          </button>
+        ` : ""}
+      </div>
+    `;
+  }
+
+  function showEnhancedSeasonReview(key, scope = "all") {
+    const d = DATA[key] || DATA.economics;
+    const review = getSeasonScopeReviewData(key, scope);
 
     openSheet(sheet(
-      tr("ИТОГ СЕЗОНА", "MAVSUM YAKUNI", "SEASON SUMMARY"),
-      d.title,
-      tr("Общий итог сезона по предмету.", "Fan bo‘yicha mavsum yakuni.", "Subject season summary."),
+      scope === "all" ? tr("ИТОГ СЕЗОНА", "MAVSUM YAKUNI", "SEASON REVIEW") : tr("ИТОГ ТУРА", "TUR YAKUNI", "TOUR REVIEW"),
+      `${d.title}${scope === "all" ? "" : ` · ${review.title}`}`,
+      review.subtitle,
       `
-        <div class="psp-report-grid">
-          <div><b>${esc(d.tours)}</b><span>${tr("Туры", "Turlar", "Tours")}</span></div>
-          <div><b>${esc(d.avg)}</b><span>${tr("Средний", "O‘rtacha", "Average")}</span></div>
-          <div><b>${esc(d.rank)}</b><span>${tr("Регион", "Hudud", "Region")}</span></div>
-          <div><b>18</b><span>${tr("Практики", "Amaliyot", "Practices")}</span></div>
-        </div>
+        ${getSeasonScopeTabs(key, scope)}
+
+        ${review.stats.length ? `
+          <div class="psp-report-grid">
+            ${review.stats.map(([value, label]) => `
+              <div><b>${esc(value)}</b><span>${esc(label)}</span></div>
+            `).join("")}
+          </div>
+        ` : `
+          <div class="psp-panel psp-tour-not-done-panel">
+            <div class="psp-panel-title">${tr("Тур не пройден", "Tur topshirilmagan", "Tour not completed")}</div>
+            <div class="psp-muted">${tr("Личного результата нет, но темы тура доступны для изучения.", "Shaxsiy natija yo‘q, ammo tur mavzulari o‘rganish uchun ochiq.", "No personal result, but tour topics are available for study.")}</div>
+          </div>
+        `}
+
+        ${renderSeasonTopicPanel(
+          tr("Освоенные темы", "O‘zlashtirilgan mavzular", "Mastered topics"),
+          tr("Показаны темы с высокой точностью и достаточным числом ответов.", "Yuqori aniqlik va yetarli javoblar soni bo‘lgan mavzular ko‘rsatiladi.", "Topics shown have high accuracy and enough answers."),
+          review.mastered,
+          "mastered",
+          tr("Пока нет тем с достаточным подтверждением.", "Hozircha yetarli tasdiqlangan mavzular yo‘q.", "No topics have enough evidence yet."),
+          key,
+          scope
+        )}
+
+        ${renderSeasonTopicPanel(
+          tr("Темы для изучения", "O‘rganish mavzulari", "Topics to study"),
+          tr("Приоритет — повторяющиеся ошибки, низкая точность и важность для Grand Olympiad.", "Ustuvorlik — takroriy xatolar, past aniqlik va Grand Olympiad uchun muhim mavzular.", "Priority is based on repeated mistakes, low accuracy and Grand Olympiad relevance."),
+          review.study,
+          "study",
+          tr("Темы для изучения пока не определены.", "O‘rganish mavzulari hali aniqlanmadi.", "No study topics identified yet."),
+          key,
+          scope
+        )}
 
         <div class="psp-panel">
-          <div class="psp-panel-title">${tr("Освоенные темы", "O‘zlashtirilgan mavzular", "Mastered topics")}</div>
-          <div class="psp-chip-row">${d.strong.map((x) => `<span class="good">${esc(x)}</span>`).join("")}</div>
+          <div class="psp-panel-title">${tr("Подробный итог", "Batafsil yakun", "Detailed review")}</div>
+          <div class="psp-muted">${esc(review.reportText)}</div>
+          <button type="button"
+            class="btn primary psp-report-download"
+            data-psp-action="download-report"
+            data-subject="${esc(key)}">
+            ${scope === "all"
+              ? tr("Скачать подробный итог", "Batafsil yakunni yuklab olish", "Download detailed review")
+              : tr(`Скачать итог ${review.title}`, `${review.title} yakunini yuklab olish`, `Download ${review.title} review`)}
+          </button>
         </div>
-
-        <div class="psp-panel study">
-          <div class="psp-panel-title">${tr("Темы для изучения", "O‘rganish mavzulari", "Topics to study")}</div>
-          <div class="psp-chip-row">${d.study.map((x) => `<span class="warn">${esc(x)}</span>`).join("")}</div>
-        </div>
-
-        <div class="psp-panel">
-          <div class="psp-panel-title">${tr("Подробный итог", "Batafsil yakun", "Detailed summary")}</div>
-          <div class="psp-muted">${tr("Скачайте расширенный итог по активности, динамике, темам и обезличенному сравнению.", "Faollik, dinamika, mavzular va anonim taqqoslash bo‘yicha kengaytirilgan yakunni yuklab oling.", "Download an extended summary of activity, progress, topics and anonymized comparison.")}</div>
-          <button type="button" class="btn primary psp-full" data-psp-action="download-report" data-subject="${esc(key)}">${tr("Скачать подробный итог", "Batafsil yakunni yuklab olish", "Download detailed summary")}</button>
-        </div>
-      `
+      `,
+      "season-review",
+      `data-subject="${esc(key)}" data-scope="${esc(scope)}"`
     ));
   }
+
+  function showReport(key) {
+    const reviewKey = arguments[0] || getSubject();
+    const scope = arguments[1] || "all";
+    return showEnhancedSeasonReview(reviewKey, scope);
+  }
+
 
 
 
@@ -3723,6 +3944,127 @@
   }
 
 
+
+  function injectSeasonReviewTopicScopeStyles() {
+    if (document.getElementById("psp-v56-season-review-topic-scope")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-v56-season-review-topic-scope";
+    style.textContent = `
+      /* PSP_SEASON_REVIEW_TOPIC_SCOPE_V56 */
+      #psp-sheet .psp-season-scope-row {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding: 2px 2px 10px;
+        margin: 2px -2px 10px;
+        scrollbar-width: none;
+      }
+
+      #psp-sheet .psp-season-scope-row::-webkit-scrollbar {
+        display: none;
+      }
+
+      #psp-sheet .psp-season-scope-row button {
+        border: 1px solid rgba(226,232,240,.95);
+        background: #fff;
+        color: rgba(15,23,42,.72);
+        border-radius: 999px;
+        padding: 9px 13px;
+        font-size: 12px;
+        line-height: 1;
+        font-weight: 950;
+        white-space: nowrap;
+        flex: 0 0 auto;
+      }
+
+      #psp-sheet .psp-season-scope-row button.is-done:not(.is-on) {
+        border-color: rgba(22,163,74,.22);
+        background: rgba(22,163,74,.055);
+        color: #166534;
+      }
+
+      #psp-sheet .psp-season-scope-row button.is-missed:not(.is-on) {
+        border-color: rgba(239,68,68,.18);
+        background: rgba(239,68,68,.045);
+        color: #991b1b;
+      }
+
+      #psp-sheet .psp-season-scope-row button.is-on {
+        border-color: rgba(37,99,235,.35);
+        background: rgba(37,99,235,.10);
+        color: #2563eb;
+        box-shadow: inset 0 0 0 1px rgba(37,99,235,.10);
+      }
+
+      #psp-sheet .psp-topic-panel-note {
+        margin-bottom: 10px;
+      }
+
+      #psp-sheet .psp-topic-evidence-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      #psp-sheet .psp-topic-evidence {
+        display: inline-grid;
+        grid-template-columns: auto;
+        gap: 2px;
+        border-radius: 999px;
+        padding: 8px 10px;
+        max-width: 100%;
+      }
+
+      #psp-sheet .psp-topic-evidence b {
+        font-size: 12px;
+        line-height: 1.1;
+        font-weight: 950;
+      }
+
+      #psp-sheet .psp-topic-evidence small {
+        font-size: 10px;
+        line-height: 1.1;
+        font-weight: 900;
+        opacity: .78;
+      }
+
+      #psp-sheet .psp-topic-evidence.is-mastered {
+        color: #166534;
+        background: rgba(22,163,74,.10);
+      }
+
+      #psp-sheet .psp-topic-evidence.is-study {
+        color: #b45309;
+        background: rgba(245,158,11,.14);
+      }
+
+      #psp-sheet .psp-study-cta,
+      #psp-sheet .psp-report-download {
+        width: 100%;
+        margin-top: 12px;
+      }
+
+      #psp-sheet .psp-empty-topic-note {
+        border-radius: 14px;
+        padding: 11px 12px;
+        color: rgba(15,23,42,.58);
+        background: rgba(248,250,252,.9);
+        font-size: 12px;
+        line-height: 1.35;
+        font-weight: 750;
+      }
+
+      #psp-sheet .psp-tour-not-done-panel {
+        border-color: rgba(37,99,235,.18);
+        background: rgba(37,99,235,.045);
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
@@ -3737,6 +4079,7 @@
     injectCertificateArchiveStyles();
     injectProfileCertRepairStyles();
 injectProfileCleanupStyles();
+    injectSeasonReviewTopicScopeStyles();
     bind();
     installPhaseSelect();
 
