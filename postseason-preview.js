@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v71-ratings-seasons-current-archive-20260609";
+  const BUILD = "grand-final-v72-ratings-season-labels-20260609";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -6002,18 +6002,18 @@
   const PSP_RATING_SEASONS_V71 = [
     {
       id: "season_2_current",
-      titleRu: "Сезон 2 — текущий",
-      titleUz: "2-mavsum — joriy",
-      titleEn: "Season 2 — current",
+      titleRu: "Текущий",
+      titleUz: "Joriy",
+      titleEn: "Current",
       status: "current",
       openStages: ["1"],
       defaultStage: "1"
     },
     {
       id: "season_1_archive",
-      titleRu: "Сезон 1 — архив",
-      titleUz: "1-mavsum — arxiv",
-      titleEn: "Season 1 — archive",
+      titleRu: "Сезон 1",
+      titleUz: "1-mavsum",
+      titleEn: "Season 1",
       status: "archive",
       openStages: ["season_total", "1", "2", "3", "4", "5", "6", "7", "grand_final"],
       defaultStage: "grand_final"
