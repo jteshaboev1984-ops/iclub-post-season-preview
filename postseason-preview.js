@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v65-visible-quiz-dom-width-20260609";
+  const BUILD = "grand-final-v66-preview-shell-full-width-20260609";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -2934,7 +2934,8 @@
       }
 
       .psp-final-shell {
-        width: min(100%, 430px);
+        width: 100%;
+    max-width: none;
         min-height: 100dvh;
         background: #f8fafc;
         box-sizing: border-box;
@@ -3252,7 +3253,8 @@
       }
 
       .psp-practice-shell {
-        width: min(100%, 430px);
+        width: 100%;
+    max-width: none;
         min-height: 100dvh;
         background: #f8fafc;
         box-sizing: border-box;
@@ -5265,6 +5267,40 @@
   }
 
 
+
+  function injectPreviewAssessmentShellWidthFix() {
+    if (document.getElementById("psp-v66-preview-shell-full-width")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-v66-preview-shell-full-width";
+    style.textContent = `
+      /* PSP_PREVIEW_SHELL_FULL_WIDTH_V66 */
+      #psp-practice-screen,
+      #psp-final-screen {
+        justify-content: stretch !important;
+        align-items: stretch !important;
+      }
+
+      #psp-practice-screen .psp-practice-shell,
+      #psp-final-screen .psp-final-shell {
+        width: 100% !important;
+        max-width: none !important;
+        min-width: 0 !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        box-sizing: border-box !important;
+      }
+
+      #psp-practice-screen .psp-practice-shell > *,
+      #psp-final-screen .psp-final-shell > * {
+        box-sizing: border-box !important;
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
@@ -5293,6 +5329,7 @@ injectProfileCleanupStyles();
     observeQuestionCardMainWidthV63();
     injectVisibleQuizDomWidthV65Styles();
     observeVisibleQuizDomWidthV65();
+    injectPreviewAssessmentShellWidthFix();
     bind();
     installPhaseSelect();
 
