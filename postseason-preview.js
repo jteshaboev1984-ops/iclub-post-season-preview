@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v62-assessment-content-main-width-20260604";
+  const BUILD = "grand-final-v63-question-card-main-width-20260609";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -4831,6 +4831,229 @@
   }
 
 
+
+  function isPreviewQuestionScreenV63(root) {
+    if (!root) return false;
+
+    const text = String(root.innerText || root.textContent || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .toLowerCase();
+
+    return (
+      text.includes("вопрос практики") ||
+      text.includes("финальный вопрос") ||
+      text.includes("practice question") ||
+      text.includes("final question") ||
+      text.includes("amaliyot savoli") ||
+      text.includes("yakuniy savol")
+    );
+  }
+
+  function findQuestionCardV63(root) {
+    const candidates = Array.from(root.querySelectorAll("div,section,article,form"));
+
+    const label = candidates.find((el) => {
+      const text = String(el.innerText || el.textContent || "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+
+      return (
+        text === "вопрос практики" ||
+        text === "финальный вопрос" ||
+        text === "practice question" ||
+        text === "final question" ||
+        text === "amaliyot savoli" ||
+        text === "yakuniy savol"
+      );
+    });
+
+    if (!label) return null;
+
+    let cur = label;
+    let best = null;
+    let guard = 0;
+
+    while (cur && cur !== root && guard < 8) {
+      const buttons = cur.querySelectorAll("button,[role='button']");
+      const text = String(cur.innerText || cur.textContent || "").toLowerCase();
+      const rect = cur.getBoundingClientRect();
+
+      if (
+        buttons.length >= 4 &&
+        rect.width >= 220 &&
+        text.includes(label.textContent.trim().toLowerCase())
+      ) {
+        best = cur;
+      }
+
+      cur = cur.parentElement;
+      guard += 1;
+    }
+
+    return best;
+  }
+
+  function forceQuestionCardMainWidthV63() {
+    const root = document.getElementById("psp-sheet");
+    if (!root || !isPreviewQuestionScreenV63(root)) return;
+
+    root.classList.add("psp-question-main-width-v63");
+
+    const sheetCard = root.querySelector(".psp-sheet-card") || root;
+    const questionCard = findQuestionCardV63(root);
+
+    Object.assign(root.style, {
+      position: "fixed",
+      inset: "0",
+      width: "100vw",
+      minWidth: "100vw",
+      maxWidth: "none",
+      height: "100dvh",
+      minHeight: "100dvh",
+      maxHeight: "100dvh",
+      margin: "0",
+      overflow: "hidden",
+      background: "#f8fafc"
+    });
+
+    Object.assign(sheetCard.style, {
+      width: "100%",
+      minWidth: "100%",
+      maxWidth: "none",
+      height: "100%",
+      minHeight: "100%",
+      maxHeight: "100%",
+      margin: "0",
+      padding: "10px 12px 22px",
+      borderRadius: "0",
+      boxShadow: "none",
+      overflowY: "auto",
+      overflowX: "hidden",
+      boxSizing: "border-box",
+      background: "#f8fafc"
+    });
+
+    if (questionCard) {
+      Object.assign(questionCard.style, {
+        width: "100%",
+        minWidth: "0",
+        maxWidth: "none",
+        marginLeft: "0",
+        marginRight: "0",
+        boxSizing: "border-box"
+      });
+
+      Array.from(questionCard.querySelectorAll("button,[role='button']")).forEach((btn) => {
+        Object.assign(btn.style, {
+          width: "100%",
+          maxWidth: "none",
+          boxSizing: "border-box"
+        });
+      });
+    }
+
+    Array.from(root.querySelectorAll("button,[role='button']")).forEach((btn) => {
+      const text = String(btn.innerText || btn.textContent || "")
+        .replace(/\s+/g, " ")
+        .trim()
+        .toLowerCase();
+
+      if (
+        text === "ответить" ||
+        text === "answer" ||
+        text === "javob berish" ||
+        text === "javob"
+      ) {
+        Object.assign(btn.style, {
+          width: "100%",
+          maxWidth: "none",
+          boxSizing: "border-box"
+        });
+
+        if (btn.parentElement && btn.parentElement !== sheetCard) {
+          Object.assign(btn.parentElement.style, {
+            width: "100%",
+            maxWidth: "none",
+            marginLeft: "0",
+            marginRight: "0",
+            boxSizing: "border-box"
+          });
+        }
+      }
+    });
+  }
+
+  function observeQuestionCardMainWidthV63() {
+    if (window.__pspQuestionCardMainWidthV63Bound) {
+      forceQuestionCardMainWidthV63();
+      return;
+    }
+
+    window.__pspQuestionCardMainWidthV63Bound = true;
+
+    const run = () => {
+      forceQuestionCardMainWidthV63();
+      requestAnimationFrame(forceQuestionCardMainWidthV63);
+      setTimeout(forceQuestionCardMainWidthV63, 80);
+      setTimeout(forceQuestionCardMainWidthV63, 180);
+    };
+
+    new MutationObserver(run).observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class", "style"]
+    });
+
+    window.addEventListener("resize", run);
+    run();
+  }
+
+  function injectQuestionCardMainWidthV63Styles() {
+    if (document.getElementById("psp-v63-question-card-main-width")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-v63-question-card-main-width";
+    style.textContent = `
+      /* PSP_QUESTION_CARD_MAIN_WIDTH_V63 */
+      #psp-sheet.psp-question-main-width-v63 {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        min-width: 100vw !important;
+        max-width: none !important;
+        height: 100dvh !important;
+        min-height: 100dvh !important;
+        max-height: 100dvh !important;
+        margin: 0 !important;
+        overflow: hidden !important;
+        background: #f8fafc !important;
+      }
+
+      #psp-sheet.psp-question-main-width-v63 .psp-sheet-card {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: none !important;
+        height: 100% !important;
+        min-height: 100% !important;
+        max-height: 100% !important;
+        margin: 0 !important;
+        padding: 10px 12px 22px !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        background: #f8fafc !important;
+        box-sizing: border-box !important;
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
@@ -4855,6 +5078,8 @@ injectProfileCleanupStyles();
     injectAssessmentFullWidthStyles();
     observeAssessmentFullWidth();
     injectAssessmentContentMainWidthStyles();
+    injectQuestionCardMainWidthV63Styles();
+    observeQuestionCardMainWidthV63();
     bind();
     installPhaseSelect();
 
