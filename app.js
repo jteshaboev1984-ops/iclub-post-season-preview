@@ -7983,13 +7983,69 @@ function formatDateForLangSafe(value, lang = "ru") {
   }
 }
 
+
+function getPreviewGrandFinalCertificateRows() {
+  if (!window.ICLUB_PREVIEW_MODE) return [];
+
+  const profile = (typeof loadProfile === "function" ? loadProfile() : null) || {};
+  const lang = String(profile?.language || profile?.uiLanguage || currentLang() || "ru").toLowerCase();
+
+  const fullName = String(
+    profile?.full_name ||
+    profile?.fullName ||
+    profile?.fullname ||
+    [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
+    profile?.name ||
+    "iClub Participant"
+  ).trim();
+
+  const subjectKey = "economics";
+  const subjectText = typeof subjectTitle === "function"
+    ? subjectTitle(subjectKey, "Экономика")
+    : "Экономика";
+
+  return [
+    {
+      id: 970001,
+      user_id: "preview-user",
+      subject_id: 7,
+      tour_id: null,
+      certificate_type: "grand_final",
+      score: 17,
+      percent: 85,
+      participants_total: 128,
+      rank_district: 8,
+      rank_region: 8,
+      rank_country: 8,
+      certificate_number: "ICL-20260609-ECONOMICS-GF-970001",
+      language_code: lang,
+      created_at: "2026-06-09T12:00:00.000Z",
+      completed_tours: null,
+      total_tours: null,
+      subject_key: subjectKey,
+      subject_title: subjectText,
+      tour_no: null,
+      participant_name: fullName,
+      school: profile?.school || "10",
+      class: profile?.class || "10",
+      region: profile?.region || "",
+      district: profile?.district || "",
+      region_tr: profile?.region_tr || null,
+      district_tr: profile?.district_tr || null
+    }
+  ];
+}
+
+
 function buildCertificateDownloadName(row, ext) {
   const type = String(row?.certificate_type || "certificate").toLowerCase();
   const subjectKey = String(row?.subject_key || "subject").toLowerCase();
   const suffix =
-    type === "final"
-      ? "final"
-      : `tour-${Number(row?.tour_no || 0) || "x"}`;
+    type === "grand_final"
+      ? "grand-final"
+      : type === "final"
+        ? "final"
+        : `tour-${Number(row?.tour_no || 0) || "x"}`;
 
   return `iclub-${subjectKey}-${suffix}-${Number(row?.id || 0)}.${ext}`;
 }
@@ -8262,6 +8318,10 @@ async function canIssueFinalCertificateNow(subjectId) {
    
 async function fetchMyCertificatesDb() {
   try {
+    if (window.ICLUB_PREVIEW_MODE) {
+      return getPreviewGrandFinalCertificateRows();
+    }
+
     if (!window.sb) return [];
 
     const uid = await getAuthUid();
@@ -8358,9 +8418,16 @@ async function fetchMyCertificatesDb() {
 }
 
 function certificateTypeLabel(row) {
-  if (String(row?.certificate_type || "") === "final") {
+  const type = String(row?.certificate_type || "");
+
+  if (type === "grand_final") {
+    return "Grand Final";
+  }
+
+  if (type === "final") {
     return t("cert_final_label") || "Итоговый сертификат";
   }
+
   const no = Number(row?.tour_no || 0);
   return `${t("tours_tour_label") || "Тур"} ${no || "—"}`;
 }
@@ -8418,7 +8485,13 @@ function renderCertificateStatsHtml(row) {
 async function canAccessCertificateRow(row) {
   if (!row) return false;
 
-  if (String(row?.certificate_type || "") === "final") {
+  const type = String(row?.certificate_type || "");
+
+  if (type === "grand_final") {
+    return true;
+  }
+
+  if (type === "final") {
     return await canIssueFinalCertificateNow(Number(row?.subject_id || 0));
   }
 
@@ -8642,9 +8715,16 @@ async function renderCertificateQr(row) {
 
 async function fetchCertificateVerificationRow(certificateNumber) {
   try {
-    if (!window.sb || !certificateNumber) return null;
+    const certNo = String(certificateNumber || "").trim();
+    if (!certNo) return null;
 
-    const certNo = String(certificateNumber).trim();
+    if (window.ICLUB_PREVIEW_MODE) {
+      const previewRow = getPreviewGrandFinalCertificateRows()
+        .find(row => String(row.certificate_number || "") === certNo);
+      if (previewRow) return previewRow;
+    }
+
+    if (!window.sb) return null;
 
     let baseRow = null;
 
@@ -8813,10 +8893,14 @@ async function renderCertificateVerifyView(certificateNumber) {
     ? subjectTitle(row.subject_key, row.subject_title || "")
     : (row.subject_title || verifyT("subject_label", "Subject"));
 
+  const verifyCertType = String(row?.certificate_type || "");
+
   const typeText =
-    String(row?.certificate_type || "") === "final"
-      ? verifyT("cert_final_label", "Final Certificate")
-      : `${verifyT("tours_tour_label", "Tour")} ${Number(row?.tour_no || 0) || "—"}`;
+    verifyCertType === "grand_final"
+      ? "Grand Final"
+      : verifyCertType === "final"
+        ? verifyT("cert_final_label", "Final Certificate")
+        : `${verifyT("tours_tour_label", "Tour")} ${Number(row?.tour_no || 0) || "—"}`;
 
   const participantName =
     String(
@@ -9068,7 +9152,9 @@ function certificateViewerHtml(row) {
       ? escapeHTML(formatCertificatePlace(row.rank_district, certLang))
       : "—";
 
-  const isFinal = String(row?.certificate_type || "") === "final";
+  const certType = String(row?.certificate_type || "");
+  const isFinal = certType === "final";
+  const isGrandFinal = certType === "grand_final";
 
   return `
     <div class="card" id="certificate-viewer-card" style="padding:0; overflow:visible;">
@@ -9140,12 +9226,20 @@ function certificateViewerHtml(row) {
                   </div>
 
                   <div class="cert-line-premium">
-                    <span class="cert-line-label-premium">${escapeHTML(isFinal ? certT("completed_tours_label", "Completed Tours") : certT("tours_tour_label", "Tour"))}:</span>
+                    <span class="cert-line-label-premium">${escapeHTML(
+                      isGrandFinal
+                        ? certT("certificate_verify_type_label", "Certificate type")
+                        : isFinal
+                          ? certT("completed_tours_label", "Completed Tours")
+                          : certT("tours_tour_label", "Tour")
+                    )}:</span>
                     <span class="cert-line-value-premium">
                       ${
-                        isFinal
-                          ? `${escapeHTML(String(row.completed_tours ?? 0))}/${escapeHTML(String(row.total_tours ?? 7))}`
-                          : `${escapeHTML(String(row.tour_no ?? "—"))}`
+                        isGrandFinal
+                          ? "Grand Final"
+                          : isFinal
+                            ? `${escapeHTML(String(row.completed_tours ?? 0))}/${escapeHTML(String(row.total_tours ?? 7))}`
+                            : `${escapeHTML(String(row.tour_no ?? "—"))}`
                       }
                     </span>
                   </div>

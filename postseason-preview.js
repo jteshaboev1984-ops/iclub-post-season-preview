@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v72-ratings-season-labels-20260609";
+  const BUILD = "grand-final-v73-real-grand-certificate-20260609";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -963,90 +963,8 @@
     ));
   }
 
-  function getPreviewCertificates() {
-    return [
-      {
-        id: "s1-economics-t3",
-        bucket: "current",
-        season: "season_1",
-        seasonLabel: "Season 1 · 2026",
-        subjectKey: "economics",
-        subjectTitle: DATA.economics.title,
-        type: "tour",
-        filter: "tour3",
-        tourNo: 3,
-        title: `${DATA.economics.title} · ${tr("Тур 3", "3-tur", "Tour 3")}`,
-        certificateType: "Tour Certificate",
-        score: "17/20",
-        percent: "85%",
-        rank: "#12",
-        rankLabel: tr("регион", "hudud", "region"),
-        date: "26.05.2026",
-        number: "ICL-2026-S1-ECO-T3-0008",
-        status: "issued"
-      },
-      {
-        id: "s1-math-t5",
-        bucket: "current",
-        season: "season_1",
-        seasonLabel: "Season 1 · 2026",
-        subjectKey: "mathematics",
-        subjectTitle: DATA.mathematics.title,
-        type: "tour",
-        filter: "tour5",
-        tourNo: 5,
-        title: `${DATA.mathematics.title} · ${tr("Тур 5", "5-tur", "Tour 5")}`,
-        certificateType: "Tour Certificate",
-        score: "14/20",
-        percent: "70%",
-        rank: "#18",
-        rankLabel: tr("регион", "hudud", "region"),
-        date: "27.05.2026",
-        number: "ICL-2026-S1-MATH-T5-0014",
-        status: "issued"
-      },
-      {
-        id: "s1-economics-grand",
-        bucket: "current",
-        season: "season_1",
-        seasonLabel: "Season 1 · 2026",
-        subjectKey: "economics",
-        subjectTitle: DATA.economics.title,
-        type: "grand",
-        filter: "grand",
-        tourNo: 8,
-        title: `${DATA.economics.title} · Grand Final`,
-        certificateType: "Grand Final Certificate",
-        score: "17/20",
-        percent: "85%",
-        rank: "#8",
-        rankLabel: tr("регион", "hudud", "region"),
-        date: "03.06.2026",
-        number: "ICL-2026-S1-ECO-GF-0008",
-        status: "issued"
-      },
-      {
-        id: "s0-biology-t2",
-        bucket: "past",
-        season: "season_0",
-        seasonLabel: "Season 0 · Archive",
-        subjectKey: "biology",
-        subjectTitle: DATA.biology.title,
-        type: "tour",
-        filter: "tour2",
-        tourNo: 2,
-        title: `${DATA.biology.title} · ${tr("Тур 2", "2-tur", "Tour 2")}`,
-        certificateType: "Tour Certificate",
-        score: "16/20",
-        percent: "80%",
-        rank: "#9",
-        rankLabel: tr("регион", "hudud", "region"),
-        date: "12.04.2026",
-        number: "ICL-2026-S0-BIO-T2-0009",
-        status: "issued"
-      }
-    ];
-  }
+
+
 
   function getCertificateById(id) {
     return getPreviewCertificates().find((cert) => cert.id === id) || getPreviewCertificates()[0];
@@ -1102,97 +1020,8 @@
     `;
   }
 
-  function showCertificatesArchive(bucket = "current", season = "season_1", filter = "all") {
-    const all = getPreviewCertificates();
-    const seasons = Array.from(new Map(
-      all.filter((cert) => cert.bucket === "past").map((cert) => [cert.season, cert.seasonLabel])
-    ).entries());
 
-    if (bucket === "past" && seasons.length && !seasons.some(([value]) => value === season)) {
-      season = seasons[0][0];
-    }
 
-    const items = filterCertificates(bucket, season, filter);
-
-    openSheet(sheet(
-      tr("СЕРТИФИКАТЫ", "SERTIFIKATLAR", "CERTIFICATES"),
-      tr("Мои сертификаты", "Mening sertifikatlarim", "My certificates"),
-      tr("Туры и Grand Final по сезонам.", "Mavsumlar bo‘yicha turlar va Grand Final.", "Tours and Grand Final by season."),
-      `
-        <div class="psp-cert-tabs">
-          <button type="button" class="${bucket === "current" ? "is-on" : ""}" data-psp-action="cert-bucket" data-bucket="current">
-            ${tr("Текущий сезон", "Joriy mavsum", "Current season")}
-          </button>
-          <button type="button" class="${bucket === "past" ? "is-on" : ""}" data-psp-action="cert-bucket" data-bucket="past">
-            ${tr("Прошлые сезоны", "Oldingi mavsumlar", "Past seasons")}
-          </button>
-        </div>
-
-        ${bucket === "past" ? `
-          <div class="psp-panel">
-            <div class="psp-panel-title">${tr("Сезон", "Mavsum", "Season")}</div>
-            <div class="psp-filter-row">
-              ${seasons.map(([value, label]) => `
-                <button type="button"
-                  class="${season === value ? "is-on" : ""}"
-                  data-psp-action="cert-season"
-                  data-season="${esc(value)}">
-                  ${esc(label)}
-                </button>
-              `).join("")}
-            </div>
-          </div>
-        ` : `
-          <div class="psp-season-note">
-            <b>Season 1 · 2026</b>
-            <span>${tr("Здесь собраны выданные сертификаты текущего сезона.", "Bu yerda joriy mavsum sertifikatlari jamlangan.", "Issued certificates for the current season are collected here.")}</span>
-          </div>
-        `}
-
-        <div class="psp-panel">
-          <div class="psp-panel-title">${tr("Фильтр", "Filtr", "Filter")}</div>
-          <div class="psp-filter-row">
-            ${renderCertificateFilterButton(tr("Все", "Hammasi", "All"), "all", filter)}
-            ${[1,2,3,4,5,6,7].map((no) => renderCertificateFilterButton(`${tr("Тур", "Tur", "Tour")} ${no}`, `tour${no}`, filter)).join("")}
-            ${renderCertificateFilterButton("Grand", "grand", filter)}
-          </div>
-        </div>
-
-        <div class="psp-cert-list">
-          ${items.length ? items.map((cert) => `
-            <article class="psp-cert-card">
-              <div>
-                <div class="psp-cert-card-kicker">${esc(cert.seasonLabel)} · ${cert.type === "grand" ? "Grand Final" : `${tr("Тур", "Tur", "Tour")} ${cert.tourNo}`}</div>
-                <div class="psp-cert-card-title">${esc(cert.title)}</div>
-                <div class="psp-muted">${esc(cert.score)} · ${esc(cert.percent)} · ${esc(cert.rank)} ${esc(cert.rankLabel)}</div>
-              </div>
-              <button type="button"
-                class="btn"
-                data-psp-action="certificate-open"
-                data-cert-id="${esc(cert.id)}"
-                data-bucket="${esc(bucket)}"
-                data-season="${esc(season)}"
-                data-filter="${esc(filter)}">
-                ${tr("Открыть", "Ochish", "Open")}
-              </button>
-            </article>
-          `).join("") : `
-            <div class="psp-empty-builder">
-              <b>${tr("Сертификатов нет", "Sertifikatlar yo‘q", "No certificates")}</b>
-              <span>${tr("По выбранному фильтру сертификаты пока не выданы.", "Tanlangan filtr bo‘yicha sertifikatlar hali berilmagan.", "No certificates have been issued for this filter yet.")}</span>
-            </div>
-          `}
-        </div>
-      `
-    ));
-
-    const root = document.getElementById("psp-sheet");
-    if (root) {
-      root.dataset.certBucket = bucket;
-      root.dataset.certSeason = season;
-      root.dataset.certFilter = filter;
-    }
-  }
 
   function certificateVisualHTML(cert) {
     return `
@@ -1233,182 +1062,30 @@
     `;
   }
 
-  function showCertificateById(id, bucket = "current", season = "season_1", filter = "all") {
-    const cert = getCertificateById(id);
-
-    openSheet(sheet(
-      tr("СЕРТИФИКАТ", "SERTIFIKAT", "CERTIFICATE"),
-      cert.certificateType,
-      cert.title,
-      `
-        ${certificateVisualHTML(cert)}
-
-        <div class="psp-actions">
-          <button type="button"
-            class="btn"
-            data-psp-action="certificates"
-            data-bucket="${esc(bucket)}"
-            data-season="${esc(season)}"
-            data-filter="${esc(filter)}">
-            ${tr("Назад", "Orqaga", "Back")}
-          </button>
-
-          <button type="button"
-            class="btn primary"
-            data-psp-action="certificate-download"
-            data-cert-id="${esc(cert.id)}">
-            ${tr("Скачать", "Yuklab olish", "Download")}
-          </button>
-        </div>
-      `,
-      "certificates",
-      `data-bucket="${esc(bucket)}" data-season="${esc(season)}" data-filter="${esc(filter)}"`
-    ));
-  }
-
-  function showCertificate(key) {
-    const cert = getGrandCertificateForSubject(key);
-
-    openSheet(sheet(
-      tr("СЕРТИФИКАТ", "SERTIFIKAT", "CERTIFICATE"),
-      cert.certificateType,
-      cert.title,
-      `
-        ${certificateVisualHTML(cert)}
-
-        <div class="psp-actions">
-          <button type="button" class="btn" data-psp-action="grand-result" data-subject="${esc(key)}">${tr("Назад", "Orqaga", "Back")}</button>
-          <button type="button" class="btn primary" data-psp-action="certificate-download" data-cert-id="${esc(cert.id)}" data-subject="${esc(key)}">${tr("Скачать", "Yuklab olish", "Download")}</button>
-        </div>
-      `,
-      "grand-result",
-      `data-subject="${esc(key)}"`
-    ));
-  }
-
-  function downloadCertificate(cert) {
-    const rows = [
-      "iClub Certificate",
-      "",
-      cert.certificateType,
-      cert.seasonLabel,
-      "",
-      `Participant: Preview Student`,
-      `Subject/Event: ${cert.title}`,
-      `Result: ${cert.score} · ${cert.percent}`,
-      `Rank: ${cert.rank} ${cert.rankLabel}`,
-      `Date: ${cert.date}`,
-      `Certificate number: ${cert.number}`,
-      "",
-      "Preview file. In production this will be generated from the certificates table and verified by certificate_number."
-    ];
-
-    const blob = new Blob([rows.join("\n")], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-
-    a.href = url;
-    a.download = `${cert.number}.txt`;
-    document.body.appendChild(a);
-    a.click();
-
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-      a.remove();
-    }, 0);
-  }
-
-  function getActiveProfileRoot() {
-    const root =
-      document.querySelector("#view-profile.view.is-active") ||
-      document.querySelector("#view-profile.is-active") ||
-      document.querySelector("[data-view='profile'].is-active") ||
-      document.querySelector(".profile-view.is-active") ||
-      document.querySelector("#profile-view.is-active");
-
-    if (!root) return null;
-
-    const style = window.getComputedStyle ? window.getComputedStyle(root) : null;
-    const hidden =
-      root.hidden ||
-      root.getAttribute("aria-hidden") === "true" ||
-      root.classList.contains("hidden") ||
-      root.style.display === "none" ||
-      style?.display === "none" ||
-      style?.visibility === "hidden";
-
-    return hidden ? null : root;
-  }
-
-  function cleanupCertificateActionsOutsideProfile(profileRoot) {
-    document.querySelectorAll('[data-psp-action="certificates"]').forEach((el) => {
-      if (el.closest("#psp-sheet")) return;
-      if (profileRoot && profileRoot.contains(el)) return;
-
-      el.removeAttribute("data-psp-action");
-      el.removeAttribute("data-bucket");
-      el.removeAttribute("data-season");
-      el.removeAttribute("data-filter");
-      el.style.cursor = "";
-    });
-  }
-
-  function looksLikeCertificatesMenuItem(el) {
-    const text = String(el?.innerText || el?.textContent || "")
-      .replace(/\s+/g, " ")
-      .trim()
-      .toLowerCase();
-
-    if (!text || text.length > 160) return false;
-
-    return (
-      text.includes("мои сертификаты") ||
-      text.includes("my certificates") ||
-      text.includes("mening sertifikat") ||
-      text.includes("sertifikatlarim")
-    );
-  }
 
 
 
 
 
-  function decorateProfileCertificates() {
-    const profileRoot = getActiveProfileRoot();
 
-    cleanupCertificateActionsOutsideProfile(profileRoot);
 
-    if (!profileRoot) return;
 
-    const candidates = Array.from(profileRoot.querySelectorAll(
-      "button,a,[role='button'],.profile-menu-item,.settings-row,.profile-action,.menu-item,.list-item,.profile-list-item,.panel-card,.card,.achievement-card"
-    ));
 
-    candidates.forEach((el) => {
-      if (!looksLikeCertificatesMenuItem(el)) return;
 
-      const target =
-        el.closest("button,a,[role='button'],.profile-menu-item,.settings-row,.profile-action,.menu-item,.list-item,.profile-list-item,.panel-card,.card,.achievement-card") ||
-        el;
 
-      const targetText = String(target.innerText || target.textContent || "")
-        .replace(/\s+/g, " ")
-        .trim();
 
-      if (!targetText || targetText.length > 220) return;
 
-      target.setAttribute("data-psp-action", "certificates");
-      target.setAttribute("data-bucket", "current");
-      target.setAttribute("data-season", "season_1");
-      target.setAttribute("data-filter", "all");
-      target.style.cursor = "pointer";
 
-      if (target.tagName === "A") {
-        target.setAttribute("href", "javascript:void(0)");
-        target.removeAttribute("target");
-      }
-    });
-  }
+
+
+
+
+
+
+
+
+
+
 
 
   function getSeasonCompletedToursCount(key) {
