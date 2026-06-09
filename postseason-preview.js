@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v69-ratings-grand-final-safe-20260609";
+  const BUILD = "grand-final-v70-ratings-season-stages-20260609";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -5604,6 +5604,400 @@
   }
 
 
+
+  function pspRatingsSubjectsV70() {
+    return ["economics", "mathematics", "biology", "chemistry", "informatics"]
+      .filter((key) => DATA[key]);
+  }
+
+  function pspEnsureRatingsSubjectOptionsV70() {
+    const select = document.getElementById("ratings-subject");
+    if (!select) return;
+
+    const subjects = pspRatingsSubjectsV70();
+    const current = String(select.value || "").trim();
+    const currentKnown = subjects.includes(current);
+    const knownOptions = Array.from(select.options || [])
+      .filter((option) => subjects.includes(String(option.value || "").trim()))
+      .length;
+
+    if (knownOptions >= subjects.length) return;
+
+    const nextValue = currentKnown ? current : (subjects.includes(getSubject()) ? getSubject() : subjects[0]);
+
+    select.innerHTML = subjects.map((key) => {
+      const d = DATA[key] || {};
+      return `<option value="${esc(key)}">${esc(d.title || key)}</option>`;
+    }).join("");
+
+    if (nextValue) select.value = nextValue;
+  }
+
+  function pspEnsureRatingsStageOptionsV70() {
+    const select = document.getElementById("ratings-tour");
+    if (!select) return;
+
+    const current = String(select.value || "").trim();
+
+    const stages = [
+      ["season_total", tr("Все 7 туров", "Barcha 7 tur", "All 7 tours")],
+      ["1", tr("Тур 1", "1-tur", "Tour 1")],
+      ["2", tr("Тур 2", "2-tur", "Tour 2")],
+      ["3", tr("Тур 3", "3-tur", "Tour 3")],
+      ["4", tr("Тур 4", "4-tur", "Tour 4")],
+      ["5", tr("Тур 5", "5-tur", "Tour 5")],
+      ["6", tr("Тур 6", "6-tur", "Tour 6")],
+      ["7", tr("Тур 7", "7-tur", "Tour 7")],
+      ["grand_final", "Grand Final"]
+    ];
+
+    const values = stages.map(([value]) => value);
+    const hasAllStages = values.every((value) =>
+      Array.from(select.options || []).some((option) => String(option.value || "") === value)
+    );
+
+    if (!hasAllStages) {
+      select.innerHTML = stages.map(([value, label]) =>
+        `<option value="${esc(value)}">${esc(label)}</option>`
+      ).join("");
+    }
+
+    if (values.includes(current)) {
+      select.value = current;
+    } else {
+      select.value = "grand_final";
+    }
+  }
+
+  function pspRatingsSubjectKeyV70() {
+    pspEnsureRatingsSubjectOptionsV70();
+
+    const select = document.getElementById("ratings-subject");
+    const value = String(select?.value || "").trim().toLowerCase();
+
+    if (DATA[value]) return value;
+    return getSubject();
+  }
+
+  function pspRatingsStageV70() {
+    pspEnsureRatingsStageOptionsV70();
+    return String(document.getElementById("ratings-tour")?.value || "grand_final").trim();
+  }
+
+  function pspRatingsScopeV70() {
+    const active = document.querySelector("#view-ratings .seg-btn.is-active");
+    return String(active?.dataset?.scope || "district").trim() || "district";
+  }
+
+  function pspRatingsStageLabelV70(stage) {
+    if (stage === "grand_final") return "Grand Final";
+    if (stage === "season_total") return tr("Все 7 туров", "Barcha 7 tur", "All 7 tours");
+    return tr(`Тур ${stage}`, `${stage}-tur`, `Tour ${stage}`);
+  }
+
+  function pspRatingsPublishedV70(stage) {
+    const phase = typeof getPhase === "function" ? getPhase() : "auto";
+
+    if (stage === "grand_final") {
+      return phase === "auto" || phase === "grand_ready";
+    }
+
+    return true;
+  }
+
+  function pspRatingsRowsV70(subjectKey, stage, scope) {
+    const d = DATA[subjectKey] || DATA.economics;
+    const title = d?.title || "Subject";
+    const offset = scope === "country" ? 0 : scope === "region" ? 2 : 4;
+
+    const base = [
+      ["Azizbek Karimov", "Presidential School · 10"],
+      ["Madina Rustamova", "Specialized School · 11"],
+      ["Sardorbek Aliyev", "School 21 · 10"],
+      ["YOU", "iClub participant"],
+      ["Nigina Sobirova", "School 7 · 9"],
+      ["Javohir Ismoilov", "Academic Lyceum · 11"],
+      ["Malika Tursunova", "School 12 · 10"],
+      ["Bekzod Nazarov", "Specialized School · 9"]
+    ];
+
+    let scores;
+    let maxScore;
+    let times;
+
+    if (stage === "season_total") {
+      maxScore = 140;
+      scores = [128, 124, 119, 116, 111, 107, 101, 96];
+      times = ["1:18:42", "1:21:10", "1:22:38", "1:26:04", "1:27:55", "1:31:21", "1:33:47", "1:35:08"];
+    } else if (stage === "grand_final") {
+      maxScore = 20;
+      scores = [19, 18, 18, 17, 16, 15, 14, 13];
+      times = ["11:42", "12:10", "12:38", "13:04", "12:55", "14:21", "13:47", "15:08"];
+    } else {
+      const tourNo = Number(stage) || 1;
+      maxScore = 20;
+      scores = [
+        Math.max(12, 20 - Math.floor(tourNo / 3)),
+        Math.max(12, 19 - Math.floor(tourNo / 4)),
+        18,
+        Math.max(12, 17 - (tourNo >= 6 ? 1 : 0)),
+        16,
+        15,
+        14,
+        13
+      ];
+      times = ["09:58", "10:24", "10:51", "11:16", "11:42", "12:05", "12:44", "13:19"];
+    }
+
+    return base.map(([name, meta], index) => {
+      const score = Number(scores[index] || 0);
+      const percent = Math.round((score / maxScore) * 100);
+
+      return {
+        rank: index + 1 + offset,
+        name,
+        meta: `${title} · ${meta}`,
+        score,
+        maxScore,
+        percent,
+        time: times[index],
+        isMe: name === "YOU"
+      };
+    });
+  }
+
+  function pspRenderRatingsStageV70() {
+    pspEnsureRatingsSubjectOptionsV70();
+    pspEnsureRatingsStageOptionsV70();
+
+    const list = document.getElementById("ratings-list");
+    if (!list) return;
+
+    const subjectKey = pspRatingsSubjectKeyV70();
+    const stage = pspRatingsStageV70();
+    const scope = pspRatingsScopeV70();
+    const d = DATA[subjectKey] || DATA.economics;
+    const hint = document.getElementById("ratings-viewer-hint");
+    const mybar = document.getElementById("ratings-mybar");
+    const stageLabel = pspRatingsStageLabelV70(stage);
+
+    if (!pspRatingsPublishedV70(stage)) {
+      if (hint) {
+        hint.style.display = "";
+        hint.textContent = tr(
+          "Финальный рейтинг появится после завершения финала и расчёта результатов.",
+          "Final reyting final yakunlanib, natijalar hisoblangandan keyin ochiladi.",
+          "Grand Final rating will appear after the final ends and results are calculated."
+        );
+      }
+
+      list.innerHTML = `
+        <div class="empty muted psp-rating-empty-v70">
+          <b>${esc(d.title || "")} · ${esc(stageLabel)}</b>
+          <span>${esc(tr(
+            "Результаты ещё не опубликованы.",
+            "Natijalar hali e’lon qilinmagan.",
+            "Results are not published yet."
+          ))}</span>
+        </div>
+      `;
+
+      if (mybar) mybar.style.display = "none";
+      return;
+    }
+
+    const rows = pspRatingsRowsV70(subjectKey, stage, scope);
+    const me = rows.find((row) => row.isMe);
+
+    if (hint) {
+      hint.style.display = "";
+      hint.textContent =
+        stage === "grand_final"
+          ? tr(
+              `${d.title} · Grand Final. Финальный рейтинг после 7 туров.`,
+              `${d.title} · Grand Final. 7 turdan keyingi final reyting.`,
+              `${d.title} · Grand Final. Final rating after 7 tours.`
+            )
+          : stage === "season_total"
+            ? tr(
+                `${d.title} · суммарный рейтинг 7 туров сезона.`,
+                `${d.title} · mavsumdagi 7 turning umumiy reytingi.`,
+                `${d.title} · combined rating for all 7 tours.`
+              )
+            : tr(
+                `${d.title} · рейтинг официального тура ${stage}.`,
+                `${d.title} · ${stage}-tur rasmiy reytingi.`,
+                `${d.title} · official Tour ${stage} rating.`
+              );
+    }
+
+    list.innerHTML = rows.map((row) => `
+      <div class="psp-rating-row-v70 ${row.isMe ? "is-me" : ""}">
+        <div class="psp-rating-rank-v70">#${esc(row.rank)}</div>
+        <div class="psp-rating-student-v70">
+          <b>${esc(row.isMe ? tr("Вы", "Siz", "You") : row.name)}</b>
+          <span>${esc(row.meta)}</span>
+        </div>
+        <div class="psp-rating-score-v70">
+          <b>${esc(row.score)}/${esc(row.maxScore)}</b>
+          <span>${esc(row.percent)}%</span>
+        </div>
+        <div class="psp-rating-time-v70">${esc(row.time)}</div>
+      </div>
+    `).join("");
+
+    if (mybar && me) {
+      mybar.style.display = "";
+
+      const rankEl = document.getElementById("ratings-mybar-rank");
+      const totalEl = document.getElementById("ratings-mybar-total");
+      const scoreEl = document.getElementById("ratings-mybar-score");
+      const timeEl = document.getElementById("ratings-mybar-time");
+
+      if (rankEl) rankEl.textContent = `#${me.rank}`;
+      if (totalEl) totalEl.textContent = `${stageLabel} · ${tr("рейтинг", "reyting", "rating")}`;
+      if (scoreEl) scoreEl.textContent = `${me.score}/${me.maxScore}`;
+      if (timeEl) timeEl.textContent = me.time;
+    }
+  }
+
+  function pspScheduleRatingsStageV70() {
+    setTimeout(pspRenderRatingsStageV70, 0);
+    setTimeout(pspRenderRatingsStageV70, 140);
+    setTimeout(pspRenderRatingsStageV70, 420);
+  }
+
+  function pspBindRatingsStagesV70() {
+    if (window.__pspRatingsStagesV70Bound) return;
+    window.__pspRatingsStagesV70Bound = true;
+
+    document.addEventListener("change", (event) => {
+      const id = event.target?.id || "";
+      if (id === "ratings-subject" || id === "ratings-tour") {
+        pspScheduleRatingsStageV70();
+      }
+    });
+
+    document.addEventListener("click", (event) => {
+      if (
+        event.target?.closest?.('[data-tab="ratings"]') ||
+        event.target?.closest?.("#view-ratings .seg-btn")
+      ) {
+        pspScheduleRatingsStageV70();
+      }
+    });
+
+    pspScheduleRatingsStageV70();
+  }
+
+  function pspInjectRatingsStagesStylesV70() {
+    if (document.getElementById("psp-ratings-stages-v70")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-ratings-stages-v70";
+    style.textContent = `
+      /* PSP_RATINGS_STAGES_V70 */
+      #view-ratings .psp-rating-row-v70 {
+        display: grid;
+        grid-template-columns: 46px minmax(0, 1fr) 72px 58px;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 10px;
+        border-radius: 16px;
+        background: #fff;
+        border: 1px solid rgba(15,23,42,.08);
+        box-shadow: 0 8px 22px rgba(15,23,42,.06);
+      }
+
+      #view-ratings .psp-rating-row-v70 + .psp-rating-row-v70 {
+        margin-top: 10px;
+      }
+
+      #view-ratings .psp-rating-row-v70.is-me {
+        border-color: rgba(47,111,214,.34);
+        background: linear-gradient(180deg, rgba(47,111,214,.08), rgba(255,255,255,.98));
+        box-shadow: 0 0 0 1px rgba(47,111,214,.06) inset, 0 8px 22px rgba(15,23,42,.06);
+      }
+
+      #view-ratings .psp-rating-rank-v70 {
+        font-size: 14px;
+        font-weight: 950;
+        color: #0f172a;
+      }
+
+      #view-ratings .psp-rating-student-v70 {
+        min-width: 0;
+        display: grid;
+        gap: 3px;
+      }
+
+      #view-ratings .psp-rating-student-v70 b,
+      #view-ratings .psp-rating-student-v70 span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      #view-ratings .psp-rating-student-v70 b {
+        font-size: 13px;
+        line-height: 1.15;
+        color: #0f172a;
+      }
+
+      #view-ratings .psp-rating-student-v70 span {
+        font-size: 11px;
+        line-height: 1.15;
+        font-weight: 700;
+        color: rgba(100,116,139,.95);
+      }
+
+      #view-ratings .psp-rating-score-v70 {
+        text-align: right;
+        display: grid;
+        gap: 2px;
+      }
+
+      #view-ratings .psp-rating-score-v70 b {
+        font-size: 13px;
+        line-height: 1.1;
+        font-weight: 950;
+        color: #0f172a;
+      }
+
+      #view-ratings .psp-rating-score-v70 span {
+        font-size: 11px;
+        line-height: 1.1;
+        font-weight: 850;
+        color: rgba(100,116,139,.95);
+      }
+
+      #view-ratings .psp-rating-time-v70 {
+        text-align: right;
+        font-size: 12px;
+        font-weight: 900;
+        color: rgba(15,23,42,.72);
+        white-space: nowrap;
+      }
+
+      #view-ratings .psp-rating-empty-v70 {
+        display: grid;
+        gap: 6px;
+      }
+
+      @media (max-width: 360px) {
+        #view-ratings .psp-rating-row-v70 {
+          grid-template-columns: 38px minmax(0, 1fr) 62px 52px;
+          gap: 8px;
+          padding: 11px 9px;
+        }
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
@@ -5633,8 +6027,8 @@ injectProfileCleanupStyles();
     injectVisibleQuizDomWidthV65Styles();
     observeVisibleQuizDomWidthV65();
     injectPreviewAssessmentShellWidthFix();
-    pspInjectGrandFinalRatingsStylesV69();
-    pspBindGrandFinalRatingsV69();
+    pspInjectRatingsStagesStylesV70();
+    pspBindRatingsStagesV70();
     bind();
     installPhaseSelect();
 
