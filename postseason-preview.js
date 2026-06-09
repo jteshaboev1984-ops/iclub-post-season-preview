@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v66-preview-shell-full-width-20260609";
+  const BUILD = "grand-final-v68-ratings-grand-final-20260609";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -5301,6 +5301,391 @@
   }
 
 
+
+  function getGrandFinalRatingsSubjectKeyV68() {
+    const select = document.getElementById("ratings-subject");
+    const raw = String(select?.value || "").trim().toLowerCase();
+    const text = String(select?.selectedOptions?.[0]?.textContent || "").trim().toLowerCase();
+
+    const known = Object.keys(DATA || {});
+    if (known.includes(raw)) return raw;
+
+    const combined = `${raw} ${text}`;
+
+    if (combined.includes("econom")) return "economics";
+    if (combined.includes("мат") || combined.includes("math")) return "mathematics";
+    if (combined.includes("bio") || combined.includes("био")) return "biology";
+    if (combined.includes("chem") || combined.includes("хим")) return "chemistry";
+    if (combined.includes("inform") || combined.includes("информ")) return "informatics";
+
+    return getSubject();
+  }
+
+  function getGrandFinalRatingsScopeV68() {
+    const active = document.querySelector("#view-ratings .seg-btn.is-active");
+    return String(active?.dataset?.scope || "district").trim() || "district";
+  }
+
+  function getGrandFinalRatingsStageLabelV68() {
+    return tr("Grand Final", "Grand Final", "Grand Final");
+  }
+
+  function ensureGrandFinalRatingsOptionV68() {
+    const select = document.getElementById("ratings-tour");
+    if (!select) return;
+
+    const label = getGrandFinalRatingsStageLabelV68();
+    let option = select.querySelector('option[value="grand_final"]');
+
+    if (!option) {
+      option = document.createElement("option");
+      option.value = "grand_final";
+      option.dataset.pspGrandFinal = "true";
+      select.appendChild(option);
+    }
+
+    option.textContent = label;
+  }
+
+  function isGrandFinalRatingsSelectedV68() {
+    const select = document.getElementById("ratings-tour");
+    return String(select?.value || "") === "grand_final";
+  }
+
+  function isGrandFinalRatingsReadyV68() {
+    const phase = typeof getPhase === "function" ? getPhase() : "auto";
+
+    // Auto is treated as demo-ready in preview branch.
+    return phase === "auto" || phase === "grand_ready";
+  }
+
+  function getGrandFinalRatingsRowsV68(subjectKey, scope) {
+    const d = DATA[subjectKey] || DATA.economics;
+    const title = d.title || "Subject";
+
+    const scopeShift = scope === "country" ? 0 : scope === "region" ? 2 : 4;
+
+    const names = [
+      ["Azizbek Karimov", "Presidential School · 10"],
+      ["Madina Rustamova", "Specialized School · 11"],
+      ["Sardorbek Aliyev", "School 21 · 10"],
+      ["YOU", "iClub participant"],
+      ["Nigina Sobirova", "School 7 · 9"],
+      ["Javohir Ismoilov", "Academic Lyceum · 11"],
+      ["Malika Tursunova", "School 12 · 10"],
+      ["Bekzod Nazarov", "Specialized School · 9"]
+    ];
+
+    const scores = [
+      [19, "11:42"],
+      [18, "12:10"],
+      [18, "12:38"],
+      [17, "13:04"],
+      [16, "12:55"],
+      [15, "14:21"],
+      [14, "13:47"],
+      [13, "15:08"]
+    ];
+
+    return names.map(([name, meta], index) => {
+      const [score, time] = scores[index];
+      const rank = index + 1 + scopeShift;
+      const percent = Math.round((score / 20) * 100);
+
+      return {
+        rank,
+        name,
+        meta: `${title} · ${meta}`,
+        score,
+        percent,
+        time,
+        isMe: name === "YOU"
+      };
+    });
+  }
+
+  function renderGrandFinalRatingsPendingV68(subjectKey) {
+    const list = document.getElementById("ratings-list");
+    const hint = document.getElementById("ratings-viewer-hint");
+    const mybar = document.getElementById("ratings-mybar");
+
+    if (hint) {
+      hint.style.display = "";
+      hint.textContent = tr(
+        "Финальный рейтинг появится после завершения финала и расчёта результатов.",
+        "Final reyting final yakunlanib, natijalar hisoblangandan keyin ochiladi.",
+        "Grand Final rating will appear after the final ends and results are calculated."
+      );
+    }
+
+    if (list) {
+      const d = DATA[subjectKey] || DATA.economics;
+
+      list.innerHTML = `
+        <div class="empty muted psp-grand-rating-empty">
+          <b>${esc(d.title || "")} · ${esc(getGrandFinalRatingsStageLabelV68())}</b>
+          <span>${esc(tr(
+            "Результаты ещё не опубликованы.",
+            "Natijalar hali e’lon qilinmagan.",
+            "Results are not published yet."
+          ))}</span>
+        </div>
+      `;
+    }
+
+    if (mybar) mybar.style.display = "none";
+  }
+
+  function renderGrandFinalRatingsV68() {
+    ensureGrandFinalRatingsOptionV68();
+
+    if (!isGrandFinalRatingsSelectedV68()) return;
+
+    const subjectKey = getGrandFinalRatingsSubjectKeyV68();
+    const scope = getGrandFinalRatingsScopeV68();
+    const list = document.getElementById("ratings-list");
+    const hint = document.getElementById("ratings-viewer-hint");
+    const mybar = document.getElementById("ratings-mybar");
+
+    if (!list) return;
+
+    if (!isGrandFinalRatingsReadyV68()) {
+      renderGrandFinalRatingsPendingV68(subjectKey);
+      return;
+    }
+
+    const d = DATA[subjectKey] || DATA.economics;
+    const rows = getGrandFinalRatingsRowsV68(subjectKey, scope);
+    const me = rows.find((row) => row.isMe);
+
+    if (hint) {
+      hint.style.display = "";
+      hint.textContent = tr(
+        `${d.title} · Grand Final. Рейтинг финала после 7 туров.`,
+        `${d.title} · Grand Final. 7 turdan keyingi final reyting.`,
+        `${d.title} · Grand Final. Final rating after 7 tours.`
+      );
+    }
+
+    list.dataset.pspGrandFinalRatings = "true";
+    list.innerHTML = rows.map((row) => `
+      <div class="psp-grand-rating-row ${row.isMe ? "is-me" : ""}">
+        <div class="psp-grand-rank">#${esc(row.rank)}</div>
+        <div class="psp-grand-student">
+          <b>${esc(row.isMe ? tr("Вы", "Siz", "You") : row.name)}</b>
+          <span>${esc(row.meta)}</span>
+        </div>
+        <div class="psp-grand-score">
+          <b>${esc(row.score)}/20</b>
+          <span>${esc(row.percent)}%</span>
+        </div>
+        <div class="psp-grand-time">${esc(row.time)}</div>
+      </div>
+    `).join("");
+
+    if (mybar && me) {
+      mybar.style.display = "";
+      const rankEl = document.getElementById("ratings-mybar-rank");
+      const totalEl = document.getElementById("ratings-mybar-total");
+      const scoreEl = document.getElementById("ratings-mybar-score");
+      const timeEl = document.getElementById("ratings-mybar-time");
+
+      if (rankEl) rankEl.textContent = `#${me.rank}`;
+      if (totalEl) totalEl.textContent = tr("Grand Final · финальный рейтинг", "Grand Final · final reyting", "Grand Final · final rating");
+      if (scoreEl) scoreEl.textContent = `${me.score}/20`;
+      if (timeEl) timeEl.textContent = me.time;
+    }
+  }
+
+  function scheduleGrandFinalRatingsRenderV68() {
+    ensureGrandFinalRatingsOptionV68();
+
+    requestAnimationFrame(() => {
+      ensureGrandFinalRatingsOptionV68();
+      renderGrandFinalRatingsV68();
+    });
+
+    setTimeout(() => {
+      ensureGrandFinalRatingsOptionV68();
+      renderGrandFinalRatingsV68();
+    }, 80);
+
+    setTimeout(() => {
+      ensureGrandFinalRatingsOptionV68();
+      renderGrandFinalRatingsV68();
+    }, 240);
+  }
+
+  function bindGrandFinalRatingsV68() {
+    if (window.__pspGrandFinalRatingsV68Bound) return;
+    window.__pspGrandFinalRatingsV68Bound = true;
+
+    document.addEventListener("change", (event) => {
+      const target = event.target;
+
+      if (
+        target?.id === "ratings-tour" ||
+        target?.id === "ratings-subject"
+      ) {
+        scheduleGrandFinalRatingsRenderV68();
+      }
+    }, true);
+
+    document.addEventListener("click", (event) => {
+      if (
+        event.target?.closest?.("#view-ratings .seg-btn") ||
+        event.target?.closest?.('[data-tab="ratings"]')
+      ) {
+        scheduleGrandFinalRatingsRenderV68();
+      }
+    }, true);
+
+    const observer = new MutationObserver(() => {
+      const ratings = document.getElementById("view-ratings");
+      const isRatingsActive = ratings?.classList?.contains("is-active");
+
+      if (isRatingsActive || document.getElementById("ratings-tour")) {
+        scheduleGrandFinalRatingsRenderV68();
+      }
+    });
+
+    observer.observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class"]
+    });
+
+    scheduleGrandFinalRatingsRenderV68();
+  }
+
+  function injectGrandFinalRatingsStylesV68() {
+    if (document.getElementById("psp-v68-grand-final-ratings")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-v68-grand-final-ratings";
+    style.textContent = `
+      /* PSP_GRAND_FINAL_RATINGS_V68 */
+      #view-ratings .psp-grand-rating-row {
+        display: grid;
+        grid-template-columns: 46px minmax(0, 1fr) 72px 58px;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 10px;
+        border-radius: 16px;
+        background: #fff;
+        border: 1px solid rgba(15,23,42,.08);
+        box-shadow: 0 8px 22px rgba(15,23,42,.06);
+      }
+
+      #view-ratings .psp-grand-rating-row + .psp-grand-rating-row {
+        margin-top: 10px;
+      }
+
+      #view-ratings .psp-grand-rating-row.is-me {
+        border-color: rgba(47,111,214,.34);
+        background: linear-gradient(180deg, rgba(47,111,214,.08), rgba(255,255,255,.98));
+        box-shadow:
+          0 0 0 1px rgba(47,111,214,.06) inset,
+          0 8px 22px rgba(15,23,42,.06);
+      }
+
+      #view-ratings .psp-grand-rank {
+        font-size: 14px;
+        font-weight: 950;
+        color: #0f172a;
+      }
+
+      #view-ratings .psp-grand-student {
+        min-width: 0;
+        display: grid;
+        gap: 3px;
+      }
+
+      #view-ratings .psp-grand-student b {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 13px;
+        line-height: 1.15;
+        color: #0f172a;
+      }
+
+      #view-ratings .psp-grand-student span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 11px;
+        line-height: 1.15;
+        font-weight: 700;
+        color: rgba(100,116,139,.95);
+      }
+
+      #view-ratings .psp-grand-score {
+        text-align: right;
+        display: grid;
+        gap: 2px;
+      }
+
+      #view-ratings .psp-grand-score b {
+        font-size: 13px;
+        line-height: 1.1;
+        font-weight: 950;
+        color: #0f172a;
+      }
+
+      #view-ratings .psp-grand-score span {
+        font-size: 11px;
+        line-height: 1.1;
+        font-weight: 850;
+        color: rgba(100,116,139,.95);
+      }
+
+      #view-ratings .psp-grand-time {
+        text-align: right;
+        font-size: 12px;
+        font-weight: 900;
+        color: rgba(15,23,42,.72);
+        white-space: nowrap;
+      }
+
+      #view-ratings .psp-grand-rating-empty {
+        display: grid;
+        gap: 6px;
+      }
+
+      #view-ratings .psp-grand-rating-empty b {
+        color: #0f172a;
+      }
+
+      #view-ratings .psp-grand-rating-empty span {
+        font-size: 13px;
+        line-height: 1.35;
+      }
+
+      @media (max-width: 360px) {
+        #view-ratings .psp-grand-rating-row {
+          grid-template-columns: 38px minmax(0, 1fr) 62px 52px;
+          gap: 8px;
+          padding: 11px 9px;
+        }
+
+        #view-ratings .psp-grand-student b {
+          font-size: 12px;
+        }
+
+        #view-ratings .psp-grand-time {
+          font-size: 11px;
+        }
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
@@ -5330,6 +5715,8 @@ injectProfileCleanupStyles();
     injectVisibleQuizDomWidthV65Styles();
     observeVisibleQuizDomWidthV65();
     injectPreviewAssessmentShellWidthFix();
+    injectGrandFinalRatingsStylesV68();
+    bindGrandFinalRatingsV68();
     bind();
     installPhaseSelect();
 
