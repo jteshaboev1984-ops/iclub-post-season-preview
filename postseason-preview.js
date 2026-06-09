@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v60-safe-sheet-no-side-gap-20260604";
+  const BUILD = "grand-final-v61-assessment-full-width-no-gap-20260604";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -4569,6 +4569,169 @@
   }
 
 
+
+  function enforceAssessmentFullWidth() {
+    const root = document.getElementById("psp-sheet");
+    if (!root) return;
+
+    const isAssessment =
+      root.classList.contains("psp-blocking-assessment") ||
+      (
+        root.classList.contains("psp-sheet-fullscreen") &&
+        !root.classList.contains("psp-keep-bottom-tabbar")
+      );
+
+    if (!isAssessment) return;
+
+    const backdrop = root.querySelector(".psp-backdrop");
+    const card = root.querySelector(".psp-sheet-card");
+
+    Object.assign(root.style, {
+      position: "fixed",
+      inset: "0",
+      width: "100vw",
+      minWidth: "100vw",
+      maxWidth: "none",
+      height: "100dvh",
+      minHeight: "100dvh",
+      maxHeight: "100dvh",
+      margin: "0",
+      transform: "none",
+      overflow: "hidden",
+      background: "#f8fafc",
+      zIndex: "1200"
+    });
+
+    if (backdrop) {
+      Object.assign(backdrop.style, {
+        position: "absolute",
+        inset: "0",
+        width: "100%",
+        minWidth: "100%",
+        maxWidth: "none",
+        height: "100%",
+        minHeight: "100%",
+        maxHeight: "100%",
+        margin: "0",
+        padding: "0",
+        transform: "none",
+        display: "block",
+        background: "#f8fafc"
+      });
+    }
+
+    if (card) {
+      Object.assign(card.style, {
+        width: "100%",
+        minWidth: "100%",
+        maxWidth: "none",
+        height: "100%",
+        minHeight: "100%",
+        maxHeight: "100%",
+        margin: "0",
+        borderRadius: "0",
+        boxShadow: "none",
+        overflowY: "auto",
+        overflowX: "hidden",
+        boxSizing: "border-box",
+        background: "#f8fafc"
+      });
+    }
+  }
+
+  function observeAssessmentFullWidth() {
+    if (window.__pspAssessmentFullWidthObserverBound) {
+      enforceAssessmentFullWidth();
+      return;
+    }
+
+    window.__pspAssessmentFullWidthObserverBound = true;
+
+    const run = () => {
+      enforceAssessmentFullWidth();
+      requestAnimationFrame(enforceAssessmentFullWidth);
+      setTimeout(enforceAssessmentFullWidth, 80);
+    };
+
+    new MutationObserver(run).observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class", "style"]
+    });
+
+    window.addEventListener("resize", run);
+    run();
+  }
+
+  function injectAssessmentFullWidthStyles() {
+    if (document.getElementById("psp-v61-assessment-full-width")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-v61-assessment-full-width";
+    style.textContent = `
+      /* PSP_ASSESSMENT_FULL_WIDTH_V61 */
+      #psp-sheet.psp-blocking-assessment,
+      #psp-sheet.psp-sheet-fullscreen:not(.psp-keep-bottom-tabbar) {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        min-width: 100vw !important;
+        max-width: none !important;
+        height: 100dvh !important;
+        min-height: 100dvh !important;
+        max-height: 100dvh !important;
+        margin: 0 !important;
+        transform: none !important;
+        overflow: hidden !important;
+        background: #f8fafc !important;
+        z-index: 1200 !important;
+      }
+
+      #psp-sheet.psp-blocking-assessment .psp-backdrop,
+      #psp-sheet.psp-sheet-fullscreen:not(.psp-keep-bottom-tabbar) .psp-backdrop {
+        position: absolute !important;
+        inset: 0 !important;
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: none !important;
+        height: 100% !important;
+        min-height: 100% !important;
+        max-height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: block !important;
+        transform: none !important;
+        background: #f8fafc !important;
+      }
+
+      #psp-sheet.psp-blocking-assessment .psp-sheet-card,
+      #psp-sheet.psp-sheet-fullscreen:not(.psp-keep-bottom-tabbar) .psp-sheet-card {
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: none !important;
+        height: 100% !important;
+        min-height: 100% !important;
+        max-height: 100% !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+        background: #f8fafc !important;
+      }
+
+      #psp-sheet.psp-blocking-assessment .psp-sheet-card *,
+      #psp-sheet.psp-sheet-fullscreen:not(.psp-keep-bottom-tabbar) .psp-sheet-card * {
+        box-sizing: border-box !important;
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
@@ -4590,6 +4753,8 @@ injectProfileCleanupStyles();
     injectSafeSheetMainWidthStyles();
     injectSafeSheetNoSideGapStyles();
     observeSafeSheetFullWidth();
+    injectAssessmentFullWidthStyles();
+    observeAssessmentFullWidth();
     bind();
     installPhaseSelect();
 
