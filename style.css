@@ -7032,3 +7032,117 @@ button.is-loading { opacity: .85; }
 
 /* /PSP_MAIN_QUIZ_WIDTH_V64 */
 
+
+/* PSP_MAIN_QUIZ_WIDTH_V64_REAL
+   Real target: #courses-practice-quiz and #courses-tour-quiz in index.html.
+   These are main app stack screens, not preview sheets.
+*/
+#courses-practice-quiz.stack-screen,
+#courses-tour-quiz.stack-screen,
+.stack-screen[data-screen="practice-quiz"],
+.stack-screen[data-screen="tour-quiz"] {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+#courses-practice-quiz .quiz-top,
+.stack-screen[data-screen="practice-quiz"] .quiz-top,
+#courses-tour-quiz .tour-head,
+.stack-screen[data-screen="tour-quiz"] .tour-head,
+#courses-tour-quiz .tour-badges,
+.stack-screen[data-screen="tour-quiz"] .tour-badges,
+#courses-tour-quiz .tour-timers,
+.stack-screen[data-screen="tour-quiz"] .tour-timers {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+#courses-practice-quiz > .card,
+.stack-screen[data-screen="practice-quiz"] > .card,
+#courses-tour-quiz > .card,
+.stack-screen[data-screen="tour-quiz"] > .card {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin: 0 0 14px 0 !important;
+  box-sizing: border-box !important;
+}
+
+#courses-practice-quiz .question-text,
+.stack-screen[data-screen="practice-quiz"] .question-text,
+#courses-tour-quiz .question-text,
+.stack-screen[data-screen="tour-quiz"] .question-text {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+#courses-practice-quiz .options,
+.stack-screen[data-screen="practice-quiz"] .options,
+#courses-tour-quiz .options,
+.stack-screen[data-screen="tour-quiz"] .options {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 10px !important;
+  box-sizing: border-box !important;
+}
+
+#courses-practice-quiz .options > *,
+.stack-screen[data-screen="practice-quiz"] .options > *,
+#courses-tour-quiz .options > *,
+.stack-screen[data-screen="tour-quiz"] .options > *,
+#courses-practice-quiz .option,
+.stack-screen[data-screen="practice-quiz"] .option,
+#courses-tour-quiz .option,
+.stack-screen[data-screen="tour-quiz"] .option,
+#courses-practice-quiz .option-btn,
+.stack-screen[data-screen="practice-quiz"] .option-btn,
+#courses-tour-quiz .option-btn,
+.stack-screen[data-screen="tour-quiz"] .option-btn,
+#courses-practice-quiz .answer-option,
+.stack-screen[data-screen="practice-quiz"] .answer-option,
+#courses-tour-quiz .answer-option,
+.stack-screen[data-screen="tour-quiz"] .answer-option {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+#courses-practice-quiz > .actions-row,
+.stack-screen[data-screen="practice-quiz"] > .actions-row,
+#courses-tour-quiz > .actions-row,
+.stack-screen[data-screen="tour-quiz"] > .actions-row {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  display: flex !important;
+  box-sizing: border-box !important;
+}
+
+#practice-submit-btn,
+#tour-next-btn {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+  box-sizing: border-box !important;
+}
+/* /PSP_MAIN_QUIZ_WIDTH_V64_REAL */
+
