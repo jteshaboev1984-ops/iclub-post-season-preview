@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v64-real-main-quiz-width-20260609";
+  const BUILD = "grand-final-v65-visible-quiz-dom-width-20260609";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -5054,6 +5054,217 @@
   }
 
 
+
+  function isVisibleQuizNodeV65(el) {
+    if (!el) return false;
+
+    const rect = el.getBoundingClientRect();
+    const style = window.getComputedStyle ? window.getComputedStyle(el) : null;
+
+    return (
+      rect.width > 0 &&
+      rect.height > 0 &&
+      style?.display !== "none" &&
+      style?.visibility !== "hidden" &&
+      style?.opacity !== "0"
+    );
+  }
+
+  function getVisibleQuizContextV65() {
+    const question =
+      Array.from(document.querySelectorAll("#practice-question,#tour-question,.question-text"))
+        .find((el) => {
+          if (!isVisibleQuizNodeV65(el)) return false;
+
+          const text = String(el.innerText || el.textContent || "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toLowerCase();
+
+          return text && !text.includes("вопрос тура…") && !text.includes("вопрос практики…");
+        });
+
+    if (!question) return null;
+
+    const screen =
+      question.closest("#courses-practice-quiz,#courses-tour-quiz,.stack-screen[data-screen='practice-quiz'],.stack-screen[data-screen='tour-quiz']") ||
+      question.closest(".stack-screen") ||
+      question.closest("#psp-sheet");
+
+    if (!screen || !isVisibleQuizNodeV65(screen)) return null;
+
+    const options =
+      screen.querySelector("#practice-options,#tour-options,.options") ||
+      question.parentElement?.querySelector?.(".options");
+
+    const submit =
+      screen.querySelector("#practice-submit-btn,#tour-next-btn,[data-action='practice-submit'],[data-action='tour-next']");
+
+    const card =
+      question.closest(".card,.panel-card,.psp-panel,.psp-card,.psp-question-card") ||
+      options?.closest?.(".card,.panel-card,.psp-panel,.psp-card,.psp-question-card");
+
+    return { screen, question, options, submit, card };
+  }
+
+  function setWideBoxV65(el) {
+    if (!el) return;
+
+    Object.assign(el.style, {
+      width: "100%",
+      minWidth: "0",
+      maxWidth: "none",
+      marginLeft: "0",
+      marginRight: "0",
+      boxSizing: "border-box"
+    });
+  }
+
+  function forceVisibleQuizDomWidthV65() {
+    const ctx = getVisibleQuizContextV65();
+    if (!ctx) return;
+
+    const { screen, question, options, submit, card } = ctx;
+
+    screen.classList.add("psp-visible-quiz-width-v65");
+
+    setWideBoxV65(screen);
+
+    const top =
+      screen.querySelector(".quiz-top,.tour-head") ||
+      screen.firstElementChild;
+
+    setWideBoxV65(top);
+    setWideBoxV65(card);
+    setWideBoxV65(question);
+    setWideBoxV65(options);
+
+    // The real cause: a parent wrapper/card can keep old max-width.
+    // Walk from the question card up to the active quiz screen and force only that chain.
+    let current = card || question.parentElement;
+    let guard = 0;
+
+    while (current && current !== screen && guard < 12) {
+      setWideBoxV65(current);
+      current = current.parentElement;
+      guard += 1;
+    }
+
+    if (options) {
+      Object.assign(options.style, {
+        display: "grid",
+        gridTemplateColumns: "1fr",
+        gap: "10px"
+      });
+
+      Array.from(options.children || []).forEach(setWideBoxV65);
+      Array.from(options.querySelectorAll("button,[role='button'],.option,.option-btn,.answer-option")).forEach(setWideBoxV65);
+    }
+
+    const actions =
+      submit?.closest?.(".actions-row") ||
+      screen.querySelector(".actions-row");
+
+    setWideBoxV65(actions);
+    setWideBoxV65(submit);
+
+    if (actions) {
+      Object.assign(actions.style, {
+        display: "flex"
+      });
+
+      Array.from(actions.children || []).forEach((child) => {
+        setWideBoxV65(child);
+        child.style.flex = "1 1 auto";
+      });
+    }
+  }
+
+  function observeVisibleQuizDomWidthV65() {
+    if (window.__pspVisibleQuizDomWidthV65Bound) {
+      forceVisibleQuizDomWidthV65();
+      return;
+    }
+
+    window.__pspVisibleQuizDomWidthV65Bound = true;
+
+    const run = () => {
+      forceVisibleQuizDomWidthV65();
+      requestAnimationFrame(forceVisibleQuizDomWidthV65);
+      setTimeout(forceVisibleQuizDomWidthV65, 80);
+      setTimeout(forceVisibleQuizDomWidthV65, 220);
+    };
+
+    new MutationObserver(run).observe(document.documentElement, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class", "style", "hidden", "aria-hidden"]
+    });
+
+    document.addEventListener("click", run, true);
+    window.addEventListener("resize", run);
+    run();
+  }
+
+  function injectVisibleQuizDomWidthV65Styles() {
+    if (document.getElementById("psp-v65-visible-quiz-dom-width")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-v65-visible-quiz-dom-width";
+    style.textContent = `
+      /* PSP_VISIBLE_QUIZ_DOM_WIDTH_V65 */
+      .psp-visible-quiz-width-v65,
+      .psp-visible-quiz-width-v65 .quiz-top,
+      .psp-visible-quiz-width-v65 .tour-head,
+      .psp-visible-quiz-width-v65 > .card,
+      .psp-visible-quiz-width-v65 .card,
+      .psp-visible-quiz-width-v65 .question-text,
+      .psp-visible-quiz-width-v65 .options,
+      .psp-visible-quiz-width-v65 .actions-row {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        box-sizing: border-box !important;
+      }
+
+      .psp-visible-quiz-width-v65 .options {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+      }
+
+      .psp-visible-quiz-width-v65 .options > *,
+      .psp-visible-quiz-width-v65 .options button,
+      .psp-visible-quiz-width-v65 .options [role="button"],
+      .psp-visible-quiz-width-v65 .option,
+      .psp-visible-quiz-width-v65 .option-btn,
+      .psp-visible-quiz-width-v65 .answer-option,
+      #practice-submit-btn,
+      #tour-next-btn {
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: none !important;
+        box-sizing: border-box !important;
+      }
+
+      .psp-visible-quiz-width-v65 > .actions-row,
+      .psp-visible-quiz-width-v65 .actions-row {
+        display: flex !important;
+      }
+
+      .psp-visible-quiz-width-v65 > .actions-row > *,
+      .psp-visible-quiz-width-v65 .actions-row > * {
+        flex: 1 1 auto !important;
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
@@ -5080,6 +5291,8 @@ injectProfileCleanupStyles();
     injectAssessmentContentMainWidthStyles();
     injectQuestionCardMainWidthV63Styles();
     observeQuestionCardMainWidthV63();
+    injectVisibleQuizDomWidthV65Styles();
+    observeVisibleQuizDomWidthV65();
     bind();
     installPhaseSelect();
 
