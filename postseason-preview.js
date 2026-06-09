@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v73-real-grand-certificate-20260609";
+  const BUILD = "grand-final-v74-certificate-button-bridge-20260609";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -6090,6 +6090,32 @@
   }
 
 
+
+  function bindRealGrandFinalCertificateButtonV74() {
+    window.showCertificate = async function showCertificateBridgeV74() {
+      try {
+        if (typeof window.openPreviewGrandFinalCertificate === "function") {
+          const ok = await window.openPreviewGrandFinalCertificate();
+          if (ok) return;
+        }
+
+        const btn =
+          document.querySelector('[data-action="profile-certificates"]') ||
+          document.querySelector('[data-action="open-certificates"]');
+
+        if (btn) {
+          btn.click();
+          return;
+        }
+
+        console.warn("[iClub Preview] Certificate viewer is not ready yet.");
+      } catch (e) {
+        console.warn("[iClub Preview] Certificate bridge failed", e);
+      }
+    };
+  }
+
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
@@ -6121,6 +6147,7 @@ injectProfileCleanupStyles();
     injectPreviewAssessmentShellWidthFix();
     pspInjectRatingsStylesV71();
     pspBindRatingsV71();
+    bindRealGrandFinalCertificateButtonV74();
     bind();
     installPhaseSelect();
 

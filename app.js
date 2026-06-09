@@ -8610,7 +8610,38 @@ async function renderCertificatesView() {
   const oldViewer = document.getElementById("certificate-viewer-wrap");
   if (oldViewer) oldViewer.remove();
 }
-      function findSelectedCertificateRow(rows) {
+      
+async function openPreviewGrandFinalCertificate() {
+  try {
+    if (!window.ICLUB_PREVIEW_MODE) return false;
+
+    const row = getPreviewGrandFinalCertificateRows()[0] || null;
+    if (!row?.id) return false;
+
+    if (!state.certificates) {
+      state.certificates = { selectedId: null, lastIssuedId: null };
+    }
+
+    state.certificates.selectedId = Number(row.id);
+    state.certificates.lastIssuedId = Number(row.id);
+    saveState();
+
+    openGlobal("certificates");
+    await renderCertificatesView();
+
+    return true;
+  } catch (e) {
+    try { console.warn("[iClub Preview] open Grand Final certificate failed", e); } catch {}
+    return false;
+  }
+}
+
+if (window.ICLUB_PREVIEW_MODE) {
+  window.openPreviewGrandFinalCertificate = openPreviewGrandFinalCertificate;
+}
+
+
+function findSelectedCertificateRow(rows) {
   const selectedId = Number(state?.certificates?.selectedId || 0);
   if (!selectedId) return null;
   return rows.find(r => Number(r.id) === selectedId) || null;
