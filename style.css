@@ -6938,3 +6938,97 @@ button.is-loading { opacity: .85; }
     grid-template-columns: 1fr;
   }
 }
+
+
+/* PSP_MAIN_QUIZ_WIDTH_V64
+   Target: real main-app quiz screens, not preview sheets.
+   Reason: practice/tour quiz lives in #courses-practice-quiz / #courses-tour-quiz in index.html.
+*/
+#courses-practice-quiz,
+#courses-tour-quiz {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin-left: 0;
+  margin-right: 0;
+  box-sizing: border-box;
+}
+
+#courses-practice-quiz .quiz-top,
+#courses-practice-quiz > .card,
+#courses-practice-quiz > .actions-row,
+#courses-tour-quiz .tour-head,
+#courses-tour-quiz .tour-badges,
+#courses-tour-quiz .tour-timers,
+#courses-tour-quiz > .card,
+#courses-tour-quiz > .actions-row,
+#courses-tour-quiz .tour-monitor {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin-left: 0;
+  margin-right: 0;
+  box-sizing: border-box;
+}
+
+#courses-practice-quiz > .card,
+#courses-tour-quiz > .card {
+  display: block;
+}
+
+#courses-practice-quiz .question-text,
+#courses-tour-quiz .question-text {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+#courses-practice-quiz .options,
+#courses-tour-quiz .options {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  box-sizing: border-box;
+}
+
+#courses-practice-quiz .options > *,
+#courses-tour-quiz .options > *,
+#courses-practice-quiz .option,
+#courses-tour-quiz .option,
+#courses-practice-quiz .option-btn,
+#courses-tour-quiz .option-btn,
+#courses-practice-quiz .answer-option,
+#courses-tour-quiz .answer-option {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin-left: 0;
+  margin-right: 0;
+  box-sizing: border-box;
+}
+
+#practice-submit-btn,
+#tour-next-btn {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+#courses-practice-quiz > .actions-row,
+#courses-tour-quiz > .actions-row {
+  display: flex;
+  width: 100%;
+}
+
+#courses-practice-quiz > .actions-row > *,
+#courses-tour-quiz > .actions-row > * {
+  flex: 1 1 auto;
+}
+
+/* /PSP_MAIN_QUIZ_WIDTH_V64 */
+
