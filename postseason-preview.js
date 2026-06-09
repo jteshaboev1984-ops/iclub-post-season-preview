@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v61-assessment-full-width-no-gap-20260604";
+  const BUILD = "grand-final-v62-assessment-content-main-width-20260604";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -4732,6 +4732,105 @@
   }
 
 
+
+  function injectAssessmentContentMainWidthStyles() {
+    if (document.getElementById("psp-v62-assessment-content-main-width")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-v62-assessment-content-main-width";
+    style.textContent = `
+      /* PSP_ASSESSMENT_CONTENT_MAIN_WIDTH_V62 */
+
+      #psp-sheet.psp-blocking-assessment .psp-sheet-card,
+      #psp-sheet.psp-sheet-fullscreen:not(.psp-keep-bottom-tabbar) .psp-sheet-card {
+        padding: 14px 16px 22px !important;
+        width: 100% !important;
+        max-width: none !important;
+        box-sizing: border-box !important;
+      }
+
+      #psp-sheet.psp-blocking-assessment .psp-sheet-card > *,
+      #psp-sheet.psp-sheet-fullscreen:not(.psp-keep-bottom-tabbar) .psp-sheet-card > * {
+        width: 100% !important;
+        max-width: none !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        box-sizing: border-box !important;
+      }
+
+      #psp-sheet.psp-blocking-assessment .psp-sheet-card > * > *,
+      #psp-sheet.psp-sheet-fullscreen:not(.psp-keep-bottom-tabbar) .psp-sheet-card > * > * {
+        max-width: none !important;
+        box-sizing: border-box !important;
+      }
+
+      #psp-sheet.psp-blocking-assessment :is(
+        .psp-panel,
+        .psp-card,
+        .panel-card,
+        .card,
+        .psp-question-card,
+        .psp-question-panel,
+        .psp-option-list,
+        .psp-options,
+        .psp-actions,
+        .psp-quiz-actions
+      ),
+      #psp-sheet.psp-sheet-fullscreen:not(.psp-keep-bottom-tabbar) :is(
+        .psp-panel,
+        .psp-card,
+        .panel-card,
+        .card,
+        .psp-question-card,
+        .psp-question-panel,
+        .psp-option-list,
+        .psp-options,
+        .psp-actions,
+        .psp-quiz-actions
+      ) {
+        width: 100% !important;
+        max-width: none !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        box-sizing: border-box !important;
+      }
+
+      #psp-sheet.psp-blocking-assessment :is(
+        button,
+        .btn,
+        .psp-option,
+        .answer-option,
+        [role="button"]
+      ),
+      #psp-sheet.psp-sheet-fullscreen:not(.psp-keep-bottom-tabbar) :is(
+        button,
+        .btn,
+        .psp-option,
+        .answer-option,
+        [role="button"]
+      ) {
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+
+      #psp-sheet.psp-blocking-assessment .psp-sheet-card .btn.primary,
+      #psp-sheet.psp-sheet-fullscreen:not(.psp-keep-bottom-tabbar) .psp-sheet-card .btn.primary {
+        width: 100% !important;
+      }
+
+      @media (max-width: 600px) {
+        #psp-sheet.psp-blocking-assessment .psp-sheet-card,
+        #psp-sheet.psp-sheet-fullscreen:not(.psp-keep-bottom-tabbar) .psp-sheet-card {
+          padding-left: 16px !important;
+          padding-right: 16px !important;
+        }
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
@@ -4755,6 +4854,7 @@ injectProfileCleanupStyles();
     observeSafeSheetFullWidth();
     injectAssessmentFullWidthStyles();
     observeAssessmentFullWidth();
+    injectAssessmentContentMainWidthStyles();
     bind();
     installPhaseSelect();
 
