@@ -3,7 +3,7 @@
 
   if (!window.ICLUB_PREVIEW_MODE) return;
 
-  const BUILD = "grand-final-v70-ratings-season-stages-20260609";
+  const BUILD = "grand-final-v71-ratings-seasons-current-archive-20260609";
   window.ICLUB_POSTSEASON_PREVIEW_BUILD = BUILD;
   console.info("[iClub Preview] build:", BUILD);
 
@@ -5998,6 +5998,421 @@
   }
 
 
+
+  const PSP_RATING_SEASONS_V71 = [
+    {
+      id: "season_2_current",
+      titleRu: "Сезон 2 — текущий",
+      titleUz: "2-mavsum — joriy",
+      titleEn: "Season 2 — current",
+      status: "current",
+      openStages: ["1"],
+      defaultStage: "1"
+    },
+    {
+      id: "season_1_archive",
+      titleRu: "Сезон 1 — архив",
+      titleUz: "1-mavsum — arxiv",
+      titleEn: "Season 1 — archive",
+      status: "archive",
+      openStages: ["season_total", "1", "2", "3", "4", "5", "6", "7", "grand_final"],
+      defaultStage: "grand_final"
+    }
+  ];
+
+  function pspSeasonLabelV71(season) {
+    return tr(season.titleRu, season.titleUz, season.titleEn);
+  }
+
+  function pspRatingsSubjectsV71() {
+    return ["economics", "mathematics", "biology", "chemistry", "informatics"]
+      .filter((key) => DATA[key]);
+  }
+
+  function pspEnsureRatingsSeasonFilterV71() {
+    const filters = document.querySelector("#view-ratings .lb-filters");
+    if (!filters) return null;
+
+    let select = document.getElementById("ratings-season");
+    if (select) return select;
+
+    const subjectSelect = document.getElementById("ratings-subject");
+    const subjectLabel = subjectSelect?.closest?.(".lb-filter") || null;
+
+    const wrap = document.createElement("label");
+    wrap.className = "lb-filter psp-ratings-season-filter-v71";
+    wrap.innerHTML = `
+      <div class="lb-filter-label">${esc(tr("Сезон", "Mavsum", "Season"))}</div>
+      <select id="ratings-season" class="lb-select" aria-label="Season"></select>
+    `;
+
+    filters.insertBefore(wrap, subjectLabel || filters.firstChild);
+    return wrap.querySelector("#ratings-season");
+  }
+
+  function pspEnsureRatingsSeasonOptionsV71() {
+    const select = pspEnsureRatingsSeasonFilterV71();
+    if (!select) return;
+
+    const current = String(select.value || "").trim();
+    const values = PSP_RATING_SEASONS_V71.map((season) => season.id);
+
+    if (select.options.length !== PSP_RATING_SEASONS_V71.length) {
+      select.innerHTML = PSP_RATING_SEASONS_V71.map((season) =>
+        `<option value="${esc(season.id)}">${esc(pspSeasonLabelV71(season))}</option>`
+      ).join("");
+    }
+
+    select.value = values.includes(current) ? current : "season_2_current";
+  }
+
+  function pspCurrentRatingsSeasonV71() {
+    pspEnsureRatingsSeasonOptionsV71();
+
+    const value = String(document.getElementById("ratings-season")?.value || "season_2_current");
+    return PSP_RATING_SEASONS_V71.find((season) => season.id === value) || PSP_RATING_SEASONS_V71[0];
+  }
+
+  function pspEnsureRatingsSubjectOptionsV71() {
+    const select = document.getElementById("ratings-subject");
+    if (!select) return;
+
+    const subjects = pspRatingsSubjectsV71();
+    const current = String(select.value || "").trim();
+    const currentKnown = subjects.includes(current);
+
+    select.innerHTML = subjects.map((key) => {
+      const d = DATA[key] || {};
+      return `<option value="${esc(key)}">${esc(d.title || key)}</option>`;
+    }).join("");
+
+    select.value = currentKnown ? current : (subjects.includes(getSubject()) ? getSubject() : subjects[0]);
+  }
+
+  function pspStageLabelV71(stage, locked = false) {
+    let label;
+
+    if (stage === "season_total") {
+      label = tr("Все 7 туров", "Barcha 7 tur", "All 7 tours");
+    } else if (stage === "grand_final") {
+      label = "Grand Final";
+    } else {
+      label = tr(`Тур ${stage}`, `${stage}-tur`, `Tour ${stage}`);
+    }
+
+    if (!locked) return label;
+
+    return `${label} · ${tr("позже", "keyinroq", "later")}`;
+  }
+
+  function pspEnsureRatingsStageOptionsV71() {
+    const select = document.getElementById("ratings-tour");
+    if (!select) return;
+
+    const season = pspCurrentRatingsSeasonV71();
+    const current = String(select.value || "").trim();
+
+    const stages = ["season_total", "1", "2", "3", "4", "5", "6", "7", "grand_final"];
+
+    select.innerHTML = stages.map((stage) => {
+      const isOpen = season.openStages.includes(stage);
+      return `
+        <option value="${esc(stage)}" ${isOpen ? "" : "disabled"}>
+          ${esc(pspStageLabelV71(stage, !isOpen))}
+        </option>
+      `;
+    }).join("");
+
+    if (season.openStages.includes(current)) {
+      select.value = current;
+    } else {
+      select.value = season.defaultStage || season.openStages[0] || "1";
+    }
+  }
+
+  function pspRatingsSubjectKeyV71() {
+    pspEnsureRatingsSubjectOptionsV71();
+
+    const value = String(document.getElementById("ratings-subject")?.value || "").trim().toLowerCase();
+    return DATA[value] ? value : getSubject();
+  }
+
+  function pspRatingsStageV71() {
+    pspEnsureRatingsStageOptionsV71();
+    return String(document.getElementById("ratings-tour")?.value || "1").trim();
+  }
+
+  function pspRatingsScopeV71() {
+    const active = document.querySelector("#view-ratings .seg-btn.is-active");
+    return String(active?.dataset?.scope || "district").trim() || "district";
+  }
+
+  function pspRatingsRowsV71(subjectKey, stage, scope, season) {
+    const d = DATA[subjectKey] || DATA.economics;
+    const title = d?.title || "Subject";
+
+    const baseOffset = scope === "country" ? 0 : scope === "region" ? 2 : 4;
+    const seasonOffset = season.status === "archive" ? 0 : 1;
+
+    const students = [
+      ["Azizbek Karimov", "Presidential School · 10"],
+      ["Madina Rustamova", "Specialized School · 11"],
+      ["Sardorbek Aliyev", "School 21 · 10"],
+      ["YOU", "iClub participant"],
+      ["Nigina Sobirova", "School 7 · 9"],
+      ["Javohir Ismoilov", "Academic Lyceum · 11"],
+      ["Malika Tursunova", "School 12 · 10"],
+      ["Bekzod Nazarov", "Specialized School · 9"]
+    ];
+
+    let maxScore;
+    let scores;
+    let times;
+
+    if (stage === "season_total") {
+      maxScore = 140;
+      scores = season.status === "archive"
+        ? [128, 124, 119, 116, 111, 107, 101, 96]
+        : [18, 17, 16, 15, 14, 13, 12, 11];
+      times = season.status === "archive"
+        ? ["1:18:42", "1:21:10", "1:22:38", "1:26:04", "1:27:55", "1:31:21", "1:33:47", "1:35:08"]
+        : ["09:58", "10:24", "10:51", "11:16", "11:42", "12:05", "12:44", "13:19"];
+    } else if (stage === "grand_final") {
+      maxScore = 20;
+      scores = [19, 18, 18, 17, 16, 15, 14, 13];
+      times = ["11:42", "12:10", "12:38", "13:04", "12:55", "14:21", "13:47", "15:08"];
+    } else {
+      const tourNo = Number(stage) || 1;
+      maxScore = 20;
+      scores = season.status === "archive"
+        ? [
+            Math.max(12, 20 - Math.floor(tourNo / 3)),
+            Math.max(12, 19 - Math.floor(tourNo / 4)),
+            18,
+            Math.max(12, 17 - (tourNo >= 6 ? 1 : 0)),
+            16,
+            15,
+            14,
+            13
+          ]
+        : [18, 17, 16, 15, 14, 13, 12, 11];
+
+      times = ["09:58", "10:24", "10:51", "11:16", "11:42", "12:05", "12:44", "13:19"];
+    }
+
+    return students.map(([name, meta], index) => {
+      const score = Number(scores[index] || 0);
+      return {
+        rank: index + 1 + baseOffset + seasonOffset,
+        name,
+        meta: `${title} · ${meta}`,
+        score,
+        maxScore,
+        percent: Math.round((score / maxScore) * 100),
+        time: times[index],
+        isMe: name === "YOU"
+      };
+    });
+  }
+
+  function pspRenderRatingsV71() {
+    pspEnsureRatingsSeasonOptionsV71();
+    pspEnsureRatingsSubjectOptionsV71();
+    pspEnsureRatingsStageOptionsV71();
+
+    const list = document.getElementById("ratings-list");
+    if (!list) return;
+
+    const season = pspCurrentRatingsSeasonV71();
+    const subjectKey = pspRatingsSubjectKeyV71();
+    const stage = pspRatingsStageV71();
+    const scope = pspRatingsScopeV71();
+    const d = DATA[subjectKey] || DATA.economics;
+    const hint = document.getElementById("ratings-viewer-hint");
+    const mybar = document.getElementById("ratings-mybar");
+
+    const seasonLabel = pspSeasonLabelV71(season);
+    const stageLabel = pspStageLabelV71(stage);
+
+    const rows = pspRatingsRowsV71(subjectKey, stage, scope, season);
+    const me = rows.find((row) => row.isMe);
+
+    if (hint) {
+      hint.style.display = "";
+      hint.textContent =
+        stage === "grand_final"
+          ? `${seasonLabel} · ${d.title} · Grand Final. ${tr("Финальный рейтинг сезона.", "Mavsum final reytingi.", "Season final rating.")}`
+          : stage === "season_total"
+            ? `${seasonLabel} · ${d.title}. ${tr("Суммарный рейтинг 7 туров.", "7 turning umumiy reytingi.", "Combined rating for 7 tours.")}`
+            : `${seasonLabel} · ${d.title}. ${tr(`Рейтинг тура ${stage}.`, `${stage}-tur reytingi.`, `Tour ${stage} rating.`)}`;
+    }
+
+    list.innerHTML = rows.map((row) => `
+      <div class="psp-rating-row-v71 ${row.isMe ? "is-me" : ""}">
+        <div class="psp-rating-rank-v71">#${esc(row.rank)}</div>
+        <div class="psp-rating-student-v71">
+          <b>${esc(row.isMe ? tr("Вы", "Siz", "You") : row.name)}</b>
+          <span>${esc(row.meta)}</span>
+        </div>
+        <div class="psp-rating-score-v71">
+          <b>${esc(row.score)}/${esc(row.maxScore)}</b>
+          <span>${esc(row.percent)}%</span>
+        </div>
+        <div class="psp-rating-time-v71">${esc(row.time)}</div>
+      </div>
+    `).join("");
+
+    if (mybar && me) {
+      mybar.style.display = "";
+
+      const rankEl = document.getElementById("ratings-mybar-rank");
+      const totalEl = document.getElementById("ratings-mybar-total");
+      const scoreEl = document.getElementById("ratings-mybar-score");
+      const timeEl = document.getElementById("ratings-mybar-time");
+
+      if (rankEl) rankEl.textContent = `#${me.rank}`;
+      if (totalEl) totalEl.textContent = `${seasonLabel} · ${stageLabel}`;
+      if (scoreEl) scoreEl.textContent = `${me.score}/${me.maxScore}`;
+      if (timeEl) timeEl.textContent = me.time;
+    }
+  }
+
+  function pspScheduleRatingsV71() {
+    setTimeout(pspRenderRatingsV71, 0);
+    setTimeout(pspRenderRatingsV71, 160);
+    setTimeout(pspRenderRatingsV71, 420);
+  }
+
+  function pspBindRatingsV71() {
+    if (window.__pspRatingsV71Bound) return;
+    window.__pspRatingsV71Bound = true;
+
+    document.addEventListener("change", (event) => {
+      const id = event.target?.id || "";
+      if (id === "ratings-season" || id === "ratings-subject" || id === "ratings-tour") {
+        pspScheduleRatingsV71();
+      }
+    });
+
+    document.addEventListener("click", (event) => {
+      if (
+        event.target?.closest?.('[data-tab="ratings"]') ||
+        event.target?.closest?.("#view-ratings .seg-btn")
+      ) {
+        pspScheduleRatingsV71();
+      }
+    });
+
+    pspScheduleRatingsV71();
+  }
+
+  function pspInjectRatingsStylesV71() {
+    if (document.getElementById("psp-ratings-seasons-v71")) return;
+
+    const style = document.createElement("style");
+    style.id = "psp-ratings-seasons-v71";
+    style.textContent = `
+      /* PSP_RATINGS_SEASONS_V71 */
+      #view-ratings .psp-ratings-season-filter-v71 {
+        grid-column: 1 / -1;
+      }
+
+      #view-ratings .psp-rating-row-v71 {
+        display: grid;
+        grid-template-columns: 46px minmax(0, 1fr) 72px 58px;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 10px;
+        border-radius: 16px;
+        background: #fff;
+        border: 1px solid rgba(15,23,42,.08);
+        box-shadow: 0 8px 22px rgba(15,23,42,.06);
+      }
+
+      #view-ratings .psp-rating-row-v71 + .psp-rating-row-v71 {
+        margin-top: 10px;
+      }
+
+      #view-ratings .psp-rating-row-v71.is-me {
+        border-color: rgba(47,111,214,.34);
+        background: linear-gradient(180deg, rgba(47,111,214,.08), rgba(255,255,255,.98));
+        box-shadow: 0 0 0 1px rgba(47,111,214,.06) inset, 0 8px 22px rgba(15,23,42,.06);
+      }
+
+      #view-ratings .psp-rating-rank-v71 {
+        font-size: 14px;
+        font-weight: 950;
+        color: #0f172a;
+      }
+
+      #view-ratings .psp-rating-student-v71 {
+        min-width: 0;
+        display: grid;
+        gap: 3px;
+      }
+
+      #view-ratings .psp-rating-student-v71 b,
+      #view-ratings .psp-rating-student-v71 span {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      #view-ratings .psp-rating-student-v71 b {
+        font-size: 13px;
+        line-height: 1.15;
+        color: #0f172a;
+      }
+
+      #view-ratings .psp-rating-student-v71 span {
+        font-size: 11px;
+        line-height: 1.15;
+        font-weight: 700;
+        color: rgba(100,116,139,.95);
+      }
+
+      #view-ratings .psp-rating-score-v71 {
+        text-align: right;
+        display: grid;
+        gap: 2px;
+      }
+
+      #view-ratings .psp-rating-score-v71 b {
+        font-size: 13px;
+        line-height: 1.1;
+        font-weight: 950;
+        color: #0f172a;
+      }
+
+      #view-ratings .psp-rating-score-v71 span {
+        font-size: 11px;
+        line-height: 1.1;
+        font-weight: 850;
+        color: rgba(100,116,139,.95);
+      }
+
+      #view-ratings .psp-rating-time-v71 {
+        text-align: right;
+        font-size: 12px;
+        font-weight: 900;
+        color: rgba(15,23,42,.72);
+        white-space: nowrap;
+      }
+
+      @media (max-width: 360px) {
+        #view-ratings .psp-rating-row-v71 {
+          grid-template-columns: 38px minmax(0, 1fr) 62px 52px;
+          gap: 8px;
+          padding: 11px 9px;
+        }
+      }
+    `;
+
+    document.head.appendChild(style);
+  }
+
+
   function boot() {
     injectStyles();
     injectSheetFullscreenFix();
@@ -6027,8 +6442,8 @@ injectProfileCleanupStyles();
     injectVisibleQuizDomWidthV65Styles();
     observeVisibleQuizDomWidthV65();
     injectPreviewAssessmentShellWidthFix();
-    pspInjectRatingsStagesStylesV70();
-    pspBindRatingsStagesV70();
+    pspInjectRatingsStylesV71();
+    pspBindRatingsV71();
     bind();
     installPhaseSelect();
 
