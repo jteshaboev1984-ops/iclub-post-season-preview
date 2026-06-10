@@ -8017,6 +8017,9 @@ function getPreviewGrandFinalCertificateRows() {
       rank_district: 8,
       rank_region: 8,
       rank_country: 8,
+      season_id: 1,
+      season_key: "season_1",
+      _preview_season_key: "season_1",
       certificate_number: "ICL-20260609-ECONOMICS-GF-970001",
       language_code: lang,
       created_at: "2026-06-09T12:00:00.000Z",
@@ -8518,6 +8521,144 @@ async function filterAvailableCertificateRows(rows) {
   return out;
 }
    
+
+function previewCertificateSeasonLabelV75(value) {
+  const v = String(value || "current");
+
+  if (v === "season_1") {
+    return tr3("Сезон 1", "1-mavsum", "Season 1");
+  }
+
+  return tr3("Текущий", "Joriy", "Current");
+}
+
+function getPreviewCertificateSeasonValueV75(row) {
+  return String(
+    row?._preview_season_key ||
+    row?.season_key ||
+    (Number(row?.season_id || 0) === 1 ? "season_1" : "current")
+  );
+}
+
+function ensurePreviewCertificateSeasonFilterV75(rows = []) {
+  if (!window.ICLUB_PREVIEW_MODE) return;
+
+  const listEl = document.getElementById("certificates-list");
+  if (!listEl) return;
+
+  const intro = document.querySelector('#view-certificates [data-i18n="certificates_sub"]');
+  if (intro) {
+    intro.textContent = tr3(
+      "По турам, сезонам и Grand Final",
+      "Turlar, mavsumlar va Grand Final bo‘yicha",
+      "By tours, seasons and Grand Final"
+    );
+  }
+
+  let wrap = document.getElementById("certificates-season-filter-v75");
+
+  if (!wrap) {
+    wrap = document.createElement("div");
+    wrap.id = "certificates-season-filter-v75";
+    wrap.className = "cert-season-filter-v75";
+    wrap.innerHTML = `
+      <label class="cert-season-label-v75" for="certificates-season-select-v75">
+        ${escapeHTML(tr3("Сезон", "Mavsum", "Season"))}
+      </label>
+      <select id="certificates-season-select-v75" class="input cert-season-select-v75">
+        <option value="current">${escapeHTML(previewCertificateSeasonLabelV75("current"))}</option>
+        <option value="season_1">${escapeHTML(previewCertificateSeasonLabelV75("season_1"))}</option>
+      </select>
+    `;
+
+    listEl.parentNode.insertBefore(wrap, listEl);
+
+    const select = wrap.querySelector("#certificates-season-select-v75");
+    if (select) {
+      select.addEventListener("change", () => {
+        if (!state.certificates) {
+          state.certificates = { selectedId: null, lastIssuedId: null };
+        }
+
+        state.certificates.selectedId = null;
+        state.certificates.seasonFilter = select.value || "current";
+        saveState();
+        renderCertificatesView();
+      });
+    }
+  }
+
+  const select = document.getElementById("certificates-season-select-v75");
+  if (!select) return;
+
+  const available = new Set((Array.isArray(rows) ? rows : []).map(getPreviewCertificateSeasonValueV75));
+  const saved = String(state?.certificates?.seasonFilter || "");
+
+  let next = saved;
+  if (!["current", "season_1"].includes(next)) {
+    next = available.has("current") ? "current" : "season_1";
+  }
+
+  select.value = next;
+}
+
+function filterPreviewCertificatesBySeasonV75(rows = []) {
+  if (!window.ICLUB_PREVIEW_MODE) return rows;
+
+  const selectedId = Number(state?.certificates?.selectedId || 0);
+  if (selectedId > 0) {
+    return rows;
+  }
+
+  const selectValue = String(
+    document.getElementById("certificates-season-select-v75")?.value ||
+    state?.certificates?.seasonFilter ||
+    "current"
+  );
+
+  return (Array.isArray(rows) ? rows : [])
+    .filter((row) => getPreviewCertificateSeasonValueV75(row) === selectValue);
+}
+
+function injectPreviewCertificateSeasonStylesV75() {
+  if (!window.ICLUB_PREVIEW_MODE) return;
+  if (document.getElementById("certificates-season-filter-v75-style")) return;
+
+  const style = document.createElement("style");
+  style.id = "certificates-season-filter-v75-style";
+  style.textContent = `
+    /* PSP_CERTIFICATES_SEASONS_V75 */
+    #view-certificates .cert-season-filter-v75 {
+      margin: 14px 0 12px;
+      padding: 10px;
+      border-radius: 16px;
+      background: #fff;
+      border: 1px solid rgba(15,23,42,.08);
+      box-shadow: 0 8px 22px rgba(15,23,42,.06);
+      display: grid;
+      gap: 7px;
+    }
+
+    #view-certificates .cert-season-label-v75 {
+      font-size: 11px;
+      font-weight: 900;
+      color: rgba(71,85,105,.9);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+
+    #view-certificates .cert-season-select-v75 {
+      width: 100%;
+      min-height: 42px;
+      border-radius: 13px;
+      font-weight: 900;
+    }
+  `;
+
+  document.head.appendChild(style);
+}
+
+
 async function renderCertificatesView() {
   const listEl = document.getElementById("certificates-list");
   if (!listEl) return;
@@ -8539,6 +8680,12 @@ async function renderCertificatesView() {
     await ensureEligibleCertificatesIssued();
     rawRows = await fetchMyCertificatesDb();
     rows = await filterAvailableCertificateRows(rawRows);
+
+    if (window.ICLUB_PREVIEW_MODE) {
+      injectPreviewCertificateSeasonStylesV75();
+      ensurePreviewCertificateSeasonFilterV75(rows);
+      rows = filterPreviewCertificatesBySeasonV75(rows);
+    }
   } finally {
     hideAsyncOverlay();
   }
@@ -8987,8 +9134,28 @@ async function renderCertificateVerifyView(certificateNumber) {
   const schoolText = formatSchoolValue(rawSchoolText, certLang);
   const classText = formatClassValue(rawClassText, certLang);
 
-  const regionText = pickTr(row?.region_tr, row?.region);
-  const districtText = pickTr(row?.district_tr, row?.district);
+  const cleanPreviewGeoLabel = (value, fallback) => {
+    const v = String(value || "").trim();
+
+    if (
+      window.ICLUB_PREVIEW_MODE &&
+      (!v || /preview/i.test(v))
+    ) {
+      return String(fallback || "").trim();
+    }
+
+    return v || String(fallback || "").trim();
+  };
+
+  const regionText = cleanPreviewGeoLabel(
+    pickTr(row?.region_tr, row?.region),
+    certT("rank_region_label", "Region")
+  );
+
+  const districtText = cleanPreviewGeoLabel(
+    pickTr(row?.district_tr, row?.district),
+    certT("rank_district_label", "District")
+  );
 
   const schoolClassValue =
     String([schoolText, classText].filter(Boolean).join(" · ")).trim() || "—";
